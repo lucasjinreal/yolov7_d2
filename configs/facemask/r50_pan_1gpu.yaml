@@ -1,0 +1,57 @@
+_BASE_: "../Base-YOLOv7.yaml"
+MODEL:
+  META_ARCHITECTURE: "YOLOV7"
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  MASK_ON: False
+  BACKBONE:
+    NAME: "build_resnet_pan_backbone"
+  RESNETS:
+    DEPTH: 50
+    OUT_FEATURES: ["res3", "res4", "res5"] # fpn produce 4 levels, only using 3 for now
+  FPN:
+    IN_FEATURES: ["res3", "res4", "res5"]
+    OUT_CHANNELS_LIST: [256, 512, 1024]
+  YOLO:
+    ANCHORS:
+      [
+        [[322, 428], [194, 260], [123, 168]],
+        [[84, 115], [60, 79], [41, 53]],
+        [[27, 37], [18, 23], [10, 13]],
+      ]
+    CLASSES: 2
+    IN_FEATURES: ["p3", "p4", "p5"] # p3, p4, p5 from FPN
+    CONF_THRESHOLD: 0.2
+    NMS_THRESHOLD: 0.1
+    IGNORE_THRESHOLD: 0.1
+    VARIANT: "yolov7"
+    LOSS_TYPE: "v4"
+    LOSS:
+      LAMBDA_CLS: 1.1
+DATASETS:
+  TRAIN: ("facemask_train",)
+  TEST: ("facemask_val",)
+
+INPUT:
+  # open all augmentations
+  JITTER_CROP:
+    ENABLED: True
+  RESIZE:
+    ENABLED: True
+    SHAPE: (640, 640)
+  DISTORTION:
+    ENABLED: True
+  MOSAIC:
+    ENABLED: True
+    NUM_IMAGES: 4
+    MOSAIC_WIDTH: 640
+    MOSAIC_HEIGHT: 640
+
+SOLVER:
+  IMS_PER_BATCH: 3
+  BASE_LR: 0.0004
+  STEPS: (60000, 80000)
+  MAX_ITER: 90000
+
+DATALOADER:
+  # proposals are part of the dataset_dicts, and take a lot of RAM
+  NUM_WORKERS: 2

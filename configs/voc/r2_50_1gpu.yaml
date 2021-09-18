@@ -1,0 +1,74 @@
+_BASE_: "../Base-YOLOv7.yaml"
+MODEL:
+  META_ARCHITECTURE: "YOLOV7"
+  WEIGHTS: ""
+  MASK_ON: False
+  BACKBONE:
+    NAME: "build_res2net_backbone"
+  RESNETS:
+    R2TYPE: "res2net50_v1b"
+    DEPTH: 50
+    OUT_FEATURES: ["res3", "res4", "res5"] # fpn produce 4 levels, only using 3 for now
+  YOLO:
+    ANCHORS:
+      [
+        [[354, 330], [289, 169], [168, 270]],
+        [[91, 192], [137, 109], [60, 103]],
+        [[56, 40], [29, 64], [18, 25]],
+      ]
+    CLASSES: 20
+    IN_FEATURES: ["res3", "res4", "res5"] # p3, p4, p5 from FPN
+    CONF_THRESHOLD: 0.01
+    NMS_THRESHOLD: 0.2
+    IGNORE_THRESHOLD: 0.7
+    VARIANT: "yolov7"
+    LOSS_TYPE: "v7"
+    LOSS:
+      LAMBDA_IOU: 1.5
+
+DATASETS:
+  TRAIN: ("voc_train",)
+  TEST: ("voc_val",)
+
+
+
+INPUT:
+  MIN_SIZE_TRAIN: (416, 512, 608, 768)
+  MAX_SIZE_TRAIN: 768
+  MIN_SIZE_TEST: 512
+  # open all augmentations
+  JITTER_CROP:
+    ENABLED: False
+  RESIZE:
+    ENABLED: False
+    # SHAPE: (540, 960)
+  DISTORTION:
+    ENABLED: False
+  # MOSAIC:
+  #   ENABLED: True
+  #   NUM_IMAGES: 4
+  #   DEBUG_VIS: True
+  #   # MOSAIC_WIDTH: 960
+  #   # MOSAIC_HEIGHT: 540
+  MOSAIC_AND_MIXUP:
+    ENABLED: True
+    DEBUG_VIS: False
+    ENABLE_MIXUP: False
+
+
+SOLVER:
+  IMS_PER_BATCH: 3
+  BASE_LR: 0.002
+  STEPS: (60000, 80000)
+  MAX_ITER: 130000
+  LR_SCHEDULER_NAME: "WarmupCosineLR"
+
+
+TEST:
+  EVAL_PERIOD: 9000
+  # EVAL_PERIOD: 0
+OUTPUT_DIR: "output/voc_r2_50"
+
+DATALOADER:
+  # proposals are part of the dataset_dicts, and take a lot of RAM
+  NUM_WORKERS: 1

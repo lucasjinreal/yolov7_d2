@@ -1,0 +1,105 @@
+_BASE_: "../Base-YOLOv7.yaml"
+MODEL:
+  META_ARCHITECTURE: "YOLOMask"
+  WEIGHTS: "weights/coco_yoloxs_map36.6.pth"
+  MASK_ON: True
+  BACKBONE:
+    NAME: "build_cspdarknetx_backbone"
+  DARKNET:
+    WEIGHTS: ""
+    DEPTH_WISE: False
+    OUT_FEATURES: ["dark2", "dark3", "dark4", "dark5"]
+
+  YOLO:
+    ANCHORS:
+      # yolomask anchors slightly different than YOLOv7
+      [
+        [142, 110],
+        [192, 243],
+        [459, 401],
+
+        [36, 75],
+        [76, 55],
+        [72, 146],
+
+        [12, 16],
+        [19, 36],
+        [40, 28],
+      ]
+    ANCHOR_MASK: [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
+    CLASSES: 80
+    IN_FEATURES: ["dark2", "dark3", "dark4", "dark5"] # p3, p4, p5 from FPN
+    WIDTH_MUL: 0.50
+    # WIDTH_MUL: 1.
+    DEPTH_MUL: 0.33
+    # DEPTH_MUL: 1.
+
+    CONF_THRESHOLD: 0.21
+    NMS_THRESHOLD: 0.65
+    IGNORE_THRESHOLD: 0.7
+    VARIANT: "yolov7"
+    LOSS_TYPE: "v7"
+    LOSS:
+      LAMBDA_IOU: 1.1
+    NECK:
+      TYPE: "fpn"
+      WITH_SPP: true
+    ORIEN_HEAD:
+      UP_CHANNELS: 128
+
+DATASETS:
+  TRAIN: ("coco_2017_train",)
+  # TEST: ("coco_2014_val_mini",)
+  TEST: ("coco_2017_val",)
+
+INPUT:
+  MASK_FORMAT: "bitmask"
+  MIN_SIZE_TRAIN: (416, 512, 608, 768, 800)
+  MAX_SIZE_TRAIN: 900 # force max size train to 800?
+  MIN_SIZE_TEST: 640
+  MAX_SIZE_TEST: 800
+  # open all augmentations
+  RANDOM_FLIP: "horizontal"
+  CROP:
+    ENABLED: False
+  JITTER_CROP:
+    ENABLED: False
+  RESIZE:
+    ENABLED: False
+    # SHAPE: (540, 960)
+  DISTORTION:
+    ENABLED: True
+  COLOR_JITTER:
+    BRIGHTNESS: True
+    SATURATION: True
+  # MOSAIC:
+  #   ENABLED: True
+  #   NUM_IMAGES: 4
+  #   DEBUG_VIS: True
+  #   # MOSAIC_WIDTH: 960
+  #   # MOSAIC_HEIGHT: 540
+  MOSAIC_AND_MIXUP:
+    ENABLED: False
+    DEBUG_VIS: False
+    ENABLE_MIXUP: False
+
+SOLVER:
+  # AMP:
+  # ENABLED: true
+  IMS_PER_BATCH: 16 # 1/5 bs than YOLOX
+  # it can be 0.016 maybe
+  BASE_LR: 0.003
+  STEPS: (60000, 80000)
+  WARMUP_FACTOR: 0.00033333
+  WARMUP_ITERS: 1500
+  MAX_ITER: 210000
+  LR_SCHEDULER_NAME: "WarmupCosineLR"
+
+TEST:
+  # EVAL_PERIOD: 10000
+  EVAL_PERIOD: 5000
+OUTPUT_DIR: "output/coco_yolomask_canary"
+
+DATALOADER:
+  # proposals are part of the dataset_dicts, and take a lot of RAM
+  NUM_WORKERS: 1

@@ -1,0 +1,39 @@
+_BASE_: "../Base-YoloV7.yaml"
+MODEL:
+  WEIGHTS: ""
+  META_ARCHITECTURE: "YOLOV7"
+  MASK_ON: False
+  BACKBONE:
+    NAME: "build_cspdarknet_backbone"
+  DARKNET:
+    WEIGHTS: "weights/cspdarknet53_ra_256-d05c7c21.pth" # manually down from: https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/cspdarknet53_ra_256-d05c7c21.pth
+    DEPTH: 53
+    STEM_OUT_CHANNELS: 32
+    WEIGHTS: ""
+    OUT_FEATURES: ["layer3", "layer4", "layer5"]
+  YOLO:
+    ANCHORS: [[[231.0, 298.0], [356.0, 458.0], [157.0, 199.0]], [[85.0, 106.0], [63.0, 79.0], [115.0, 143.0]], [[46.0, 56.0], [31.0, 37.0], [17.0, 19.0]]]
+    CLASSES: 2
+    IN_FEATURES: ["layer3", "layer4", "layer5"]
+    CONF_THRESHOLD: 0.01
+    NMS_THRESHOLD: 0.1
+    IGNORE_THRESHOLD: 0.5
+    LOSS_TYPE: "v7"
+
+DATASETS:
+  TRAIN: ("mask_train",)
+  TEST: ("mask_val",)
+
+SOLVER:
+  IMS_PER_BATCH: 3
+  BASE_LR: 0.005
+  STEPS: (60000, 80000)
+  MAX_ITER: 90000
+  CHECKPOINT_PERIOD: 1000
+
+OUTPUT_DIR: "output/wearmask_cspdarknet53"
+
+
+DATALOADER:
+  # proposals are part of the dataset_dicts, and take a lot of RAM
+  NUM_WORKERS: 2

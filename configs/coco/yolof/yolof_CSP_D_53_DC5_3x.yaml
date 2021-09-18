@@ -1,0 +1,39 @@
+_BASE_: "Base-YOLOF.yaml"
+MODEL:
+  WEIGHTS: "./pretrained_models/cspdarknet53.pth"
+  META_ARCHITECTURE: "YOLOF"
+  BACKBONE:
+    NAME: "build_darknet_backbone"
+  DARKNET:
+    NORM: "SyncBN"
+    RES5_DILATION: 2
+  ANCHOR_GENERATOR:
+    SIZES: [[16, 32, 64, 128, 256, 512]]
+  YOLOF:
+    ENCODER:
+      IN_CHANNELS: 1024
+      NUM_RESIDUAL_BLOCKS: 8
+      BLOCK_DILATIONS: [1, 2, 3, 4, 5, 6, 7, 8]
+      NORM: "SyncBN"
+      ACTIVATION: "LeakyReLU"
+    DECODER:
+      NUM_ANCHORS: 6
+      NORM: "SyncBN"
+      ACTIVATION: "LeakyReLU"
+    POS_IGNORE_THRESHOLD: 0.1
+SOLVER:
+  BASE_LR: 0.04
+  BACKBONE_MULTIPLIER: 1.0
+  STEPS: (52500, 62500)
+  MAX_ITER: 67500
+  CHECKPOINT_PERIOD: 5000
+INPUT:
+  JITTER_CROP:
+    ENABLED: True
+  RESIZE:
+    ENABLED: True
+  DISTORTION:
+    ENABLED: True
+  MOSAIC:
+    ENABLED: True
+OUTPUT_DIR: "output/yolof/CSP_D_53_DC5_3x"

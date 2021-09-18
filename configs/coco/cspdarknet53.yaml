@@ -1,0 +1,50 @@
+_BASE_: "../Base-YOLOv7.yaml"
+MODEL:
+  META_ARCHITECTURE: "YOLOV7"
+  WEIGHTS: ""
+  MASK_ON: False
+  BACKBONE:
+    NAME: "build_cspdarknet_backbone"
+  DARKNET:
+    WEIGHTS: "weights/cspdarknet53_ra_256-d05c7c21.pth" # manually down from: https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/cspdarknet53_ra_256-d05c7c21.pth
+    DEPTH: 53
+    WITH_CSP: True
+    STEM_OUT_CHANNELS: 32
+    WEIGHTS: ""
+    OUT_FEATURES: ["layer3", "layer4", "layer5"]
+  YOLO:
+    ANCHORS:
+      [
+        [[116, 90], [156, 198], [373, 326]],
+        [[30, 61], [62, 45], [42, 119]],
+        [[10, 13], [16, 30], [33, 23]],
+      ]
+    CLASSES: 80
+    IN_FEATURES: ["layer3", "layer4", "layer5"]
+    CONF_THRESHOLD: 0.01
+    NMS_THRESHOLD: 0.5
+    IGNORE_THRESHOLD: 0.5
+    LOSS_TYPE: "v7"
+
+DATASETS:
+  TRAIN: ("coco_2017_train",)
+  TEST: ("coco_2017_val",)
+
+SOLVER:
+  IMS_PER_BATCH: 32
+  BASE_LR: 0.0009
+  WARMUP_ITERS: 1000
+  STEPS: (60000, 80000)
+  MAX_ITER: 120000
+  CLIP_GRADIENTS:
+    ENABLED: True
+  CHECKPOINT_PERIOD: 5000
+
+TEST:
+  EVAL_PERIOD: 10000
+OUTPUT_DIR: "output/coco_cspdarknet53"
+VIS_PERIOD: 5000
+
+DATALOADER:
+  # proposals are part of the dataset_dicts, and take a lot of RAM
+  NUM_WORKERS: 2

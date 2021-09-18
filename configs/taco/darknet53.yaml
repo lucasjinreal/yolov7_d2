@@ -1,0 +1,38 @@
+_BASE_: "../Base-YoloV7.yaml"
+MODEL:
+  WEIGHTS: ""
+  MASK_ON: False
+  BACKBONE:
+    NAME: "build_darknet_backbone"
+    
+  DARKNET:
+    WEIGHTS: "weights/yolov3.pt" # using pytorch weights from ultralytics's yolov3
+    DEPTH: 53
+    STEM_OUT_CHANNELS: 32
+    WEIGHTS: ""
+    OUT_FEATURES: ["dark3", "dark4", "dark5"]
+  YOLO:
+    ANCHORS:
+      [
+        [[116, 90], [156, 198], [373, 326]],
+        [[30, 61], [62, 45], [42, 119]],
+        [[10, 13], [16, 30], [33, 23]],
+      ]
+    CLASSES: 60
+    IN_FEATURES: ["dark3", "dark4", "dark5"]
+    CONF_THRESHOLD: 0.01
+    NMS_THRESHOLD: 0.5
+    IGNORE_THRESHOLD: 0.1
+DATASETS:
+  TRAIN: ("taco_train",)
+  TEST: ("taco_val",)
+
+SOLVER:
+  IMS_PER_BATCH: 16
+  BASE_LR: 0.005
+  STEPS: (60000, 80000)
+  MAX_ITER: 90000
+
+DATALOADER:
+  # proposals are part of the dataset_dicts, and take a lot of RAM
+  NUM_WORKERS: 2

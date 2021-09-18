@@ -1,0 +1,63 @@
+_BASE_: "../Base-YoloV7.yaml"
+MODEL:
+  META_ARCHITECTURE: "YOLOV7"
+  WEIGHTS: ""
+  MASK_ON: False
+  BACKBONE:
+    NAME: "build_darknet_backbone"
+  DARKNET:
+    WEIGHTS: "weights/yolov3.pt" # using pytorch weights from ultralytics's yolov3
+    DEPTH: 53
+    # WITH_CSP: True
+    STEM_OUT_CHANNELS: 32
+    OUT_FEATURES: ["dark3", "dark4", "dark5"]
+  YOLO:
+    ANCHORS:
+      [
+        [[362, 331], [296, 170], [178, 277]],
+        [[98, 205], [139, 116], [57, 116]],
+        [[75, 53], [33, 57], [19, 24]],
+      ]
+    CLASSES: 20
+    IN_FEATURES: ["dark3", "dark4", "dark5"]
+    CONF_THRESHOLD: 0.01
+    NMS_THRESHOLD: 0.2
+    IGNORE_THRESHOLD: 0.7
+    VARIANT: "yolov7"
+    LOSS_TYPE: "v7"
+DATASETS:
+  TRAIN: ("voc_train",)
+  TEST: ("voc_val",)
+
+INPUT:
+  MIN_SIZE_TRAIN: (416, 512, 608, 768, 800)
+  # open all augmentations
+  JITTER_CROP:
+    ENABLED: True
+  RESIZE:
+    ENABLED: True
+    # SHAPE: (540, 960)
+  DISTORTION:
+    ENABLED: True
+  MOSAIC:
+    ENABLED: True
+    NUM_IMAGES: 4
+    # MOSAIC_WIDTH: 960
+    # MOSAIC_HEIGHT: 540
+
+SOLVER:
+  IMS_PER_BATCH: 4
+  BASE_LR: 0.008
+  # WARMUP_ITERS: 20000
+  STEPS: (60000, 80000)
+  MAX_ITER: 120000
+  LR_SCHEDULER_NAME: "WarmupCosineLR"
+
+TEST:
+  EVAL_PERIOD: 10000
+  # EVAL_PERIOD: 0
+OUTPUT_DIR: "output/voc_darknet"
+
+DATALOADER:
+  # proposals are part of the dataset_dicts, and take a lot of RAM
+  NUM_WORKERS: 2

@@ -1,0 +1,60 @@
+_BASE_: "../Base-YOLOv7.yaml"
+MODEL:
+  META_ARCHITECTURE: "YOLOV7"
+  WEIGHTS: ""
+  MASK_ON: False
+  BACKBONE:
+    NAME: "build_res2net_backbone"
+  RESNETS:
+    R2TYPE: "res2net50_v1b"
+    DEPTH: 50
+    OUT_FEATURES: ["res3", "res4", "res5"] # fpn produce 4 levels, only using 3 for now
+  YOLO:
+    ANCHORS:
+      [
+        [[322, 428], [194, 260], [123, 168]],
+        [[84, 115], [60, 79], [41, 53]],
+        [[27, 37], [18, 23], [10, 13]],
+      ]
+    CLASSES: 5
+    IN_FEATURES: ["res3", "res4", "res5"] # p3, p4, p5 from FPN
+    CONF_THRESHOLD: 0.01
+    NMS_THRESHOLD: 0.2
+    IGNORE_THRESHOLD: 0.5
+    VARIANT: "yolov7"
+    LOSS_TYPE: "v7"
+DATASETS:
+  TRAIN: ("tl_train",)
+  TEST: ("tl_val",)
+
+INPUT:
+  # open all augmentations
+  JITTER_CROP:
+    ENABLED: True
+  RESIZE:
+    ENABLED: True
+    SHAPE: (540, 960)
+  DISTORTION:
+    ENABLED: True
+  MOSAIC:
+    ENABLED: True
+    NUM_IMAGES: 4
+    MOSAIC_WIDTH: 960
+    MOSAIC_HEIGHT: 540
+
+
+SOLVER:
+  IMS_PER_BATCH: 32
+  BASE_LR: 0.0008
+  STEPS: (60000, 80000)
+  MAX_ITER: 270000
+
+
+TEST:
+  # EVAL_PERIOD: 10000
+  EVAL_PERIOD: 0
+OUTPUT_DIR: "output/tl_r2_50"
+
+DATALOADER:
+  # proposals are part of the dataset_dicts, and take a lot of RAM
+  NUM_WORKERS: 8

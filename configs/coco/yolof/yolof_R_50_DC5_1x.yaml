@@ -1,0 +1,15 @@
+_BASE_: "yolof_R_50_C5_1x.yaml"
+MODEL:
+  RESNETS:
+    RES5_DILATION: 2
+  ANCHOR_GENERATOR:
+    SIZES: [[16, 32, 64, 128, 256, 512]]
+  YOLOF:
+    ENCODER:
+      BLOCK_DILATIONS: [4, 8, 12, 16]
+    DECODER:
+      NUM_ANCHORS: 6
+    MATCHER:
+      TOPK: 8
+    POS_IGNORE_THRESHOLD: 0.1
+OUTPUT_DIR: "output/yolof/R_50_DC5_1x"

@@ -1,0 +1,80 @@
+_BASE_: "../Base-YOLOv7.yaml"
+MODEL:
+  WEIGHTS: ""
+  META_ARCHITECTURE: "YOLOV7"
+  MASK_ON: False
+  BACKBONE:
+    NAME: "build_swin_transformer_backbone"
+  SWIN:
+    TYPE: "small"
+    WEIGHTS: "weights/swin_small_patch4_window7_224.pth" # manually download weights from https://github.com/microsoft/Swin-Transformer
+    OUT_FEATURES: [1, 2, 3] # we might also want try res2, res3, res4, res5
+
+  YOLO:
+    ANCHORS:
+      [
+        [[116, 90], [156, 198], [373, 326]],
+        [[30, 61], [62, 45], [42, 119]],
+        [[10, 13], [16, 30], [33, 23]],
+      ]
+    CLASSES: 80
+    IN_FEATURES: [1, 2, 3]
+    CONF_THRESHOLD: 0.01
+    NMS_THRESHOLD: 0.5
+    IGNORE_THRESHOLD: 0.7
+    VARIANT: "yolov7"
+    LOSS_TYPE: "v7"
+    LOSS:
+      LAMBDA_IOU: 1.1
+    NECK:
+      TYPE: "yolov3"
+      WITH_SPP: True
+
+DATASETS:
+  TRAIN: ("coco_2017_train",)
+  TEST: ("coco_2017_val",)
+
+INPUT:
+  MIN_SIZE_TRAIN: (416, 512, 608, 768)
+  MAX_SIZE_TRAIN: 1056
+  MIN_SIZE_TEST: 672
+  MAX_SIZE_TEST: 800
+  # open all augmentations
+  JITTER_CROP:
+    ENABLED: False
+  RESIZE:
+    ENABLED: False
+    # SHAPE: (540, 960)
+  DISTORTION:
+    ENABLED: False
+  # MOSAIC:
+  #   ENABLED: True
+  #   NUM_IMAGES: 4
+  #   DEBUG_VIS: True
+  #   # MOSAIC_WIDTH: 960
+  #   # MOSAIC_HEIGHT: 540
+  MOSAIC_AND_MIXUP:
+    ENABLED: True
+    DEBUG_VIS: False
+    ENABLE_MIXUP: False
+
+SOLVER:
+  AMP:
+    ENABLED: true
+  IMS_PER_BATCH: 24 # 1/5 bs than YOLOX
+  # it can be 0.016 maybe
+  BASE_LR: 0.003
+  STEPS: (60000, 80000)
+  WARMUP_FACTOR: 0.00033333
+  WARMUP_ITERS: 1500
+  MAX_ITER: 190000
+  LR_SCHEDULER_NAME: "WarmupCosineLR"
+
+TEST:
+  EVAL_PERIOD: 10000
+  # EVAL_PERIOD: 0
+OUTPUT_DIR: "output/coco_swin_s"
+
+DATALOADER:
+  # proposals are part of the dataset_dicts, and take a lot of RAM
+  NUM_WORKERS: 2

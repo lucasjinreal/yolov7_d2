@@ -1,0 +1,6 @@
+alfred-py
+timm
+nbnb
+mmpycocotools
+omegaconf
+

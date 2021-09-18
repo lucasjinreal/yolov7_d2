@@ -1,0 +1,85 @@
+_BASE_: "../Base-YOLOv7.yaml"
+MODEL:
+  META_ARCHITECTURE: "YOLOV7"
+  WEIGHTS: ""
+  MASK_ON: False
+  BACKBONE:
+    NAME: "build_regnet_backbone"
+  REGNETS:
+    TYPE: "RegNetX_200MF"
+    OUT_FEATURES: ["s2", "s3", "s4"] # fpn produce 4 levels, only using 3 for now
+
+  YOLO:
+    ANCHORS:
+      [
+        [[116, 90], [156, 198], [373, 326]],
+        [[30, 61], [62, 45], [42, 119]],
+        [[10, 13], [16, 30], [33, 23]],
+      ]
+    CLASSES: 80
+    IN_FEATURES: ["s2", "s3", "s4"] # p3, p4, p5 from FPN
+    CONF_THRESHOLD: 0.001
+    NMS_THRESHOLD: 0.65
+    IGNORE_THRESHOLD: 0.7
+    VARIANT: "yolov7"
+    WIDTH_MUL: 1.0 # for FPN neck
+    # WIDTH_MUL: 0.5 # for FPN neck
+    LOSS_TYPE: "v7"
+    LOSS:
+      LAMBDA_IOU: 1.1
+    NECK:
+      TYPE: "pafpn"
+
+DATASETS:
+  TRAIN: ("coco_2017_train_mini",)
+  TEST: ("coco_2014_val_mini",)
+  # TEST: ("coco_2017_val",)
+
+
+INPUT:
+  MIN_SIZE_TRAIN: (416, 512, 608, 768)
+  MAX_SIZE_TRAIN: 800 # force max size train to 800?
+  MIN_SIZE_TEST: 640
+  MAX_SIZE_TEST: 800
+  # open all augmentations
+  JITTER_CROP:
+    ENABLED: False
+  RESIZE:
+    ENABLED: False
+    # SHAPE: (540, 960)
+  DISTORTION:
+    ENABLED: False
+  # MOSAIC:
+  #   ENABLED: True
+  #   NUM_IMAGES: 4
+  #   DEBUG_VIS: True
+  #   # MOSAIC_WIDTH: 960
+  #   # MOSAIC_HEIGHT: 540
+  MOSAIC_AND_MIXUP:
+    ENABLED: True
+    DEBUG_VIS: False
+    ENABLE_MIXUP: False
+
+
+SOLVER:
+  AMP:
+    ENABLED: true
+  IMS_PER_BATCH: 64 # 1/5 bs than YOLOX
+  # IMS_PER_BATCH: 5 # 1/5 bs than YOLOX
+  # it can be 0.016 maybe
+  BASE_LR: 0.008
+  STEPS: (60000, 80000)
+  WARMUP_FACTOR: 0.00033333
+  WARMUP_ITERS: 1500
+  MAX_ITER: 190000
+  LR_SCHEDULER_NAME: "WarmupCosineLR"
+
+
+TEST:
+  EVAL_PERIOD: 10000
+  # EVAL_PERIOD: 0
+OUTPUT_DIR: "output/coco_mini_regnetx_0.2g"
+
+DATALOADER:
+  # proposals are part of the dataset_dicts, and take a lot of RAM
+  NUM_WORKERS: 1

@@ -1,0 +1,85 @@
+_BASE_: "../Base-YOLOv7.yaml"
+MODEL:
+  PIXEL_MEAN: [0.485, 0.456, 0.406] # same value as PP-YOLOv2, RGB order
+  PIXEL_STD: [0.229, 0.224, 0.225]
+
+  WEIGHTS: ""
+  MASK_ON: False
+  META_ARCHITECTURE: "YOLOX"
+  BACKBONE:
+    NAME: "build_cspdarknetx_backbone"
+
+  DARKNET:
+    WEIGHTS: ""
+    DEPTH_WISE: False
+    OUT_FEATURES: ["dark3", "dark4", "dark5"]
+
+  YOLO:
+    CLASSES: 80
+    IN_FEATURES: ["dark3", "dark4", "dark5"]
+    CONF_THRESHOLD: 0.001
+    NMS_THRESHOLD: 0.65
+    IGNORE_THRESHOLD: 0.7
+    WIDTH_MUL: 0.50
+    DEPTH_MUL: 0.33
+    LOSS_TYPE: "v7"
+    LOSS:
+      LAMBDA_IOU: 1.5
+
+DATASETS:
+  TRAIN: ("coco_2017_train",)
+  # TEST: ("coco_2014_val_mini",)
+  TEST: ("coco_2017_val",)
+
+INPUT:
+  # FORMAT: "RGB" # using BGR default
+  MIN_SIZE_TRAIN: (416, 512, 608, 768)
+  MAX_SIZE_TRAIN: 800 # force max size train to 800?
+  MIN_SIZE_TEST: 640
+  MAX_SIZE_TEST: 800
+  # open all augmentations
+  JITTER_CROP:
+    ENABLED: False
+  RESIZE:
+    ENABLED: False
+    # SHAPE: (540, 960)
+  DISTORTION:
+    ENABLED: True
+  COLOR_JITTER:
+    BRIGHTNESS: True
+    SATURATION: True
+  # MOSAIC:
+  #   ENABLED: True
+  #   NUM_IMAGES: 4
+  #   DEBUG_VIS: True
+  #   # MOSAIC_WIDTH: 960
+  #   # MOSAIC_HEIGHT: 540
+  MOSAIC_AND_MIXUP:
+    ENABLED: True
+    # ENABLED: False
+    DEBUG_VIS: False
+    ENABLE_MIXUP: False
+    DISABLE_AT_ITER: 120000
+
+
+SOLVER:
+  # enable fp16 training
+  AMP:
+    ENABLED: true
+  IMS_PER_BATCH: 112
+  BASE_LR: 0.027
+  STEPS: (60000, 80000)
+  WARMUP_FACTOR: 0.00033333
+  WARMUP_ITERS: 1200
+  MAX_ITER: 230000
+  LR_SCHEDULER_NAME: "WarmupCosineLR"
+
+TEST:
+  EVAL_PERIOD: 10000
+  # EVAL_PERIOD: 0
+OUTPUT_DIR: "output/coco_yolox_s"
+VIS_PERIOD: 5000
+
+DATALOADER:
+  # proposals are part of the dataset_dicts, and take a lot of RAM
+  NUM_WORKERS: 3

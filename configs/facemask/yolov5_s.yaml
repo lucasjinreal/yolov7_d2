@@ -1,0 +1,80 @@
+_BASE_: "../Base-YOLOv7.yaml"
+MODEL:
+  WEIGHTS: ""
+  MASK_ON: False
+  META_ARCHITECTURE: "YOLOV5"
+  BACKBONE:
+    NAME: "build_cspdarknetx_backbone"
+
+  DARKNET:
+    WEIGHTS: ""
+    DEPTH_WISE: False
+    OUT_FEATURES: ["dark3", "dark4", "dark5"]
+  YOLO:
+    ANCHORS:
+      [
+        [[13, 25], [15, 14], [7, 10]],
+        [[47, 29], [23, 40], [28, 19]],
+        [[120, 106], [80, 47], [45, 66]],
+      ]
+    CLASSES: 10
+    IN_FEATURES: ["dark3", "dark4", "dark5"]
+    CONF_THRESHOLD: 0.001
+    NMS_THRESHOLD: 0.6
+    IGNORE_THRESHOLD: 0.6
+    WIDTH_MUL: 0.50
+    DEPTH_MUL: 0.33
+    VARIANT: "yolov7"
+    LOSS_TYPE: "v7"
+    LOSS:
+      LAMBDA_IOU: 0.05
+      LAMBDA_CONF: 1.0
+      LAMBDA_CLS: 0.5
+      ANCHOR_RATIO_THRESH: 4.0
+
+DATASETS:
+  TRAIN: ("visdrone_train",)
+  TEST: ("visdrone_val",)
+
+INPUT:
+  MIN_SIZE_TRAIN: (416, 512, 608, 768)
+  MAX_SIZE_TRAIN: 1056
+  MIN_SIZE_TEST: 672
+  MAX_SIZE_TEST: 768
+  # open all augmentations
+  JITTER_CROP:
+    ENABLED: False
+  RESIZE:
+    ENABLED: False
+    # SHAPE: (540, 960)
+  DISTORTION:
+    ENABLED: False
+  # MOSAIC:
+  #   ENABLED: True
+  #   NUM_IMAGES: 4
+  #   DEBUG_VIS: True
+  #   # MOSAIC_WIDTH: 960
+  #   # MOSAIC_HEIGHT: 540
+  MOSAIC_AND_MIXUP:
+    ENABLED: True
+    DEBUG_VIS: False
+    ENABLE_MIXUP: False
+
+SOLVER:
+  IMS_PER_BATCH: 5
+  BASE_LR: 0.04
+  STEPS: (60000, 80000)
+  WARMUP_FACTOR: 0.00033333
+  WARMUP_ITERS: 1500
+  MAX_ITER: 130000
+  LR_SCHEDULER_NAME: "WarmupCosineLR"
+
+TEST:
+  EVAL_PERIOD: 5000
+  # EVAL_PERIOD: 0
+OUTPUT_DIR: "output/visdrone_yolov5_s"
+VIS_PERIOD: 5000
+
+DATALOADER:
+  # proposals are part of the dataset_dicts, and take a lot of RAM
+  NUM_WORKERS: 1

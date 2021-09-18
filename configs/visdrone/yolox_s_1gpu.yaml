@@ -1,0 +1,85 @@
+_BASE_: "../Base-YOLOv7.yaml"
+MODEL:
+  WEIGHTS: ""
+  MASK_ON: False
+  META_ARCHITECTURE: "YOLOX"
+  BACKBONE:
+    NAME: "build_cspdarknetx_backbone"
+
+  DARKNET:
+    WEIGHTS: ""
+    DEPTH_WISE: False
+    OUT_FEATURES: ["dark3", "dark4", "dark5"]
+
+  YOLO:
+    CLASSES: 10
+    IN_FEATURES: ["dark3", "dark4", "dark5"]
+    CONF_THRESHOLD: 0.001
+    NMS_THRESHOLD: 0.65
+    IGNORE_THRESHOLD: 0.7
+    MAX_BOXES_NUM: 150
+    WIDTH_MUL: 0.50
+    DEPTH_MUL: 0.33
+    LOSS_TYPE: "v7"
+    LOSS:
+      LAMBDA_IOU: 1.5
+
+DATASETS:
+  TRAIN: ("visdrone_train",)
+  TEST: ("visdrone_val",)
+
+
+
+INPUT:
+  # MIN_SIZE_TRAIN: (416, 512, 608, 768)
+  MIN_SIZE_TRAIN: (416, 900)
+  MIN_SIZE_TRAIN_SAMPLING: "range"
+  MAX_SIZE_TRAIN: 1056
+  MIN_SIZE_TEST: 640
+  MAX_SIZE_TEST: 960
+
+  # open all augmentations
+  JITTER_CROP:
+    ENABLED: False
+  RESIZE:
+    ENABLED: False
+    # SHAPE: (540, 960)
+  DISTORTION:
+    ENABLED: True
+  # MOSAIC:
+  #   ENABLED: True
+  #   NUM_IMAGES: 4
+  #   DEBUG_VIS: True
+  #   # MOSAIC_WIDTH: 960
+  #   # MOSAIC_HEIGHT: 540
+  MOSAIC_AND_MIXUP:
+    ENABLED: True
+    DEBUG_VIS: False
+    ENABLE_MIXUP: False
+  RANDOM_FLIP: "horizontal"
+
+SOLVER:
+  # enable fp16 training
+  # AMP:
+  #   ENABLED: true
+  IMS_PER_BATCH: 5
+  # BASE_LR: 0.00125
+  # STEPS: (60000, 80000)
+  # MAX_ITER: 130000
+  WARMUP_FACTOR: 0.00033333
+  WARMUP_ITERS: 3000
+  BASE_LR: 0.005
+  STEPS: (52500, 62500)
+  MAX_ITER: 230000
+  LR_SCHEDULER_NAME: "WarmupCosineLR"
+
+TEST:
+  EVAL_PERIOD: 10000
+  # EVAL_PERIOD: 0
+
+OUTPUT_DIR: "output/visdrone_yolox_s"
+VIS_PERIOD: 5000
+
+DATALOADER:
+  # proposals are part of the dataset_dicts, and take a lot of RAM
+  NUM_WORKERS: 2

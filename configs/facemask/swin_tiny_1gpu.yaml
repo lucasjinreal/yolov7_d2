@@ -1,0 +1,36 @@
+_BASE_: "../Base-YOLOv7.yaml"
+MODEL:
+  META_ARCHITECTURE: "YOLOV7"
+  MASK_ON: False
+  BACKBONE:
+    NAME: "build_swin_transformer_backbone"
+  SWIN:
+    WEIGHTS: "weights/swin_tiny_patch4_window7_224.pth" # must have
+    TYPE: "tiny"
+    OUT_FEATURES: [1, 2, 3]
+  YOLO:
+    ANCHORS:
+      [
+        [[116, 90], [156, 198], [373, 326]],
+        [[30, 61], [62, 45], [42, 119]],
+        [[10, 13], [16, 30], [33, 23]],
+      ]
+    CLASSES: 2
+    IN_FEATURES: [0, 1, 2] # reordered out indices
+    CONF_THRESHOLD: 0.01
+    NMS_THRESHOLD: 0.5
+    IGNORE_THRESHOLD: 0.7
+    VARIANT: "yolov7"
+DATASETS:
+  TRAIN: ("facemask_train",)
+  TEST: ("facemask_val",)
+
+SOLVER:
+  IMS_PER_BATCH: 1
+  BASE_LR: 0.0002
+  STEPS: (60000, 80000)
+  MAX_ITER: 90000
+  
+DATALOADER:
+  # proposals are part of the dataset_dicts, and take a lot of RAM
+  NUM_WORKERS: 2

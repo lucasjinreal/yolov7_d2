@@ -1,0 +1,79 @@
+_BASE_: "../Base-YoloV7.yaml"
+MODEL:
+  META_ARCHITECTURE: "YOLOV7"
+  WEIGHTS: ""
+  MASK_ON: False
+  BACKBONE:
+    NAME: "build_res2net_backbone"
+  RESNETS:
+    R2TYPE: "res2net50_v1b"
+    DEPTH: 50
+    OUT_FEATURES: ["res3", "res4", "res5"] # fpn produce 4 levels, only using 3 for now
+  YOLO:
+    ANCHORS:
+      [
+        [[120, 106], [80, 47], [45, 66]],
+        [[47, 29], [23, 40], [28, 19]],
+        [[13, 25], [15, 14], [7, 10]],
+      ]
+    CLASSES: 10
+    MAX_BOXES_NUM: 150
+    IN_FEATURES: ["res3", "res4", "res5"] # p3, p4, p5 from FPN
+    CONF_THRESHOLD: 0.01
+    NMS_THRESHOLD: 0.6
+    IGNORE_THRESHOLD: 0.7
+    VARIANT: "yolov7"
+    LOSS_TYPE: "v7"
+    LOSS:
+      LAMBDA_IOU: 1.5
+
+DATASETS:
+  TRAIN: ("visdrone_train",)
+  TEST: ("visdrone_val",)
+
+
+
+INPUT:
+  # MIN_SIZE_TRAIN: (416, 512, 608, 768)
+  MIN_SIZE_TRAIN: (416, 900)
+  MAX_SIZE_TRAIN: 1056
+  MIN_SIZE_TEST: 640
+  MIN_SIZE_TRAIN_SAMPLING: "range"
+  # open all augmentations
+  JITTER_CROP:
+    ENABLED: False
+  RESIZE:
+    ENABLED: False
+    # SHAPE: (540, 960)
+  DISTORTION:
+    ENABLED: True
+  # MOSAIC:
+  #   ENABLED: True
+  #   NUM_IMAGES: 4
+  #   DEBUG_VIS: True
+  #   # MOSAIC_WIDTH: 960
+  #   # MOSAIC_HEIGHT: 540
+  MOSAIC_AND_MIXUP:
+    ENABLED: True
+    DEBUG_VIS: False
+    ENABLE_MIXUP: False
+  RANDOM_FLIP: "horizontal"
+
+
+SOLVER:
+  IMS_PER_BATCH: 2
+  # BASE_LR: 0.00008 # add lr
+  BASE_LR: 0.0001 # add lr
+  STEPS: (60000, 80000)
+  MAX_ITER: 150000
+  LR_SCHEDULER_NAME: "WarmupCosineLR"
+
+
+TEST:
+  EVAL_PERIOD: 10000
+  # EVAL_PERIOD: 0
+OUTPUT_DIR: "output/visdrone_r2_50"
+
+DATALOADER:
+  # proposals are part of the dataset_dicts, and take a lot of RAM
+  NUM_WORKERS: 1

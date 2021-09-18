@@ -1,0 +1,39 @@
+_BASE_: "../Base-YoloV7.yaml"
+MODEL:
+  META_ARCHITECTURE: "YOLOV7"
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  MASK_ON: False
+  BACKBONE:
+    NAME: "build_resnet_fpn_backbone"
+  RESNETS:
+    DEPTH: 50
+    OUT_FEATURES: ["res3", "res4", "res5"] # fpn produce 4 levels, only using 3 for now
+  FPN:
+    IN_FEATURES: ["res3", "res4", "res5"]
+  YOLO:
+    ANCHORS:
+      [
+        [[116, 90], [156, 198], [373, 326]],
+        [[30, 61], [62, 45], [42, 119]],
+        [[10, 13], [16, 30], [33, 23]],
+      ]
+    CLASSES: 60
+    IN_FEATURES: ["p3", "p4", "p5"] # p3, p4, p5 from FPN
+    CONF_THRESHOLD: 0.01
+    NMS_THRESHOLD: 0.5
+    IGNORE_THRESHOLD: 0.1
+    VARIANT: "yolov7"
+    LOSS_TYPE: "v4"
+DATASETS:
+  TRAIN: ("taco_train",)
+  TEST: ("taco_val",)
+
+SOLVER:
+  IMS_PER_BATCH: 48
+  BASE_LR: 0.0005
+  STEPS: (70000, 90000)
+  MAX_ITER: 100000
+  
+DATALOADER:
+  # proposals are part of the dataset_dicts, and take a lot of RAM
+  NUM_WORKERS: 2
