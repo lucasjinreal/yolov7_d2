@@ -37,7 +37,8 @@ from alfred.vis.image.det import visualize_det_cv2_part, visualize_det_cv2_fancy
 
 
 TRT_LOGGER = trt.Logger(trt.Logger.INFO)
-
+means = [123.675, 116.280, 103.530]
+stds = [58.395, 57.120, 57.375]
 
 def preprocess_np_no_normalize(img_path):
     im = cv2.imread(img_path)
@@ -45,6 +46,9 @@ def preprocess_np_no_normalize(img_path):
     print(im.shape)
     # img = transform(im).unsqueeze(0)
     a = cv2.resize(im, (960, 768))
+    a = a.astype(np.float32)
+    a -= means
+    a /= stds
     a = np.transpose(a, (2, 0, 1)).astype(np.float32)
     return a, im
 
@@ -59,7 +63,7 @@ def engine_infer(engine, context, inputs, outputs, bindings, stream, test_image)
 
     start = time.time()
     res = do_inference_v2(context, bindings=bindings, inputs=inputs,
-                                   outputs=outputs, stream=stream, input_tensor=image_input)
+                          outputs=outputs, stream=stream, input_tensor=image_input)
     print(f"推断耗时：{time.time()-start}s")
     res = res[0]
 
@@ -131,7 +135,8 @@ def main(onnx_model_file, image_dir, fp16=False, int8=False, batch_size=1, dynam
 
     else:
         # Build a TensorRT engine.
-        with build_engine_onnx(onnx_model_file, engine_file, FP16=fp16, verbose=False, dynamic_input=dynamic) as engine:
+        with build_engine_onnx(onnx_model_file, engine_file, FP16=fp16, verbose=False,
+                               dynamic_input=dynamic, chw_shape=[3, 768, 960]) as engine:
             inputs, outputs, bindings, stream = allocate_buffers_v2(engine)
             # Contexts are used to perform inference.
             with engine.create_execution_context() as context:

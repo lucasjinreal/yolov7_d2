@@ -126,7 +126,7 @@ class Detr(nn.Module):
         """
         x is N, CHW aleady permuted
         """
-        x = [self.normalizer(i) for i in x]
+        # x = [self.normalizer(i) for i in x]
         return x
 
     def forward(self, batched_inputs):
@@ -434,7 +434,8 @@ class DETR(nn.Module):
         hs = self.transformer(self.input_proj(src), mask, self.query_embed.weight, pos[-1])[0]
 
         outputs_class = self.class_embed(hs)
-        outputs_coord = self.bbox_embed(hs).sigmoid()
+        outputs_coord = self.bbox_embed(hs)
+        outputs_coord = torch.sigmoid(outputs_coord)
         if self.onnx_export:    
             return outputs_class[-1], outputs_coord[-1]
         else:

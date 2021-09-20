@@ -115,6 +115,7 @@ def get_parser():
     parser.add_argument(
         "--input",
         # nargs="+",
+        default='./images/COCO_val2014_000000001722.jpg',
         help="A list of space separated input images; "
         "or a single glob pattern such as 'directory/*.jpg'",
     )
@@ -220,7 +221,7 @@ if __name__ == "__main__":
     model.onnx_export = True
 
     onnx_f = os.path.join(
-        'weights', os.path.basename(cfg.OUTPUT_DIR) + '.onnx')
+        'weights', os.path.basename(cfg.MODEL.WEIGHTS).split('.')[0] + '.onnx')
     torch.onnx.export(model, inp, onnx_f, output_names={
                       'out'}, opset_version=11, do_constant_folding=True, verbose=args.verbose)
     logger.info('Model saved into: {}'.format(onnx_f))
