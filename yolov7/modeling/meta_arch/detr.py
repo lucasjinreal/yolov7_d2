@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import logging
 import math
-from typing import List
+from typing import List, Dict
 
 import numpy as np
 import torch
@@ -126,7 +126,7 @@ class Detr(nn.Module):
         """
         x is N, CHW aleady permuted
         """
-        # x = [self.normalizer(i) for i in x]
+        x = [self.normalizer(i) for i in x]
         return x
 
     def forward(self, batched_inputs):
