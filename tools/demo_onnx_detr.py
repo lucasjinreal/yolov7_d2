@@ -116,6 +116,8 @@ def detect_onnx(ort_session, img, prob_threshold=0.7):
     ort_inputs = {"x.1": img}
     start = time.time()
     out = ort_session.run(None, ort_inputs)
+    end = time.time()
+    print('cost: ', end - start)
 
     # 后处理 + 也可以加NMS
     return out
@@ -166,6 +168,8 @@ if __name__ == "__main__":
 
     # onnx_path = "./weights/output.onnx"
     onnx_path = "./weights/detr-r50_sim.onnx"
+    d = onnxruntime.get_device()
+    print(d)
     ort_session = onnxruntime.InferenceSession(onnx_path)
     files = os.listdir("./images")
 
@@ -179,7 +183,6 @@ if __name__ == "__main__":
 
             # ori_img = np.asarray(im)
             out = detr_postprocess(out, ori_img)
-            print(out)
             vis_res_fast(out, ori_img)
             # plot_result(im, scores, boxes,save_name=file,imshow=False, imwrite=True)
             # print("[INFO] {} time: {} done!!!".format(file,None))

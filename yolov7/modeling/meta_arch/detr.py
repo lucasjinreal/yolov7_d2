@@ -356,7 +356,9 @@ class MaskedBackboneTraceFriendly(nn.Module):
                 assert m is not None
                 sp = x.shape[-2:]
                 # mask = F.interpolate(m.to(torch.float), size=sp).to(torch.bool)[0]
-                mask = F.interpolate(m[None].float(), size=x.shape[-2:]).to(torch.bool)[0]
+                # mask = F.interpolate(m[None].float(), size=x.shape[-2:]).to(torch.bool)[0]
+                m = m.unsqueeze(0).float()
+                mask = F.interpolate(m, size=x.shape[-2:]).to(torch.bool)[0]
                 print(mask.shape)
                 out[name] = NestedTensor(x, mask)
             return out

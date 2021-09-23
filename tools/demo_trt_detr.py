@@ -51,6 +51,7 @@ def preprocess_np_no_normalize(img_path):
     # a -= means
     # a /= stds
     a = np.transpose(a, (2, 0, 1)).astype(np.float32)
+    a = np.expand_dims(a, axis=0)
     return a, im
 
 
