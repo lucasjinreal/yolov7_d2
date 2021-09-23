@@ -34,6 +34,7 @@ from alfred.deploy.tensorrt.common import allocate_buffers, do_inference_v2, bui
 # from trt_util.process_img import preprocess_np, preprocess_torch_v1
 # from trt_util.plot_box import plot_box, CLASSES
 from alfred.vis.image.det import visualize_det_cv2_part, visualize_det_cv2_fancy
+from torch import onnx
 
 
 TRT_LOGGER = trt.Logger(trt.Logger.INFO)
@@ -47,8 +48,8 @@ def preprocess_np_no_normalize(img_path):
     # img = transform(im).unsqueeze(0)
     a = cv2.resize(im, (960, 768))
     a = a.astype(np.float32)
-    a -= means
-    a /= stds
+    # a -= means
+    # a /= stds
     a = np.transpose(a, (2, 0, 1)).astype(np.float32)
     return a, im
 
@@ -100,7 +101,11 @@ def vis_res_fast(res, img):
 def main(onnx_model_file, image_dir, fp16=False, int8=False, batch_size=1, dynamic=False):
     test_images = glob.glob(os.path.join(image_dir, '*.jpg'))
     sorted(test_images)
-    engine_file = onnx_model_file + '.trt'
+
+    if onnx_model_file.endswith('onnx'):
+        engine_file = onnx_model_file + '.trt'
+    else:
+        engine_file = onnx_model_file
 
     if int8:
         # only load the plan engine file
@@ -137,7 +142,8 @@ def main(onnx_model_file, image_dir, fp16=False, int8=False, batch_size=1, dynam
         # Build a TensorRT engine.
         with build_engine_onnx(onnx_model_file, engine_file, FP16=fp16, verbose=False,
                                dynamic_input=dynamic, chw_shape=[3, 768, 960]) as engine:
-            inputs, outputs, bindings, stream = allocate_buffers_v2(engine)
+            # inputs, outputs, bindings, stream = allocate_buffers_v2(engine)
+            inputs, outputs, bindings, stream = allocate_buffers(engine)
             # Contexts are used to perform inference.
             with engine.create_execution_context() as context:
                 print(engine.get_binding_shape(0))

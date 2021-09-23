@@ -161,7 +161,8 @@ def load_test_image_detr(f, h, w):
     a = cv2.imread(f)
     a = cv2.resize(a, (w, h))
     a_t = torch.tensor(a.astype(np.float32)).permute(2, 0, 1).to(device)
-    return [a_t], a
+    return torch.stack([a_t,]), a
+    # return torch.stack([a_t, a_t]), a
 
 def detr_postprocess(out_boxes, ori_img):
     """
@@ -214,6 +215,7 @@ if __name__ == "__main__":
     # w = 640
     # inp, ori_img = load_test_image(args.input, h, w)
     inp, ori_img = load_test_image_detr(args.input, h, w)
+    print('input shape: ', inp.shape)
     # inp = inp.to(torch.device('cuda'))
 
     model = predictor.model
@@ -227,8 +229,8 @@ if __name__ == "__main__":
     logger.info('Model saved into: {}'.format(onnx_f))
 
     # use onnxsimplify to reduce reduent model.
-    os.system("python3 -m onnxsim {} {}".format(onnx_f, onnx_f))
-    logger.info("generate simplify onnx to: {}".format(onnx_f))
+    os.system("python3 -m onnxsim {} {}".format(onnx_f, onnx_f.replace('.onnx', '_sim.onnx')))
+    logger.info("generate simplify onnx to: {}".format(onnx_f.replace('.onnx', '_sim.onnx')))
 
     logger.info('test if onnx export logic is right...')
     model.onnx_vis = True

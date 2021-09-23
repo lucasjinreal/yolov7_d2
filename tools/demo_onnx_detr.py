@@ -113,7 +113,7 @@ def detect_onnx(ort_session, img, prob_threshold=0.7):
     # img = transform(im).unsqueeze(0).cpu().numpy()
     # img = transform(im).cpu().numpy()
 
-    ort_inputs = {"i": img}
+    ort_inputs = {"x.1": img}
     start = time.time()
     out = ort_session.run(None, ort_inputs)
 
@@ -158,12 +158,14 @@ def preprocess_np_no_normalize(img_path):
     # img = transform(im).unsqueeze(0)
     a = cv2.resize(im, (960, 768))
     a = np.transpose(a, (2, 0, 1)).astype(np.float32)
+    a = np.expand_dims(a, axis=0)
     return a, im
 
 
 if __name__ == "__main__":
 
-    onnx_path = "./weights/output.onnx"
+    # onnx_path = "./weights/output.onnx"
+    onnx_path = "./weights/detr-r50_sim.onnx"
     ort_session = onnxruntime.InferenceSession(onnx_path)
     files = os.listdir("./images")
 

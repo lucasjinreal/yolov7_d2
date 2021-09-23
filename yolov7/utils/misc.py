@@ -49,14 +49,15 @@ def _max_by_axis(the_list):
             maxes[index] = max(maxes[index], item)
     return maxes
 
-    
+
 def nested_tensor_from_tensor_list(tensor_list: List[Tensor]):
     # TODO make this more general
     if tensor_list[0].ndim == 3:
         if torchvision._is_tracing():
             # nested_tensor_from_tensor_list() does not export well to ONNX
             # call _onnx_nested_tensor_from_tensor_list() instead
-            return _onnx_nested_tensor_from_tensor_list(tensor_list)
+            # return _onnx_nested_tensor_from_tensor_list(tensor_list)
+            return _onnx_nested_tensor_from_tensor_list_no_padding(tensor_list)
 
         # TODO make it support different-sized images
         max_size = _max_by_axis([list(img.shape) for img in tensor_list])
@@ -104,6 +105,17 @@ def _onnx_nested_tensor_from_tensor_list(tensor_list: List[Tensor]) -> NestedTen
     mask = torch.stack(padded_masks)
 
     return NestedTensor(tensor, mask=mask)
+
+@torch.jit.unused
+def _onnx_nested_tensor_from_tensor_list_no_padding(tensor_list: List[Tensor]) -> NestedTensor:
+    """
+    assume input tensor_list all tensor shape are same.
+    """
+    # todo: assert all tensor shape are same in tensor_list
+    imgs = torch.stack(tensor_list)
+    # 2, 3, 512, 512 mask: 2, 512, 512
+    masks = torch.zeros_like(imgs[:, 0, ...], dtype=torch.int, device=imgs.device)
+    return NestedTensor(imgs, masks)
 
 
 def interpolate(input, size=None, scale_factor=None, mode="nearest", align_corners=None):

@@ -351,8 +351,13 @@ class MaskedBackboneTraceFriendly(nn.Module):
             out: Dict[str, NestedTensor] = {}
             for name, x in features.items():
                 m = images.mask
+                print('m: ', m)
+                print('m: ', m.shape)
                 assert m is not None
+                sp = x.shape[-2:]
+                # mask = F.interpolate(m.to(torch.float), size=sp).to(torch.bool)[0]
                 mask = F.interpolate(m[None].float(), size=x.shape[-2:]).to(torch.bool)[0]
+                print(mask.shape)
                 out[name] = NestedTensor(x, mask)
             return out
         else:
