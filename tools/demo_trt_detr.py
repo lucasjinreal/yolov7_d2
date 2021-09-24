@@ -55,6 +55,19 @@ def preprocess_np_no_normalize(img_path):
     return a, im
 
 
+def detr_postprocess(out_boxes, ori_img):
+    """
+    normalized xyxy output
+    """
+    h, w, _ = ori_img.shape
+    out_boxes[..., 0] *= w
+    out_boxes[..., 1] *= h
+    out_boxes[..., 2] *= w
+    out_boxes[..., 3] *= h
+    return out_boxes
+
+
+
 def engine_infer(engine, context, inputs, outputs, bindings, stream, test_image):
 
     # image_input, img_raw, _ = preprocess_np(test_image)
@@ -76,7 +89,7 @@ def engine_infer(engine, context, inputs, outputs, bindings, stream, test_image)
     # scores = scores.reshape(output_shapes[0])
     # boxs = boxs.reshape(output_shapes[1])
     res = res.reshape(output_shapes[0])
-    print(res)
+    # print(res)
     return res, img_raw
 
 
@@ -175,6 +188,7 @@ def main(onnx_model_file, image_dir, fp16=False, int8=False, batch_size=1, dynam
                         os.makedirs(save_dir)
                     # plot_box(img_raw, scores, boxs, prob_threshold=0.7,
                     #          save_fig=os.path.join(save_dir, test_image))
+                    res = detr_postprocess(res, img_raw)
                     vis_res_fast(res, img_raw)
 
 

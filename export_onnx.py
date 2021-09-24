@@ -21,7 +21,8 @@ import detectron2.data.transforms as T
 from detectron2.checkpoint import DetectionCheckpointer
 
 from yolov7.config import add_yolo_config
-
+import onnx_graphsurgeon as gs
+import onnx
 
 from alfred.vis.image.mask import label2color_mask, vis_bitmasks
 from alfred.vis.image.det import visualize_det_cv2_part, visualize_det_cv2_fancy
@@ -147,10 +148,42 @@ def get_parser():
     return parser
 
 
+def change_detr_onnx(onnx_path):
+    '''
+    Fix default detr onnx model output all 0
+    '''
+    node_configs = [(1660, 1662), (2775, 2777), (2961, 2963),
+                    (3333, 3335), (4077, 4079)]
+    if 'batch_2' in onnx_path:
+        node_number = node_configs[1]
+    elif 'batch_4' in onnx_path:
+        node_number = node_configs[2]
+    elif 'batch_8' in onnx_path:
+        node_number = node_configs[3]
+    elif 'batch_16' in onnx_path:
+        node_number = node_configs[4]
+    else:
+        node_number = node_configs[0]
+
+    graph = gs.import_onnx(onnx.load(onnx_path))
+    for node in graph.nodes:
+        if node.name == f"Gather_{node_number[0]}":
+            print(node.inputs[1])
+            node.inputs[1].values = np.int64(5)
+            print(node.inputs[1])
+        elif node.name == f"Gather_{node_number[1]}":
+            print(node.inputs[1])
+            node.inputs[1].values = np.int64(5)
+            print(node.inputs[1])
+
+    onnx.save(gs.export_onnx(graph), onnx_path + '_changed.onnx')
+    print(f"[INFO] onnx修改完成, 保存在{onnx_path + '_changed.onnx'}.")
+
+
 def load_test_image(f, h, w):
     a = cv2.imread(f)
     a = cv2.resize(a, (w, h))
-    a_t = torch.tensor(a.astype(np.float32)).unsqueeze(0)
+    a_t = torch.tensor(a.astype(np.float32)).to(device).unsqueeze(0)
     return a_t, a
 
 
@@ -161,8 +194,9 @@ def load_test_image_detr(f, h, w):
     a = cv2.imread(f)
     a = cv2.resize(a, (w, h))
     a_t = torch.tensor(a.astype(np.float32)).permute(2, 0, 1).to(device)
-    return torch.stack([a_t,]), a
+    return torch.stack([a_t, ]), a
     # return torch.stack([a_t, a_t]), a
+
 
 def detr_postprocess(out_boxes, ori_img):
     """
@@ -225,12 +259,16 @@ if __name__ == "__main__":
     onnx_f = os.path.join(
         'weights', os.path.basename(cfg.MODEL.WEIGHTS).split('.')[0] + '.onnx')
     torch.onnx.export(model, inp, onnx_f, output_names={
-                      'out'}, opset_version=11, do_constant_folding=True, verbose=args.verbose)
+                      'out'}, opset_version=12, do_constant_folding=True, verbose=args.verbose)
     logger.info('Model saved into: {}'.format(onnx_f))
 
     # use onnxsimplify to reduce reduent model.
-    os.system("python3 -m onnxsim {} {}".format(onnx_f, onnx_f.replace('.onnx', '_sim.onnx')))
-    logger.info("generate simplify onnx to: {}".format(onnx_f.replace('.onnx', '_sim.onnx')))
+    sim_onnx = onnx_f.replace('.onnx', '_sim.onnx')
+    os.system("python3 -m onnxsim {} {}".format(onnx_f, sim_onnx))
+    logger.info("generate simplify onnx to: {}".format(sim_onnx))
+    if 'detr' in sim_onnx:
+        # this is need for detr onnx model
+        change_detr_onnx(sim_onnx)
 
     logger.info('test if onnx export logic is right...')
     model.onnx_vis = True
