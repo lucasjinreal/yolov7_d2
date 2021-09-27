@@ -5,11 +5,10 @@ from typing import List, Dict
 
 import numpy as np
 import torch
-from detectron2.utils import comm
+import torch.distributed as dist
 import torch.nn.functional as F
 from scipy.optimize import linear_sum_assignment
 from torch import nn
-import torch.distributed as dist
 
 from detectron2.layers import ShapeSpec
 from detectron2.modeling import META_ARCH_REGISTRY, build_backbone, detector_postprocess
@@ -18,8 +17,8 @@ from detectron2.utils.logger import log_first_n
 from fvcore.nn import giou_loss, smooth_l1_loss
 
 from yolov7.utils.detr_utils import HungarianMatcher
-from yolov7.utils.boxes import box_cxcywh_to_xyxy, box_xyxy_to_cxcywh, convert_coco_poly_to_mask, generalized_box_iou
-from yolov7.utils.misc import NestedTensor, nested_tensor_from_tensor_list, is_dist_avail_and_initialized, accuracy
+from yolov7.utils.boxes import box_cxcywh_to_xyxy, box_xyxy_to_cxcywh, convert_coco_poly_to_mask
+from yolov7.utils.misc import NestedTensor, nested_tensor_from_tensor_list
 
 from alfred.utils.log import logger
 
@@ -27,13 +26,13 @@ from ..backbone.detr_backbone import Joiner, PositionEmbeddingSine, Transformer
 from .detr_seg import DETRsegm, PostProcessPanoptic, PostProcessSegm
 
 
-__all__ = ["Detr"]
+__all__ = ["AnchorDetr"]
 
 
 @META_ARCH_REGISTRY.register()
-class Detr(nn.Module):
+class AnchorDetr(nn.Module):
     """
-    Implement Detr
+    Implement AnchorDetr
     """
     def __init__(self, cfg):
         super().__init__()
@@ -119,9 +118,6 @@ class Detr(nn.Module):
         self.normalizer = lambda x: (x - pixel_mean) / pixel_std
         self.to(self.device)
         self.onnx_export = False
-    
-    def update_iter(self, i):
-        self.iter = i
     
     def preprocess_input(self, x):
         # x = x.permute(0, 3, 1, 2)
@@ -539,9 +535,9 @@ class SetCriterion(nn.Module):
         losses = {}
         losses['loss_bbox'] = loss_bbox.sum() / num_boxes
 
-        loss_giou = 1 - torch.diag(generalized_box_iou(
-            box_cxcywh_to_xyxy(src_boxes),
-            box_cxcywh_to_xyxy(target_boxes)))
+        loss_giou = 1 - torch.diag(box_ops.generalized_box_iou(
+            box_ops.box_cxcywh_to_xyxy(src_boxes),
+            box_ops.box_cxcywh_to_xyxy(target_boxes)))
         losses['loss_giou'] = loss_giou.sum() / num_boxes
         return losses
 
@@ -613,7 +609,7 @@ class SetCriterion(nn.Module):
         num_boxes = torch.as_tensor([num_boxes], dtype=torch.float, device=next(iter(outputs.values())).device)
         if is_dist_avail_and_initialized():
             torch.distributed.all_reduce(num_boxes)
-        num_boxes = torch.clamp(num_boxes / comm.get_world_size(), min=1).item()
+        num_boxes = torch.clamp(num_boxes / get_world_size(), min=1).item()
 
         # Compute all the requested losses
         losses = {}

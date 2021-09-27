@@ -11,12 +11,11 @@ from enum import IntEnum, unique
 from typing import List, Tuple, Union
 import torch
 from torch import device
-from torchvision.ops.boxes import nms
+from torchvision.ops.boxes import nms, box_area
 import cv2
 import torch.utils.data
 import torchvision
 from pycocotools import mask as coco_mask
-
 
 _RawBoxType = Union[List[float], Tuple[float, ...], torch.Tensor, np.ndarray]
 
@@ -76,6 +75,23 @@ def bboxes_iou(bboxes_a, bboxes_b, xyxy=True):
     area_i = torch.prod(br - tl, 2) * en  # * ((tl < br).all())
 
     return area_i / (area_a[:, None] + area_b - area_i)
+
+
+# modified from torchvision to also return the union
+def box_iou(boxes1, boxes2):
+    area1 = box_area(boxes1)
+    area2 = box_area(boxes2)
+
+    lt = torch.max(boxes1[:, None, :2], boxes2[:, :2])  # [N,M,2]
+    rb = torch.min(boxes1[:, None, 2:], boxes2[:, 2:])  # [N,M,2]
+
+    wh = (rb - lt).clamp(min=0)  # [N,M,2]
+    inter = wh[:, :, 0] * wh[:, :, 1]  # [N,M]
+
+    union = area1[:, None] + area2 - inter
+
+    iou = inter / union
+    return iou, union
 
 
 def generalized_box_iou(boxes1, boxes2):

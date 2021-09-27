@@ -17,6 +17,14 @@ if float(torchvision.__version__.split(".")[1]) < 7.0:
     from torchvision.ops.misc import _output_size
 
 
+def is_dist_avail_and_initialized():
+    if not dist.is_available():
+        return False
+    if not dist.is_initialized():
+        return False
+    return True
+
+
 class NestedTensor(object):
     def __init__(self, tensors, mask: Optional[Tensor]):
         self.tensors = tensors
@@ -136,3 +144,22 @@ def interpolate(input, size=None, scale_factor=None, mode="nearest", align_corne
         return _new_empty_tensor(input, output_shape)
     else:
         return torchvision.ops.misc.interpolate(input, size, scale_factor, mode, align_corners)
+
+
+@torch.no_grad()
+def accuracy(output, target, topk=(1,)):
+    """Computes the precision@k for the specified values of k"""
+    if target.numel() == 0:
+        return [torch.zeros([], device=output.device)]
+    maxk = max(topk)
+    batch_size = target.size(0)
+
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+    res = []
+    for k in topk:
+        correct_k = correct[:k].view(-1).float().sum(0)
+        res.append(correct_k.mul_(100.0 / batch_size))
+    return res
