@@ -7,8 +7,6 @@ from functools import partial
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 from timm.models.registry import register_model
 from timm.models.vision_transformer import _cfg
-
-from mmcv.runner import load_checkpoint
 import math
 from detectron2.modeling.backbone import BACKBONE_REGISTRY, Backbone
 from detectron2.utils.logger import logging

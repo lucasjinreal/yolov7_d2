@@ -102,10 +102,8 @@ class YOLOX(nn.Module):
             images, size_divisibility=self.size_divisibility, pad_value=self.padded_value)
         # logger.info('images ori shape: {}'.format(images.tensor.shape))
 
-        comm.synchronize()
         if training and self.iter > self.enable_l1_loss_at and not self.use_l1:
             meg = torch.BoolTensor(1).to(self.device)
-            comm.synchronize()
             if comm.is_main_process():
                 logger.info(
                     '[master] enable l1 loss now at iter: {}'.format(self.iter))
@@ -114,7 +112,8 @@ class YOLOX(nn.Module):
 
             if comm.get_world_size() > 1:
                 comm.synchronize()
-                dist.broadcast(meg, 0)
+                if comm.is_main_process():
+                    dist.broadcast(meg, 0)
             self.head.use_l1 = meg.item()
             self.use_l1 = meg.item()
             comm.synchronize()

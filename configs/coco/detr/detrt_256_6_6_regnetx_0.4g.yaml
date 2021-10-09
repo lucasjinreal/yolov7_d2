@@ -9,7 +9,7 @@ MODEL:
     NAME: "build_regnet_backbone"
   REGNETS:
     TYPE: "RegNetX_400MF"
-    OUT_FEATURES: ["s2", "s3", "s4", "s5"] # fpn produce 4 levels, only using 3 for now
+    OUT_FEATURES: ["s2", "s3", "s4"] # fpn produce 4 levels, only using 3 for now
   # RESNETS:
   #   DEPTH: 50
   #   STRIDE_IN_1X1: False
@@ -27,7 +27,7 @@ DATASETS:
   TEST: ("coco_2017_val",)
 
 SOLVER:
-  IMS_PER_BATCH: 128
+  IMS_PER_BATCH: 64
   BASE_LR: 0.0001
   STEPS: (369600,)
   MAX_ITER: 554400
