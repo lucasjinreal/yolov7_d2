@@ -31,7 +31,7 @@ ANN_ROOT = os.path.join(DATASET_ROOT, 'annotations')
 TRAIN_PATH = os.path.join(DATASET_ROOT, 'JPEGImages')
 VAL_PATH = os.path.join(DATASET_ROOT, 'JPEGImages')
 TRAIN_JSON = os.path.join(ANN_ROOT, 'annotations_coco_tls_train.json')
-VAL_JSON = os.path.join(ANN_ROOT, 'annotations_coco_tls_val.json')
+VAL_JSON = os.path.join(ANN_ROOT, 'annotations_coco_tls_val_val.json')
 
 register_coco_instances("tl_train", {}, TRAIN_JSON, TRAIN_PATH)
 register_coco_instances("tl_val", {}, VAL_JSON, VAL_PATH)
