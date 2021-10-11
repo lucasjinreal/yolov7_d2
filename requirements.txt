@@ -3,4 +3,5 @@ timm
 nbnb
 mmpycocotools
 omegaconf
+mlflow
 
