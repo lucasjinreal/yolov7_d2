@@ -57,7 +57,6 @@ INPUT:
     ENABLE_MIXUP: True
     DISABLE_AT_ITER: 120000
 
-
 SOLVER:
   # enable fp16 training
   AMP:
@@ -68,15 +67,16 @@ SOLVER:
   STEPS: (60000, 80000)
   WARMUP_FACTOR: 0.00033333
   WARMUP_ITERS: 1500
-  MAX_ITER: 230000
+  MAX_ITER: 150000
   LR_SCHEDULER_NAME: "WarmupCosineLR"
+  CHECKPOINT_PERIOD: 5000
 
 TEST:
-  EVAL_PERIOD: 10000
+  EVAL_PERIOD: 5000
   # EVAL_PERIOD: 0
 OUTPUT_DIR: "output/tl_yolox_s"
 VIS_PERIOD: 5000
 
 DATALOADER:
   # proposals are part of the dataset_dicts, and take a lot of RAM
-  NUM_WORKERS: 1
+  NUM_WORKERS: 3

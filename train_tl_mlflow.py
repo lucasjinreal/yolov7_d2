@@ -63,14 +63,6 @@ class MLFlowSnapshotHook(HookBase):
         final_model_path = f"{self.trainer.cfg.OUTPUT_DIR}/model_final.pth"
         mlflow.log_artifact(final_model_path, "model")
 
-        best_iter = (7 - len(str(self.trainer.best_iter))) * "0" + str(
-            self.trainer.best_iter
-        )
-        best_model_path = f"{self.trainer.cfg.OUTPUT_DIR}/model_{best_iter}.pth"
-        new_path = f"{self.trainer.cfg.OUTPUT_DIR}/model_best.pth"
-        os.rename(best_model_path, new_path)
-        mlflow.log_artifact(new_path, "model")
-
 
 class Trainer(DefaultTrainer):
     @classmethod
@@ -85,6 +77,7 @@ class Trainer(DefaultTrainer):
         # test our own dataset mapper to add more augmentations
         return build_detection_train_loader(cfg, mapper=MyDatasetMapper2(cfg, True))
 
+    # @classmethod
     def build_hooks(self):
         """
         Build a list of default hooks, including timing, evaluation,
@@ -95,12 +88,10 @@ class Trainer(DefaultTrainer):
         """
         cfg = self.cfg.clone()
         cfg.defrost()
-        cfg.DATALOADER.NUM_WORKERS = 0  # save some memory and time for PreciseBN
 
         ret = [
             hooks.IterationTimer(),
             hooks.LRScheduler(),
-            MLFlowSnapshotHook(),
         ]
 
         if comm.is_main_process():
@@ -109,16 +100,25 @@ class Trainer(DefaultTrainer):
                     self.checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD
                 )
             )
+            ret.append(MLFlowSnapshotHook())
 
         def test_and_save_results():
             self._last_eval_results = self.test(self.cfg, self.model)
-            results = self._last_eval_results["bbox"]
-            for k in results:
-                mlflow.log_metric(k, results[k], self.iter)
-            if results["AP"] > self.best_ap:
-                self.best_ap = results["AP"]
-                self.best_iter = self.iter
-                mlflow.log_metric("best_AP", self.best_ap, self.iter)
+            if comm.is_main_process():
+                results = self._last_eval_results["bbox"]
+                for k in results:
+                    mlflow.log_metric(k, results[k], self.iter)
+                if results["AP"] > self.best_ap:
+                    self.best_ap = results["AP"]
+                    self.best_iter = self.iter
+                    mlflow.log_metric("best_AP", self.best_ap, self.iter)
+                    best_iter = (7 - len(str(self.best_iter))) * "0" + str(
+                        self.best_iter
+                    )
+                    best_model_path = f"{self.cfg.OUTPUT_DIR}/model_{best_iter}.pth"
+                    new_path = f"{self.cfg.OUTPUT_DIR}/model_best.pth"
+                    os.rename(best_model_path, new_path)
+                    mlflow.log_artifact(new_path, "model")
             return self._last_eval_results
 
         # Do evaluation after checkpointer, because then if it fails,
@@ -148,11 +148,6 @@ def setup(args):
 def main(args):
     cfg = setup(args)
 
-    mlflow.set_experiment("traffic_light")
-    mlflow.start_run(run_name="yolox_s_tl")
-    mlflow.log_param("max_iter", cfg.SOLVER.MAX_ITER)
-    mlflow.log_param("images_per_batch", cfg.SOLVER.IMS_PER_BATCH)
-
     if args.eval_only:
         model = Trainer.build_model(cfg)
         DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
@@ -162,8 +157,14 @@ def main(args):
         return res
 
     trainer = Trainer(cfg)
-    trainer.best_ap = 0
-    trainer.best_iter = 0
+    if comm.is_main_process():
+        mlflow.set_experiment("traffic_light")
+        run = mlflow.start_run(run_name="yolox_s_tl")
+        print(f"mlflow run_id: {run.info.run_id}")
+        mlflow.log_param("max_iter", cfg.SOLVER.MAX_ITER)
+        mlflow.log_param("images_per_batch", cfg.SOLVER.IMS_PER_BATCH)
+        trainer.best_ap = 0
+        trainer.best_iter = 0
     trainer.resume_or_load(resume=args.resume)
     return trainer.train()
 
