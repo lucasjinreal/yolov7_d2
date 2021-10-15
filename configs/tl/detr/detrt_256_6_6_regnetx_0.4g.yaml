@@ -21,14 +21,15 @@ MODEL:
     ENC_LAYERS: 6
     DEC_LAYERS: 6
     HIDDEN_DIM: 256
+    CLASSES: 5
 
 DATASETS:
-  TRAIN: ("coco_2017_train",)
-  TEST: ("coco_2017_val",)
+  TRAIN: ("tl_train",)
+  TEST: ("tl_val",)
 
 SOLVER:
   IMS_PER_BATCH: 56
-  BASE_LR: 0.0001
+  BASE_LR: 0.001
   STEPS: (369600,)
   MAX_ITER: 554400
   WARMUP_FACTOR: 1.0
@@ -38,7 +39,7 @@ SOLVER:
   BACKBONE_MULTIPLIER: 0.1
   CLIP_GRADIENTS:
     ENABLED: True
-    CLIP_TYPE: "full_model"
+    CLIP_TYPE: "norm"
     CLIP_VALUE: 0.01
     NORM_TYPE: 2.0
 INPUT:

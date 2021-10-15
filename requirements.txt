@@ -4,4 +4,5 @@ nbnb
 mmpycocotools
 omegaconf
 mlflow
-
+onnx-simplifier
+tqdm

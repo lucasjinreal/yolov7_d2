@@ -32,8 +32,8 @@ SOLVER:
   BACKBONE_MULTIPLIER: 0.1
   CLIP_GRADIENTS:
     ENABLED: True
-    # CLIP_TYPE: "full_model"
-    CLIP_TYPE: "norm"
+    CLIP_TYPE: "full_model"
+    # CLIP_TYPE: "norm"
     CLIP_VALUE: 0.01
     NORM_TYPE: 2.0
 INPUT:
