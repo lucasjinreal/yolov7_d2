@@ -187,6 +187,10 @@ def add_yolo_config(cfg):
     cfg.MODEL.DETR.PRE_NORM = False
     cfg.MODEL.DETR.HIDDEN_DIM = 256
     cfg.MODEL.DETR.NUM_OBJECT_QUERIES = 100
+    # for AnchorDETR
+    cfg.MODEL.DETR.NUM_QUERY_POSITION = 300
+    cfg.MODEL.DETR.NUM_QUERY_PATTERN = 3
+    cfg.MODEL.DETR.SPATIAL_PRIOR = 'learned'
 
     cfg.SOLVER.OPTIMIZER = "ADAMW"
     cfg.SOLVER.BACKBONE_MULTIPLIER = 0.1

@@ -438,7 +438,6 @@ class DETR(nn.Module):
             # print('samples: ', samples.shape)
         # print(samples, type(samples))
         features, pos = self.backbone(samples)
-        # print(features, 'features')
 
         src, mask = features[-1].decompose()
         assert mask is not None

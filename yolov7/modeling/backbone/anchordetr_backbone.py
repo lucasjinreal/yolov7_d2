@@ -20,7 +20,7 @@ from yolov7.utils.misc import inverse_sigmoid
 from .layers.row_column_decoupled_attention import MultiheadRCDA
 
 class Transformer(nn.Module):
-    def __init__(self, d_model=256, nhead=8,
+    def __init__(self, num_classes=91, d_model=256, nhead=8,
                  num_encoder_layers=6, num_decoder_layers=6, dim_feedforward=1024, dropout=0.,
                  activation="relu", num_query_position = 300,num_query_pattern=3,
                  spatial_prior="learned"):
@@ -61,7 +61,7 @@ class Transformer(nn.Module):
         )
 
         self.num_layers = num_decoder_layers
-        num_classes = 91
+        self.num_classes = num_classes
 
         self.class_embed = nn.Linear(d_model, num_classes)
         self.bbox_embed = MLP(d_model, d_model, 4, 3)
@@ -71,7 +71,7 @@ class Transformer(nn.Module):
     def _reset_parameters(self):
 
         num_pred = self.num_layers
-        num_classes = 91
+        num_classes = self.num_classes
         prior_prob = 0.01
         bias_value = -math.log((1 - prior_prob) / prior_prob)
         self.class_embed.bias.data = torch.ones(num_classes) * bias_value
