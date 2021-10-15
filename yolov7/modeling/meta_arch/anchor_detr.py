@@ -22,7 +22,8 @@ from yolov7.utils.misc import NestedTensor, nested_tensor_from_tensor_list
 
 from alfred.utils.log import logger
 
-from ..backbone.detr_backbone import Joiner, PositionEmbeddingSine, Transformer
+from ..backbone.detr_backbone import Joiner, PositionEmbeddingSine
+from ..backbone.anchordetr_backbone import Transformer
 from .detr_seg import DETRsegm, PostProcessPanoptic, PostProcessSegm
 
 
@@ -58,10 +59,10 @@ class AnchorDetr(nn.Module):
         no_object_weight = cfg.MODEL.DETR.NO_OBJECT_WEIGHT
 
         N_steps = hidden_dim // 2
-        d2_backbone = MaskedBackboneTraceFriendly(cfg)
+        backbone = MaskedBackboneTraceFriendly(cfg)
         # d2_backbone = MaskedBackbone(cfg)
-        backbone = Joiner(d2_backbone, PositionEmbeddingSine(N_steps, normalize=True))
-        backbone.num_channels = d2_backbone.num_channels
+        # backbone = Joiner(d2_backbone, PositionEmbeddingSine(N_steps, normalize=True))
+        backbone.num_channels = backbone.num_channels
 
         transformer = Transformer(
             d_model=hidden_dim,
@@ -74,7 +75,7 @@ class AnchorDetr(nn.Module):
             return_intermediate_dec=deep_supervision,
         )
 
-        self.detr = DETR(
+        self.detr = AnchorDETR(
             backbone, transformer, num_classes=self.num_classes, num_queries=num_queries, aux_loss=deep_supervision
         )
         if self.mask_on:
@@ -390,29 +391,34 @@ class MaskedBackboneTraceFriendly(nn.Module):
         return masks
 
 
-class DETR(nn.Module):
-    """ This is the DETR module that performs object detection """
-    def __init__(self, backbone, transformer, num_classes, num_queries, aux_loss=False):
+
+class AnchorDETR(nn.Module):
+    """ This is the AnchorDETR module that performs object detection """
+
+    def __init__(self, backbone, transformer, aux_loss=True):
         """ Initializes the model.
         Parameters:
             backbone: torch module of the backbone to be used. See backbone.py
             transformer: torch module of the transformer architecture. See transformer.py
             num_classes: number of object classes
-            num_queries: number of object queries, ie detection slot. This is the maximal number of objects
-                         DETR can detect in a single image. For COCO, we recommend 100 queries.
             aux_loss: True if auxiliary decoding losses (loss at each decoder layer) are to be used.
         """
         super().__init__()
-        self.num_queries = num_queries
         self.transformer = transformer
         hidden_dim = transformer.d_model
-        self.class_embed = nn.Linear(hidden_dim, num_classes + 1)
-        self.bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
-        self.query_embed = nn.Embedding(num_queries, hidden_dim)
-        self.input_proj = nn.Conv2d(backbone.num_channels, hidden_dim, kernel_size=1)
+
+        self.input_proj = nn.ModuleList([
+            nn.Sequential(
+                nn.Conv2d(backbone.num_channels[0], hidden_dim, kernel_size=1),
+                nn.GroupNorm(32, hidden_dim),
+            )])
         self.backbone = backbone
         self.aux_loss = aux_loss
         self.onnx_export = False
+
+        for proj in self.input_proj:
+            nn.init.xavier_uniform_(proj[0].weight, gain=1)
+            nn.init.constant_(proj[0].bias, 0)
 
     def forward(self, samples: NestedTensor):
         """ The forward expects a NestedTensor, which consists of:
@@ -429,20 +435,22 @@ class DETR(nn.Module):
                - "aux_outputs": Optional, only returned when auxilary losses are activated. It is a list of
                                 dictionnaries containing the two above keys for each decoder layer.
         """
-        if isinstance(samples, (list, torch.Tensor)):
+        if not isinstance(samples, NestedTensor):
             samples = nested_tensor_from_tensor_list(samples)
-            # print('samples: ', samples.shape)
-        # print(samples, type(samples))
-        features, pos = self.backbone(samples)
-        # print(features, 'features')
+        features = self.backbone(samples)
+
+        srcs = []
+        masks :List[Tensor]= []
 
         src, mask = features[-1].decompose()
+        srcs.append(self.input_proj[-1](src).unsqueeze(1))
+        masks.append(mask)
         assert mask is not None
-        hs = self.transformer(self.input_proj(src), mask, self.query_embed.weight, pos[-1])[0]
 
-        outputs_class = self.class_embed(hs)
-        outputs_coord = self.bbox_embed(hs)
-        outputs_coord = torch.sigmoid(outputs_coord)
+        srcs = torch.cat(srcs, dim=1)
+
+        outputs_class, outputs_coord = self.transformer(srcs, masks)
+
         if self.onnx_export:    
             return outputs_class[-1], outputs_coord[-1]
         else:
@@ -458,7 +466,7 @@ class DETR(nn.Module):
         # as a dict having both a Tensor and a list.
         return [{'pred_logits': a, 'pred_boxes': b}
                 for a, b in zip(outputs_class[:-1], outputs_coord[:-1])]
-
+   
 
 class SetCriterion(nn.Module):
     """ This class computes the loss for DETR.
