@@ -14,6 +14,7 @@ def parse_args():
 
     parser.add_argument("--source_model", default="", type=str, help="Path or url to the DETR model to convert")
     parser.add_argument("--output_model", default="", type=str, help="Path where to save the converted model")
+    parser.add_argument("--variant", default="detr", type=str, help="detr or anchordetr")
     return parser.parse_args()
 
 
@@ -29,6 +30,7 @@ def main():
     # fmt: on
 
     coco_idx = np.array(coco_idx)
+    va = args.variant
 
     if args.source_model.startswith("https"):
         checkpoint = torch.hub.load_state_dict_from_url(args.source_model, map_location="cpu", check_hash=True)
@@ -50,7 +52,7 @@ def main():
             k = k.replace("downsample.0", "shortcut")
             k = k.replace("downsample.1", "shortcut.norm")
             k = "backbone.0.backbone." + k
-        k = "detr." + k
+        k = f"{va}." + k
         print(old_k, "->", k)
         if "class_embed" in old_k:
             v = model_to_convert[old_k].detach()
