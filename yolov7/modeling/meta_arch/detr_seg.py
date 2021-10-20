@@ -55,9 +55,13 @@ class DETRsegm(nn.Module):
         # FIXME h_boxes takes the last one computed, keep this in mind
         bbox_mask = self.bbox_attention(hs[-1], memory, mask=mask)
 
+        print('box_mask: ', bbox_mask.shape)
+        print('outputs_coord: ', outputs_coord.shape)
+
         seg_masks = self.mask_head(src_proj, bbox_mask, [features[2].tensors, features[1].tensors, features[0].tensors])
         outputs_seg_masks = seg_masks.view(bs, self.detr.num_queries, seg_masks.shape[-2], seg_masks.shape[-1])
 
+        print('outputs_seg_masks: ', outputs_seg_masks.shape)
         out["pred_masks"] = outputs_seg_masks
         return out
 

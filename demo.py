@@ -5,6 +5,7 @@ import multiprocessing as mp
 import os
 import time
 import cv2
+from detectron2.structures.masks import BitMasks
 from numpy.core.fromnumeric import sort
 import tqdm
 import torch
@@ -82,9 +83,9 @@ def setup_cfg(args):
     # cfg.INPUT.MIN_SIZE_TEST = 672  # 90ms
     # cfg.INPUT.MIN_SIZE_TEST = 2560  # 90ms
     # cfg.INPUT.MAX_SIZE_TEST = 3060  # 90ms
-    cfg.INPUT.MAX_SIZE_TEST = 800  # 90ms
+    # cfg.INPUT.MAX_SIZE_TEST = 800  # 90ms
     # cfg.INPUT.MIN_SIZE_TEST = 512 # 70ms
-    # cfg.INPUT.MIN_SIZE_TEST = 1080  # 40ms
+    cfg.INPUT.MIN_SIZE_TEST = 1080  # 40ms
     # cfg.INPUT.MAX_SIZE_TEST = 512 # 40ms
     # cfg.INPUT.MAX_SIZE_TEST = 1080  # 70ms
     cfg.freeze()
@@ -147,6 +148,8 @@ def vis_res_fast(res, img, meta, colors):
         # img = np.stack((img,)*3, axis=-1)
 
         bit_masks = ins.pred_bit_masks
+        if isinstance(bit_masks, BitMasks):
+            bit_masks = bit_masks.tensor.cpu().numpy()
         # img = vis_bitmasks_with_classes(img, clss, bit_masks)
         # img = vis_bitmasks_with_classes(img, clss, bit_masks, force_colors=colors, mask_border_color=(255, 255, 255), thickness=2)
         # img = vis_bitmasks_with_classes(img, clss, bit_masks, force_colors=None, mask_border_color=None, thickness=2)

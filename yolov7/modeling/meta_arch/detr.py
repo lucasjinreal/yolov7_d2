@@ -189,6 +189,9 @@ class Detr(nn.Module):
                 box_cls = output["pred_logits"]
                 box_pred = output["pred_boxes"]
                 mask_pred = output["pred_masks"] if self.mask_on else None
+                print(box_cls.shape)
+                print(box_pred.shape)
+                # print(mask_pred.shape)
                 results = self.inference(box_cls, box_pred, mask_pred, images.image_sizes)
                 processed_results = []
                 for results_per_image, input_per_image, image_size in zip(results, batched_inputs, images.image_sizes):
@@ -244,11 +247,17 @@ class Detr(nn.Module):
 
             result.pred_boxes.scale(scale_x=image_size[1], scale_y=image_size[0])
             if self.mask_on:
-                mask = F.interpolate(mask_pred[i].unsqueeze(0), size=image_size, mode='bilinear', align_corners=False)
+                mask_pred_per_image = mask_pred[i]
+                mask_pred_per_image = mask_pred_per_image[indexes]
+                
+                mask = F.interpolate(mask_pred_per_image.unsqueeze(0), size=image_size, mode='bilinear', align_corners=False)
                 mask = mask[0].sigmoid() > 0.5
                 B, N, H, W = mask_pred.shape
-                mask = BitMasks(mask.cpu()).crop_and_resize(result.pred_boxes.tensor.cpu(), 32)
-                result.pred_masks = mask.unsqueeze(1).to(mask_pred[0].device)
+                # print('mask_pred shape: ', mask.shape)
+                # mask = BitMasks(mask.cpu()).crop_and_resize(result.pred_boxes.tensor.cpu(), 32)
+                mask = BitMasks(mask.cpu())
+                # result.pred_masks = mask.unsqueeze(1).to(mask_pred[0].device)
+                result.pred_bit_masks = mask.to(mask_pred_per_image.device)
 
             result.scores = scores_per_image
             result.pred_classes = labels_per_image

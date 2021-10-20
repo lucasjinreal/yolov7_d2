@@ -15,6 +15,7 @@ def parse_args():
     parser.add_argument("--source_model", default="", type=str, help="Path or url to the DETR model to convert")
     parser.add_argument("--output_model", default="", type=str, help="Path where to save the converted model")
     parser.add_argument("--variant", default="detr", type=str, help="detr or anchordetr")
+    parser.add_argument("--mask", action="store_true", help="mask or not")
     return parser.parse_args()
 
 
@@ -62,9 +63,25 @@ def main():
                 print("Head conversion: changing shape from {} to {}".format(shape_old, model_converted[k].shape))
                 continue
         model_converted[k] = model_to_convert[old_k].detach()
-
-    model_to_save = {"model": model_converted}
-    torch.save(model_to_save, args.output_model)
+    
+    if args.mask:
+        # for mask, replace detr.backbone.0.backbone.stem.detr.conv1.weight -> 
+        # detr.detr.backbone.0.backbone.res2.0.conv1.weight
+        print('sovling for mask...')
+        model_converted_new = {}
+        for k in model_converted.keys():
+            old_k = k
+            if 'backbone' in k:
+                k = 'detr.' + k
+                k = k.replace('backbone.detr', 'backbone')
+                k = k.replace('stem.detr', 'stem')
+            print(old_k, "->", k)
+            model_converted_new[k] = model_converted[old_k].detach()
+        model_to_save = {"model": model_converted_new}
+        torch.save(model_to_save, args.output_model)
+    else:
+        model_to_save = {"model": model_converted}
+        torch.save(model_to_save, args.output_model)
 
 
 if __name__ == "__main__":

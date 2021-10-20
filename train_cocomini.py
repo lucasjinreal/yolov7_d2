@@ -29,6 +29,8 @@ from yolov7.utils.allreduce_norm import all_reduce_norm
 
 # here is your dataset config
 CLASS_NAMES = MetadataCatalog.get('coco_2017_train').thing_classes
+a = MetadataCatalog.get('coco_2017_train_panoptic_separated').stuff_classes
+print(CLASS_NAMES, a)
 DATASET_ROOT = './datasets/coco'
 ANN_ROOT = os.path.join(DATASET_ROOT, 'annotations')
 TRAIN_PATH = os.path.join(DATASET_ROOT, 'train2017')

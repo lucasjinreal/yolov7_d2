@@ -187,6 +187,7 @@ def add_yolo_config(cfg):
     cfg.MODEL.DETR.PRE_NORM = False
     cfg.MODEL.DETR.HIDDEN_DIM = 256
     cfg.MODEL.DETR.NUM_OBJECT_QUERIES = 100
+    cfg.MODEL.DETR.FROZEN_WEIGHTS = ''
     # for AnchorDETR
     cfg.MODEL.DETR.NUM_QUERY_POSITION = 300
     cfg.MODEL.DETR.NUM_QUERY_PATTERN = 3
