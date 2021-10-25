@@ -41,7 +41,8 @@ The supported matrix in YOLOv7 are:
 - [x] YOLOv7 with Res2Net-v1d backbone, we **found res2net-v1d** have a better accuracy then darknet53;
 - [x] Added PPYOLOv2 PAN neck with SPP and dropblock;
 - [x] YOLOX arch added, now you can train YOLOX model (**anchor free yolo**) as well;
-- [ ] DETR: transformer based detection model and **onnx export supported, as well as TensorRT acceleration**;
+- [x] DETR: transformer based detection model and **onnx export supported, as well as TensorRT acceleration**;
+- [x] AnchorDETR: Faster converge version of detr, now supported!
 
 
 
