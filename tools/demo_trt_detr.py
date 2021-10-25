@@ -46,7 +46,8 @@ def preprocess_np_no_normalize(img_path):
     print(img_path)
     print(im.shape)
     # img = transform(im).unsqueeze(0)
-    a = cv2.resize(im, (960, 768))
+    # a = cv2.resize(im, (960, 768))
+    a = cv2.resize(im, (1960, 1080))
     a = a.astype(np.float32)
     # a -= means
     # a /= stds
@@ -188,6 +189,7 @@ def main(onnx_model_file, image_dir, fp16=False, int8=False, batch_size=1, dynam
                         os.makedirs(save_dir)
                     # plot_box(img_raw, scores, boxs, prob_threshold=0.7,
                     #          save_fig=os.path.join(save_dir, test_image))
+                    print(res)
                     res = detr_postprocess(res, img_raw)
                     vis_res_fast(res, img_raw)
 

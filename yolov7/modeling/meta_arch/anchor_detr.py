@@ -10,6 +10,7 @@ import torch.nn.functional as F
 from scipy.optimize import linear_sum_assignment
 from torch import nn
 
+from detectron2.utils import comm
 from detectron2.layers import ShapeSpec
 from detectron2.modeling import META_ARCH_REGISTRY, build_backbone, detector_postprocess
 from detectron2.structures import Boxes, ImageList, Instances, BitMasks, PolygonMasks
@@ -17,14 +18,14 @@ from detectron2.utils.logger import log_first_n
 from fvcore.nn import giou_loss, smooth_l1_loss
 
 from yolov7.utils.detr_utils import HungarianMatcher
-from yolov7.utils.boxes import box_cxcywh_to_xyxy, box_xyxy_to_cxcywh, convert_coco_poly_to_mask
-from yolov7.utils.misc import NestedTensor, nested_tensor_from_tensor_list
+from yolov7.utils.boxes import box_cxcywh_to_xyxy, box_xyxy_to_cxcywh, convert_coco_poly_to_mask, generalized_box_iou
+from yolov7.utils.misc import NestedTensor, nested_tensor_from_tensor_list, accuracy
 
 from alfred.utils.log import logger
 
 from ..backbone.detr_backbone import Joiner, PositionEmbeddingSine
 from ..backbone.anchordetr_backbone import Transformer
-from .detr_seg import DETRsegm, PostProcessPanoptic, PostProcessSegm
+from .detr_seg import DETRsegm, PostProcessPanoptic, PostProcessSegm, sigmoid_focal_loss, dice_loss
 
 __all__ = ["AnchorDetr"]
 
@@ -34,11 +35,13 @@ class AnchorDetr(nn.Module):
     """
     Implement AnchorDetr
     """
+
     def __init__(self, cfg):
         super().__init__()
 
         self.device = torch.device(cfg.MODEL.DEVICE)
         self.ignore_thresh = cfg.MODEL.YOLO.CONF_THRESHOLD
+        # plus 1 here for Detr compatible
         self.num_classes = cfg.MODEL.DETR.NUM_CLASSES
         self.mask_on = cfg.MODEL.MASK_ON
         hidden_dim = cfg.MODEL.DETR.HIDDEN_DIM
@@ -63,7 +66,7 @@ class AnchorDetr(nn.Module):
         backbone = MaskedBackboneTraceFriendly(cfg)
 
         transformer = Transformer(
-            num_classes=self.num_classes,
+            num_classes=self.num_classes+1,
             d_model=hidden_dim,
             dropout=dropout,
             nhead=nheads,
@@ -302,6 +305,7 @@ class AnchorDetr(nn.Module):
 
 class MLP(nn.Module):
     """ Very simple multi-layer perceptron (also called FFN)"""
+
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
         super().__init__()
         self.num_layers = num_layers
@@ -315,58 +319,12 @@ class MLP(nn.Module):
         return x
 
 
-class MaskedBackbone(nn.Module):
-    """ This is a thin wrapper around D2's backbone to provide padding masking"""
-    def __init__(self, cfg):
-        super().__init__()
-        self.backbone = build_backbone(cfg)
-        backbone_shape = self.backbone.output_shape()
-        self.feature_strides = [
-            backbone_shape[f].stride for f in backbone_shape.keys()
-        ]
-        self.num_channels = [v.channels for k, v in backbone_shape]
-
-    def forward(self, images):
-        if isinstance(images, ImageList):
-            features = self.backbone(images.tensor)
-            device = images.tensor.device
-        else:
-            features = self.backbone(images.tensors)
-            device = images.tensors.device
-        masks = self.mask_out_padding(
-            [
-                features_per_level.shape
-                for features_per_level in features.values()
-            ],
-            images.image_sizes,
-            device,
-        )
-        assert len(features) == len(masks)
-        for i, k in enumerate(features.keys()):
-            features[k] = NestedTensor(features[k], masks[i])
-        return features
-
-    def mask_out_padding(self, feature_shapes, image_sizes, device):
-        masks = []
-        assert len(feature_shapes) == len(self.feature_strides)
-        for idx, shape in enumerate(feature_shapes):
-            N, _, H, W = shape
-            masks_per_feature_level = torch.ones((N, H, W),
-                                                 dtype=torch.bool,
-                                                 device=device)
-            for img_idx, (h, w) in enumerate(image_sizes):
-                masks_per_feature_level[img_idx, :int(
-                    np.ceil(float(h) / self.feature_strides[idx])
-                ), :int(np.ceil(float(w) / self.feature_strides[idx])), ] = 0
-            masks.append(masks_per_feature_level)
-        return masks
-
-
 class MaskedBackboneTraceFriendly(nn.Module):
     """ 
     This is a thin wrapper around D2's backbone to provide padding masking.
     I change it into tracing friendly with this mask operation.
     """
+
     def __init__(self, cfg):
         super().__init__()
         self.backbone = build_backbone(cfg)
@@ -374,7 +332,8 @@ class MaskedBackboneTraceFriendly(nn.Module):
         self.feature_strides = [
             backbone_shape[f].stride for f in backbone_shape.keys()
         ]
-        self.num_channels = [backbone_shape[k].channels for k in backbone_shape.keys()]
+        self.num_channels = [
+            backbone_shape[k].channels for k in backbone_shape.keys()]
         print(self.num_channels)
         self.onnx_export = False
 
@@ -436,6 +395,7 @@ class MaskedBackboneTraceFriendly(nn.Module):
 
 class AnchorDETR(nn.Module):
     """ This is the AnchorDETR module that performs object detection """
+
     def __init__(self, backbone, transformer, aux_loss=True):
         """ Initializes the model.
         Parameters:
@@ -450,7 +410,8 @@ class AnchorDETR(nn.Module):
 
         self.input_proj = nn.ModuleList([
             nn.Sequential(
-                nn.Conv2d(backbone.num_channels[-1], hidden_dim, kernel_size=1),
+                nn.Conv2d(backbone.num_channels[-1],
+                          hidden_dim, kernel_size=1),
                 nn.GroupNorm(32, hidden_dim),
             )
         ])
@@ -480,7 +441,7 @@ class AnchorDETR(nn.Module):
         if not isinstance(samples, NestedTensor):
             samples = nested_tensor_from_tensor_list(samples)
         features = self.backbone(samples)
-        print(features)
+        # print(features)
 
         srcs = []
         masks: List[Tensor] = []
@@ -522,6 +483,7 @@ class SetCriterion(nn.Module):
         1) we compute hungarian assignment between ground truth boxes and the outputs of the model
         2) we supervise each pair of matched ground-truth / prediction (supervise class and box)
     """
+
     def __init__(self, num_classes, matcher, weight_dict, eos_coef, losses):
         """ Create the criterion.
         Parameters:
@@ -600,9 +562,9 @@ class SetCriterion(nn.Module):
         losses['loss_bbox'] = loss_bbox.sum() / num_boxes
 
         loss_giou = 1 - torch.diag(
-            box_ops.generalized_box_iou(
-                box_ops.box_cxcywh_to_xyxy(src_boxes),
-                box_ops.box_cxcywh_to_xyxy(target_boxes)))
+            generalized_box_iou(
+                box_cxcywh_to_xyxy(src_boxes),
+                box_cxcywh_to_xyxy(target_boxes)))
         losses['loss_giou'] = loss_giou.sum() / num_boxes
         return losses
 
@@ -682,9 +644,10 @@ class SetCriterion(nn.Module):
         num_boxes = torch.as_tensor([num_boxes],
                                     dtype=torch.float,
                                     device=next(iter(outputs.values())).device)
-        if is_dist_avail_and_initialized():
+        if comm.get_world_size() > 1:
             torch.distributed.all_reduce(num_boxes)
-        num_boxes = torch.clamp(num_boxes / get_world_size(), min=1).item()
+        num_boxes = torch.clamp(
+            num_boxes / comm.get_world_size(), min=1).item()
 
         # Compute all the requested losses
         losses = {}
@@ -732,7 +695,7 @@ class PostProcess(nn.Module):
         scores, labels = prob[..., :-1].max(-1)
 
         # convert to [x0, y0, x1, y1] format
-        boxes = box_ops.box_cxcywh_to_xyxy(out_bbox)
+        boxes = box_cxcywh_to_xyxy(out_bbox)
         # and from relative [0, 1] to absolute [0, height] coordinates
         img_h, img_w = target_sizes.unbind(1)
         scale_fct = torch.stack([img_w, img_h, img_w, img_h], dim=1)

@@ -19,10 +19,11 @@ from yolov7.utils.misc import inverse_sigmoid
 
 from .layers.row_column_decoupled_attention import MultiheadRCDA
 
+
 class Transformer(nn.Module):
     def __init__(self, num_classes=91, d_model=256, nhead=8,
                  num_encoder_layers=6, num_decoder_layers=6, dim_feedforward=1024, dropout=0.,
-                 activation="relu", num_query_position = 300,num_query_pattern=3,
+                 activation="relu", num_query_position=300, num_query_pattern=3,
                  spatial_prior="learned"):
         super().__init__()
 
@@ -30,17 +31,18 @@ class Transformer(nn.Module):
         self.nhead = nhead
 
         encoder_layer = TransformerEncoderLayerSpatial(d_model, dim_feedforward,
-                                                          dropout, activation, nhead)
+                                                       dropout, activation, nhead)
 
         decoder_layer = TransformerDecoderLayer(d_model, dim_feedforward,
-                                                          dropout, activation, nhead)
+                                                dropout, activation, nhead)
 
         self.num_encoder_layers_spatial = num_encoder_layers
 
-        self.encoder_layers = _get_clones(encoder_layer, self.num_encoder_layers_spatial)
+        self.encoder_layers = _get_clones(
+            encoder_layer, self.num_encoder_layers_spatial)
         self.decoder_layers = _get_clones(decoder_layer, num_decoder_layers)
 
-        self.spatial_prior=spatial_prior
+        self.spatial_prior = spatial_prior
 
         self.num_pattern = num_query_pattern
         self.pattern = nn.Embedding(self.num_pattern, d_model)
@@ -62,7 +64,6 @@ class Transformer(nn.Module):
 
         self.num_layers = num_decoder_layers
         self.num_classes = num_classes
-
         self.class_embed = nn.Linear(d_model, num_classes)
         self.bbox_embed = MLP(d_model, d_model, 4, 3)
 
@@ -82,33 +83,36 @@ class Transformer(nn.Module):
             nn.init.uniform_(self.position.weight.data, 0, 1)
 
         nn.init.constant_(self.bbox_embed.layers[-1].bias.data[2:], -2.0)
-        self.class_embed = nn.ModuleList([self.class_embed for _ in range(num_pred)])
-        self.bbox_embed = nn.ModuleList([self.bbox_embed for _ in range(num_pred)])
+        self.class_embed = nn.ModuleList(
+            [self.class_embed for _ in range(num_pred)])
+        self.bbox_embed = nn.ModuleList(
+            [self.bbox_embed for _ in range(num_pred)])
 
-
-    def forward(self, srcs, masks:List[Tensor]):
+    def forward(self, srcs, masks: List[Tensor]):
 
         # prepare input for decoder
         bs, l, c, h, w = srcs.shape
 
         if self.spatial_prior == "learned":
-            reference_points = self.position.weight.unsqueeze(0).repeat(bs, self.num_pattern, 1)
+            reference_points = self.position.weight.unsqueeze(
+                0).repeat(bs, self.num_pattern, 1)
         elif self.spatial_prior == "grid":
-            nx=ny=int(round(math.sqrt(self.num_position)))
-            self.num_position=nx*ny
+            nx = ny = int(round(math.sqrt(self.num_position)))
+            self.num_position = nx*ny
             x = (torch.arange(nx) + 0.5) / nx
             y = (torch.arange(ny) + 0.5) / ny
-            xy=torch.meshgrid(x,y)
-            reference_points=torch.cat([xy[0].reshape(-1)[...,None],xy[1].reshape(-1)[...,None]],-1).cuda()
-            reference_points = reference_points.unsqueeze(0).repeat(bs, self.num_pattern, 1)
+            xy = torch.meshgrid(x, y)
+            reference_points = torch.cat(
+                [xy[0].reshape(-1)[..., None], xy[1].reshape(-1)[..., None]], -1).cuda()
+            reference_points = reference_points.unsqueeze(
+                0).repeat(bs, self.num_pattern, 1)
         else:
             raise ValueError(f'unknown {self.spatial_prior} spatial prior')
 
         tgt = self.pattern.weight.reshape(1, self.num_pattern, 1, c).repeat(bs, 1, self.num_position, 1).reshape(
             bs, self.num_pattern * self.num_position, c)
 
-
-        mask = masks[-1].unsqueeze(1).repeat(1,l,1,1).reshape(bs*l,h,w)
+        mask = masks[-1].unsqueeze(1).repeat(1, l, 1, 1).reshape(bs*l, h, w)
         pos_col, pos_row = mask2pos(mask)
 
         posemb_row = self.adapt_pos1d(pos2posemb1d(pos_row))
@@ -119,7 +123,6 @@ class Transformer(nn.Module):
         for layer in self.encoder_layers:
             outputs = layer(outputs, mask, posemb_row, posemb_col)
 
-
         srcs = outputs.reshape(bs, l, c, h, w)
 
         output = tgt
@@ -129,25 +132,29 @@ class Transformer(nn.Module):
 
         for layer, class_embed, bbox_embed in zip(self.decoder_layers, self.class_embed, self.bbox_embed):
             query_pos = self.adapt_pos2d(pos2posemb2d(reference_points))
-            query_pos_x = self.adapt_pos1d(pos2posemb1d(reference_points[..., 0]))
-            query_pos_y = self.adapt_pos1d(pos2posemb1d(reference_points[..., 1]))
-            output = layer(output, query_pos, query_pos_x, query_pos_y, srcs, mask, posemb_row, posemb_col)
+            query_pos_x = self.adapt_pos1d(
+                pos2posemb1d(reference_points[..., 0]))
+            query_pos_y = self.adapt_pos1d(
+                pos2posemb1d(reference_points[..., 1]))
+            output = layer(output, query_pos, query_pos_x,
+                           query_pos_y, srcs, mask, posemb_row, posemb_col)
             reference = inverse_sigmoid(reference_points)
             outputs_class = class_embed(output)
             tmp = bbox_embed(output)
-            print(tmp.shape)
+            # print(tmp.shape)
             if reference.shape[-1] == 4:
                 tmp += reference
             else:
                 assert reference.shape[-1] == 2
                 tmp[..., :2] += reference
             outputs_coord = tmp.sigmoid()
-            outputs_classes.append(outputs_class[None,])
-            outputs_coords.append(outputs_coord[None,])
-        
-        output = torch.cat(outputs_classes, dim=0), torch.cat(outputs_coords, dim=0)
-        print(output[0].shape)
-        print(output[1].shape)
+            outputs_classes.append(outputs_class[None, ])
+            outputs_coords.append(outputs_coord[None, ])
+
+        output = torch.cat(outputs_classes, dim=0), torch.cat(
+            outputs_coords, dim=0)
+        # print(output[0].shape)
+        # print(output[1].shape)
         return output
 
 
@@ -190,7 +197,6 @@ class TransformerEncoderLayerSpatial(nn.Module):
         return src
 
 
-
 class TransformerDecoderLayer(nn.Module):
     def __init__(self, d_model=256, d_ffn=1024,
                  dropout=0., activation="relu", n_heads=8,):
@@ -202,7 +208,8 @@ class TransformerDecoderLayer(nn.Module):
         self.norm1 = nn.LayerNorm(d_model)
 
         # self attention
-        self.self_attn = nn.MultiheadAttention(d_model, n_heads, dropout=dropout)
+        self.self_attn = nn.MultiheadAttention(
+            d_model, n_heads, dropout=dropout)
         self.dropout2 = nn.Dropout(dropout)
         self.norm2 = nn.LayerNorm(d_model)
 
@@ -219,13 +226,13 @@ class TransformerDecoderLayer(nn.Module):
 
         # self attention
         q = k = self.with_pos_embed(tgt, query_pos)
-        tgt2 = self.self_attn(q.transpose(0, 1), k.transpose(0, 1), tgt.transpose(0, 1))[0].transpose(0, 1)
+        tgt2 = self.self_attn(q.transpose(0, 1), k.transpose(
+            0, 1), tgt.transpose(0, 1))[0].transpose(0, 1)
         tgt = tgt + self.dropout2(tgt2)
         tgt = self.norm2(tgt)
 
         bz, l, c, h, w = srcs.shape
         srcs = srcs.reshape(bz * l, c, h, w).permute(0, 2, 3, 1)
-
 
         posemb_row = posemb_row.unsqueeze(1).repeat(1, h, 1, 1)
         posemb_col = posemb_col.unsqueeze(2).repeat(1, 1, w, 1)
@@ -268,7 +275,8 @@ class MLP(nn.Module):
         super().__init__()
         self.num_layers = num_layers
         h = [hidden_dim] * (num_layers - 1)
-        self.layers = nn.ModuleList(nn.Linear(n, k) for n, k in zip([input_dim] + h, h + [output_dim]))
+        self.layers = nn.ModuleList(nn.Linear(n, k)
+                                    for n, k in zip([input_dim] + h, h + [output_dim]))
 
     def forward(self, x):
         for i, layer in enumerate(self.layers):
@@ -303,32 +311,32 @@ def build_transformer(args):
         num_query_position=args.num_query_position,
         num_query_pattern=args.num_query_pattern,
         spatial_prior=args.spatial_prior,
-)
+    )
 
 
-
-
-
-def pos2posemb2d(pos, num_pos_feats:int=128, temperature:int=10000):
+def pos2posemb2d(pos, num_pos_feats: int = 128, temperature: int = 10000):
     scale = 2 * math.pi
     pos = pos * scale
     dim_t = torch.arange(num_pos_feats, dtype=torch.float32, device=pos.device)
     dim_t = temperature ** (2 * (dim_t // 2) / num_pos_feats)
     pos_x = pos[..., 0, None] / dim_t
     pos_y = pos[..., 1, None] / dim_t
-    pos_x = torch.stack((pos_x[..., 0::2].sin(), pos_x[..., 1::2].cos()), dim=-1).flatten(2)
-    pos_y = torch.stack((pos_y[..., 0::2].sin(), pos_y[..., 1::2].cos()), dim=-1).flatten(2)
+    pos_x = torch.stack(
+        (pos_x[..., 0::2].sin(), pos_x[..., 1::2].cos()), dim=-1).flatten(2)
+    pos_y = torch.stack(
+        (pos_y[..., 0::2].sin(), pos_y[..., 1::2].cos()), dim=-1).flatten(2)
     posemb = torch.cat((pos_y, pos_x), dim=-1)
     return posemb
 
 
-def pos2posemb1d(pos, num_pos_feats:int=256, temperature:int=10000):
+def pos2posemb1d(pos, num_pos_feats: int = 256, temperature: int = 10000):
     scale = 2 * math.pi
     pos = pos * scale
     dim_t = torch.arange(num_pos_feats, dtype=torch.float32, device=pos.device)
     dim_t = temperature ** (2 * (dim_t // 2) / num_pos_feats)
     pos_x = pos[..., None] / dim_t
-    posemb = torch.stack((pos_x[..., 0::2].sin(), pos_x[..., 1::2].cos()), dim=-1).flatten(2)
+    posemb = torch.stack(
+        (pos_x[..., 0::2].sin(), pos_x[..., 1::2].cos()), dim=-1).flatten(2)
     return posemb
 
 

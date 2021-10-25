@@ -24,7 +24,7 @@ from yolov7.utils.misc import NestedTensor, nested_tensor_from_tensor_list, is_d
 from alfred.utils.log import logger
 
 from ..backbone.detr_backbone import Joiner, PositionEmbeddingSine, Transformer
-from .detr_seg import DETRsegm, PostProcessPanoptic, PostProcessSegm
+from .detr_seg import DETRsegm, PostProcessPanoptic, PostProcessSegm, sigmoid_focal_loss, dice_loss
 
 
 __all__ = ["Detr"]
@@ -181,7 +181,7 @@ class Detr(nn.Module):
                 scores, labels = F.softmax(box_cls, dim=-1)[:, :, :-1].max(-1)
                 box_pred = box_cxcywh_to_xyxy(box_pred)
                 labels = labels.to(torch.float)
-                print(scores.shape)
+                # print(scores.shape)
                 # print(scores.unsqueeze(0).shape)
                 a = torch.cat([box_pred, scores.unsqueeze(-1), labels.unsqueeze(-1)], dim=-1)
                 return a
@@ -189,8 +189,7 @@ class Detr(nn.Module):
                 box_cls = output["pred_logits"]
                 box_pred = output["pred_boxes"]
                 mask_pred = output["pred_masks"] if self.mask_on else None
-                print(box_cls.shape)
-                print(box_pred.shape)
+                
                 # print(mask_pred.shape)
                 results = self.inference(box_cls, box_pred, mask_pred, images.image_sizes)
                 processed_results = []
@@ -249,7 +248,7 @@ class Detr(nn.Module):
             if self.mask_on:
                 mask_pred_per_image = mask_pred[i]
                 mask_pred_per_image = mask_pred_per_image[indexes]
-                
+
                 mask = F.interpolate(mask_pred_per_image.unsqueeze(0), size=image_size, mode='bilinear', align_corners=False)
                 mask = mask[0].sigmoid() > 0.5
                 B, N, H, W = mask_pred.shape
@@ -258,7 +257,7 @@ class Detr(nn.Module):
                 mask = BitMasks(mask.cpu())
                 # result.pred_masks = mask.unsqueeze(1).to(mask_pred[0].device)
                 result.pred_bit_masks = mask.to(mask_pred_per_image.device)
-
+            # print('box_pred_per_image: ', box_pred_per_image.shape)
             result.scores = scores_per_image
             result.pred_classes = labels_per_image
             results.append(result)

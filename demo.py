@@ -154,7 +154,7 @@ def vis_res_fast(res, img, meta, colors):
         # img = vis_bitmasks_with_classes(img, clss, bit_masks, force_colors=colors, mask_border_color=(255, 255, 255), thickness=2)
         # img = vis_bitmasks_with_classes(img, clss, bit_masks, force_colors=None, mask_border_color=None, thickness=2)
         # img = vis_bitmasks(img, bit_masks, thickness=2, draw_contours=False)
-        img = vis_bitmasks(img, bit_masks, thickness=2, draw_contours=True, fill_mask=True)
+        img = vis_bitmasks(img, bit_masks, thickness=2, draw_contours=False, fill_mask=True)
     # print('img shape: ', img.shape)
     thickness = 1 if ins.has('pred_bit_masks') else 2
     font_scale = 0.3 if ins.has('pred_bit_masks') else 0.4

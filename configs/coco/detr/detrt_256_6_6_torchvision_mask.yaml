@@ -18,6 +18,8 @@ MODEL:
     NUM_CLASSES: 250
      # hard coded for mask
     # FROZEN_WEIGHTS: 'weights/detr_panoptic.pth'
+  YOLO:
+    CONF_THRESHOLD: 0.3
 
 DATASETS:
   TRAIN: ("coco_2017_train",)
