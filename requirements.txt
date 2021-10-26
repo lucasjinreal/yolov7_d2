@@ -3,5 +3,5 @@ timm
 nbnb
 mmpycocotools
 omegaconf
-mlflow
+mlflow[aliyun-oss]==1.20.2 --no-binary=mlflow
 
