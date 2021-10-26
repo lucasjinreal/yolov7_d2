@@ -21,6 +21,8 @@ DATASETS:
   TEST: ("coco_2017_val",)
 
 SOLVER:
+  AMP:
+    ENABLED: true
   IMS_PER_BATCH: 56
   BASE_LR: 0.0001
   STEPS: (369600,)

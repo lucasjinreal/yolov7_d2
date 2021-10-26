@@ -22,6 +22,8 @@ DATASETS:
   TEST: ("coco_2017_val",)
 
 SOLVER:
+  # AMP:
+  # ENABLED: true
   IMS_PER_BATCH: 56
   BASE_LR: 0.0001
   STEPS: (369600,)
@@ -45,10 +47,10 @@ INPUT:
     SIZE: (384, 600)
   FORMAT: "RGB"
 TEST:
-  EVAL_PERIOD: 4000
+  EVAL_PERIOD: 10000
 DATALOADER:
   FILTER_EMPTY_ANNOTATIONS: False
   NUM_WORKERS: 2
 VERSION: 2
 
-OUTPUT_DIR: "output/coco_detr"
+OUTPUT_DIR: "output/coco_anchordetr"
