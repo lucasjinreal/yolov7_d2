@@ -52,6 +52,7 @@ class AnchorDetr(nn.Module):
         dim_feedforward = cfg.MODEL.DETR.DIM_FEEDFORWARD
         enc_layers = cfg.MODEL.DETR.ENC_LAYERS
         dec_layers = cfg.MODEL.DETR.DEC_LAYERS
+        num_feature_levels = cfg.MODEL.DETR.NUM_FEATURE_LEVELS
 
         # Loss parameters:
         giou_weight = cfg.MODEL.DETR.GIOU_WEIGHT
@@ -70,6 +71,7 @@ class AnchorDetr(nn.Module):
             d_model=hidden_dim,
             dropout=dropout,
             nhead=nheads,
+            num_feature_levels=num_feature_levels,
             dim_feedforward=dim_feedforward,
             num_encoder_layers=enc_layers,
             num_decoder_layers=dec_layers,

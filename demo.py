@@ -83,9 +83,9 @@ def setup_cfg(args):
     # cfg.INPUT.MIN_SIZE_TEST = 672  # 90ms
     # cfg.INPUT.MIN_SIZE_TEST = 2560  # 90ms
     # cfg.INPUT.MAX_SIZE_TEST = 3060  # 90ms
-    # cfg.INPUT.MAX_SIZE_TEST = 800  # 90ms
+    cfg.INPUT.MAX_SIZE_TEST = 900  # 90ms
     # cfg.INPUT.MIN_SIZE_TEST = 512 # 70ms
-    cfg.INPUT.MIN_SIZE_TEST = 1080  # 40ms
+    # cfg.INPUT.MIN_SIZE_TEST = 1080  # 40ms
     # cfg.INPUT.MAX_SIZE_TEST = 512 # 40ms
     # cfg.INPUT.MAX_SIZE_TEST = 1080  # 70ms
     cfg.freeze()
@@ -152,9 +152,9 @@ def vis_res_fast(res, img, meta, colors):
             bit_masks = bit_masks.tensor.cpu().numpy()
         # img = vis_bitmasks_with_classes(img, clss, bit_masks)
         # img = vis_bitmasks_with_classes(img, clss, bit_masks, force_colors=colors, mask_border_color=(255, 255, 255), thickness=2)
-        # img = vis_bitmasks_with_classes(img, clss, bit_masks, force_colors=None, mask_border_color=None, thickness=2)
+        img = vis_bitmasks_with_classes(img, clss, bit_masks, force_colors=None, draw_contours=False)
         # img = vis_bitmasks(img, bit_masks, thickness=2, draw_contours=False)
-        img = vis_bitmasks(img, bit_masks, thickness=2, draw_contours=False, fill_mask=True)
+        # img = vis_bitmasks(img, bit_masks, thickness=2, draw_contours=False, fill_mask=True)
     # print('img shape: ', img.shape)
     thickness = 1 if ins.has('pred_bit_masks') else 2
     font_scale = 0.3 if ins.has('pred_bit_masks') else 0.4
