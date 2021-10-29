@@ -122,7 +122,7 @@ class AnchorDetr(nn.Module):
         if self.mask_on:
             losses += ["masks"]
         self.criterion = SetCriterion(
-            self.num_classes,
+            self.num_classes+1,
             matcher=matcher,
             weight_dict=weight_dict,
             eos_coef=no_object_weight,
