@@ -243,8 +243,8 @@ if __name__ == "__main__":
     metadata = MetadataCatalog.get(cfg.DATASETS.TEST[0])
     predictor = DefaultPredictor(cfg)
 
-    h = 768
-    w = 960
+    h = 1080
+    w = 1960
     # h = 640
     # w = 640
     # inp, ori_img = load_test_image(args.input, h, w)

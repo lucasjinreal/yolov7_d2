@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # Copyright (c) Facebook, Inc. and its affiliates.
-
 """
 
 Training script using custom coco format dataset
@@ -25,22 +24,6 @@ from yolov7.config import add_yolo_config
 from yolov7.data.dataset_mapper import MyDatasetMapper2, MyDatasetMapper
 from yolov7.utils.allreduce_norm import all_reduce_norm
 
-# print(MetadataCatalog.get('coco_2017_val_panoptic_separated'))
-
-# here is your dataset config
-CLASS_NAMES = MetadataCatalog.get('coco_2017_train').thing_classes
-a = MetadataCatalog.get('coco_2017_train_panoptic_separated').stuff_classes
-print(CLASS_NAMES, a)
-DATASET_ROOT = './datasets/coco'
-ANN_ROOT = os.path.join(DATASET_ROOT, 'annotations')
-TRAIN_PATH = os.path.join(DATASET_ROOT, 'train2017')
-VAL_PATH = os.path.join(DATASET_ROOT, 'val2014')
-TRAIN_JSON = os.path.join(ANN_ROOT, 'instances_minitrain2017.json')
-VAL_JSON = os.path.join(ANN_ROOT, 'instances_minival2014.json')
-
-register_coco_instances("coco_2017_train_mini", {}, TRAIN_JSON, TRAIN_PATH)
-register_coco_instances("coco_2014_val_mini", {}, VAL_JSON, VAL_PATH)
-
 
 class Trainer(DefaultTrainer):
     @classmethod
@@ -51,13 +34,8 @@ class Trainer(DefaultTrainer):
 
     @classmethod
     def build_train_loader(cls, cfg):
-        if cfg.MODEL.MASK_ON:
-            return build_detection_train_loader(cfg, mapper=MyDatasetMapper(cfg, True))
-        else:
-            # open mosaic aug
-            return build_detection_train_loader(cfg, mapper=MyDatasetMapper2(cfg, True))
-        # test our own dataset mapper to add more augmentations
-        # return build_detection_train_loader(cfg, mapper=MyDatasetMapper2(cfg, True))
+        return build_detection_train_loader(cfg,
+                                            mapper=MyDatasetMapper(cfg, True))
 
     @classmethod
     def build_model(cls, cfg):
@@ -73,13 +51,6 @@ class Trainer(DefaultTrainer):
             self.model.update_iter(self.iter)
         else:
             self.model.module.update_iter(self.iter)
-
-        # if comm.is_main_process():
-        #     # when eval period, apply all_reduce_norm as in https://github.com/Megvii-BaseDetection/YOLOX/issues/547#issuecomment-903220346
-        #     interval = self.cfg.SOLVER.CHECKPOINT_PERIOD if self.cfg.TEST.EVAL_PERIOD == 0 else self.cfg.TEST.EVAL_PERIOD
-        #     if self.iter % interval == 0:
-        #         all_reduce_norm(self.model)
-        #         self.checkpointer.save('latest')
 
 
 def setup(args):
@@ -101,8 +72,7 @@ def main(args):
     if args.eval_only:
         model = Trainer.build_model(cfg)
         DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
-            cfg.MODEL.WEIGHTS, resume=args.resume
-        )
+            cfg.MODEL.WEIGHTS, resume=args.resume)
         res = Trainer.test(cfg, model)
         return res
 
@@ -123,5 +93,5 @@ if __name__ == "__main__":
         num_machines=args.num_machines,
         machine_rank=args.machine_rank,
         dist_url=args.dist_url,
-        args=(args,),
+        args=(args, ),
     )

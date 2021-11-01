@@ -10,3 +10,4 @@ from .yolov5 import YOLOV5
 from .solov2 import SOLOv2
 
 from .detr import Detr
+from .anchor_detr import AnchorDetr
