@@ -837,7 +837,7 @@ class SetCriterion(nn.Module):
         for loss in self.losses:
             kwargs = {}
             losses.update(self.get_loss(loss, outputs, targets, indices, num_boxes, **kwargs))
-
+        print(losses)
         # In case of auxiliary losses, we repeat this process with the output of each intermediate layer.
         if 'aux_outputs' in outputs:
             for i, aux_outputs in enumerate(outputs['aux_outputs']):
@@ -871,7 +871,6 @@ class SetCriterion(nn.Module):
                 l_dict = self.get_loss(loss, enc_outputs, bin_targets, indices, num_boxes, **kwargs)
                 l_dict = {k + f'_enc': v for k, v in l_dict.items()}
                 losses.update(l_dict)
-
         return losses
 
 
