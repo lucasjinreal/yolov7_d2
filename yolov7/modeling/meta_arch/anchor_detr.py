@@ -193,6 +193,7 @@ class AnchorDetr(nn.Module):
             for k in loss_dict.keys():
                 if k in weight_dict:
                     loss_dict[k] *= weight_dict[k]
+            print(loss_dict)
             return loss_dict
         else:
             if self.onnx_export:
