@@ -125,7 +125,7 @@ class AnchorDetr(nn.Module):
             self.num_classes+1,
             matcher=matcher,
             weight_dict=weight_dict,
-            eos_coef=no_object_weight,
+            # eos_coef=no_object_weight,
             losses=losses,
         )
         self.criterion.to(self.device)
