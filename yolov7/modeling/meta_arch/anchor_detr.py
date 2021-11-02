@@ -109,7 +109,7 @@ class AnchorDetr(nn.Module):
         matcher = HungarianMatcherAnchorDETR(cost_class=1,
                                    cost_bbox=l1_weight,
                                    cost_giou=giou_weight)
-        weight_dict = {"loss_ce": 1, "loss_bbox": l1_weight}
+        weight_dict = {"loss_ce": 2, "loss_bbox": l1_weight}
         weight_dict["loss_giou"] = giou_weight
         if deep_supervision:
             aux_weight_dict = {}
