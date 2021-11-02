@@ -17,7 +17,7 @@ from detectron2.structures import Boxes, ImageList, Instances, BitMasks, Polygon
 from detectron2.utils.logger import log_first_n
 from fvcore.nn import giou_loss, smooth_l1_loss
 
-from yolov7.utils.detr_utils import HungarianMatcher
+from yolov7.utils.detr_utils import HungarianMatcherAnchorDETR
 from yolov7.utils.boxes import box_cxcywh_to_xyxy, box_xyxy_to_cxcywh, convert_coco_poly_to_mask, generalized_box_iou
 from yolov7.utils.misc import NestedTensor, nested_tensor_from_tensor_list, accuracy
 
@@ -106,7 +106,7 @@ class AnchorDetr(nn.Module):
         self.detr.to(self.device)
 
         # building criterion
-        matcher = HungarianMatcher(cost_class=1,
+        matcher = HungarianMatcherAnchorDETR(cost_class=1,
                                    cost_bbox=l1_weight,
                                    cost_giou=giou_weight)
         weight_dict = {"loss_ce": 1, "loss_bbox": l1_weight}
@@ -190,10 +190,14 @@ class AnchorDetr(nn.Module):
             targets = self.prepare_targets(gt_instances)
             loss_dict = self.criterion(output, targets)
             weight_dict = self.criterion.weight_dict
+            valid_loss_dict = {}
             for k in loss_dict.keys():
                 if k in weight_dict:
-                    loss_dict[k] *= weight_dict[k]
-            return loss_dict
+                    valid_loss_dict[k] = loss_dict[k] * weight_dict[k]
+                    # loss_dict[k] *= weight_dict[k]
+            # print(loss_dict)
+            # return loss_dict
+            return valid_loss_dict
         else:
             if self.onnx_export:
                 box_cls = output[0]
@@ -837,7 +841,7 @@ class SetCriterion(nn.Module):
         for loss in self.losses:
             kwargs = {}
             losses.update(self.get_loss(loss, outputs, targets, indices, num_boxes, **kwargs))
-        print(losses)
+        # print(losses)
         # In case of auxiliary losses, we repeat this process with the output of each intermediate layer.
         if 'aux_outputs' in outputs:
             for i, aux_outputs in enumerate(outputs['aux_outputs']):

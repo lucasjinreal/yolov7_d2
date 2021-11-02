@@ -83,7 +83,6 @@ class Transformer(nn.Module):
         self._reset_parameters()
 
     def _reset_parameters(self):
-
         num_pred = self.num_layers
         num_classes = self.num_classes
         prior_prob = 0.01
