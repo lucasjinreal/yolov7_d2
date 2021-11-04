@@ -22,121 +22,12 @@ from yolov7.utils.boxes import box_cxcywh_to_xyxy, box_xyxy_to_cxcywh, convert_c
 from yolov7.utils.misc import NestedTensor, nested_tensor_from_tensor_list, is_dist_avail_and_initialized, accuracy
 
 from alfred.utils.log import logger
+from alfred.dl.torch.common import device
 
-from ..backbone.smcadetr_backbone import Joiner, PositionEmbeddingSine, Transformer
+from ..backbone.smcadetr_backbone import Joiner, PositionEmbeddingSine, Transformer, MLP
 from .detr_seg import DETRsegm, PostProcessPanoptic, PostProcessSegm, sigmoid_focal_loss, dice_loss
 
 __all__ = ["Detr"]
-
-
-class MaskedBackboneTraceFriendly(nn.Module):
-    """ 
-    This is a thin wrapper around D2's backbone to provide padding masking.
-    I change it into tracing friendly with this mask operation.
-    """
-
-    def __init__(self, cfg):
-        super().__init__()
-        self.backbone = build_backbone(cfg)
-        backbone_shape = self.backbone.output_shape()
-        self.feature_strides = [
-            backbone_shape[f].stride for f in backbone_shape.keys()]
-        self.num_channels = backbone_shape[list(
-            backbone_shape.keys())[-1]].channels
-        self.onnx_export = False
-
-    def forward(self, images):
-        if isinstance(images, ImageList):
-            features = self.backbone(images.tensor)
-            device = images.tensor.device
-        else:
-            features = self.backbone(images.tensors)
-            device = images.tensors.device
-
-        if self.onnx_export:
-            logger.info('[onnx export] in MaskedBackbone...')
-            out: Dict[str, NestedTensor] = {}
-            for name, x in features.items():
-                m = images.mask
-                print('m: ', m)
-                print('m: ', m.shape)
-                assert m is not None
-                sp = x.shape[-2:]
-                # mask = F.interpolate(m.to(torch.float), size=sp).to(torch.bool)[0]
-                # mask = F.interpolate(m[None].float(), size=x.shape[-2:]).to(torch.bool)[0]
-                m = m.unsqueeze(0).float()
-                mask = F.interpolate(m, size=x.shape[-2:]).to(torch.bool)[0]
-                print(mask.shape)
-                out[name] = NestedTensor(x, mask)
-            return out
-        else:
-            masks = self.mask_out_padding(
-                [features_per_level.shape for features_per_level in features.values()],
-                images.image_sizes,
-                device,
-            )
-            assert len(features) == len(masks)
-            for i, k in enumerate(features.keys()):
-                features[k] = NestedTensor(features[k], masks[i])
-            return features
-
-    def mask_out_padding(self, feature_shapes, image_sizes, device):
-        masks = []
-        assert len(feature_shapes) == len(self.feature_strides)
-        for idx, shape in enumerate(feature_shapes):
-            N, _, H, W = shape
-            masks_per_feature_level = torch.ones(
-                (N, H, W), dtype=torch.bool, device=device)
-            for img_idx, (h, w) in enumerate(image_sizes):
-                # print('H', H, 'W', W, 'ceil: ', int(np.ceil(float(h) / self.feature_strides[idx])),)
-                masks_per_feature_level[
-                    img_idx,
-                    : int(np.ceil(float(h) / self.feature_strides[idx])),
-                    : int(np.ceil(float(w) / self.feature_strides[idx])),
-                ] = 0
-            masks.append(masks_per_feature_level)
-        return masks
-
-
-class MaskedBackbone(nn.Module):
-    """ This is a thin wrapper around D2's backbone to provide padding masking"""
-
-    def __init__(self, cfg):
-        super().__init__()
-        self.backbone = build_backbone(cfg)
-        backbone_shape = self.backbone.output_shape()
-        self.feature_strides = [
-            backbone_shape[f].stride for f in backbone_shape.keys()]
-        self.num_channels = backbone_shape[list(
-            backbone_shape.keys())[-1]].channels
-
-    def forward(self, images):
-        features = self.backbone(images.tensor)
-        masks = self.mask_out_padding(
-            [features_per_level.shape for features_per_level in features.values()],
-            images.image_sizes,
-            images.tensor.device,
-        )
-        assert len(features) == len(masks)
-        for i, k in enumerate(features.keys()):
-            features[k] = NestedTensor(features[k], masks[i])
-        return features
-
-    def mask_out_padding(self, feature_shapes, image_sizes, device):
-        masks = []
-        assert len(feature_shapes) == len(self.feature_strides)
-        for idx, shape in enumerate(feature_shapes):
-            N, _, H, W = shape
-            masks_per_feature_level = torch.ones(
-                (N, H, W), dtype=torch.bool, device=device)
-            for img_idx, (h, w) in enumerate(image_sizes):
-                masks_per_feature_level[
-                    img_idx,
-                    : int(np.ceil(float(h) / self.feature_strides[idx])),
-                    : int(np.ceil(float(w) / self.feature_strides[idx])),
-                ] = 0
-            masks.append(masks_per_feature_level)
-        return masks
 
 
 @META_ARCH_REGISTRY.register()
@@ -347,20 +238,120 @@ class SMCADetr(nn.Module):
         return images
 
 
-class MLP(nn.Module):
-    """ Very simple multi-layer perceptron (also called FFN)"""
+def bias_init_with_prob(prior_prob):
+    """initialize conv/fc bias value according to giving probablity."""
+    bias_init = float(-np.log((1 - prior_prob) / prior_prob))
+    return bias_init
 
-    def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
+
+class MaskedBackboneTraceFriendly(nn.Module):
+    """ 
+    This is a thin wrapper around D2's backbone to provide padding masking.
+    I change it into tracing friendly with this mask operation.
+    """
+
+    def __init__(self, cfg):
         super().__init__()
-        self.num_layers = num_layers
-        h = [hidden_dim] * (num_layers - 1)
-        self.layers = nn.ModuleList(nn.Linear(n, k)
-                                    for n, k in zip([input_dim] + h, h + [output_dim]))
+        self.backbone = build_backbone(cfg)
+        backbone_shape = self.backbone.output_shape()
+        self.feature_strides = [
+            backbone_shape[f].stride for f in backbone_shape.keys()]
+        self.num_channels = backbone_shape[list(
+            backbone_shape.keys())[-1]].channels
+        self.onnx_export = False
 
-    def forward(self, x):
-        for i, layer in enumerate(self.layers):
-            x = F.relu(layer(x)) if i < self.num_layers - 1 else layer(x)
-        return x
+    def forward(self, images):
+        if isinstance(images, ImageList):
+            features = self.backbone(images.tensor)
+            device = images.tensor.device
+        else:
+            features = self.backbone(images.tensors)
+            device = images.tensors.device
+
+        if self.onnx_export:
+            logger.info('[onnx export] in MaskedBackbone...')
+            out: Dict[str, NestedTensor] = {}
+            for name, x in features.items():
+                m = images.mask
+                print('m: ', m)
+                print('m: ', m.shape)
+                assert m is not None
+                sp = x.shape[-2:]
+                # mask = F.interpolate(m.to(torch.float), size=sp).to(torch.bool)[0]
+                # mask = F.interpolate(m[None].float(), size=x.shape[-2:]).to(torch.bool)[0]
+                m = m.unsqueeze(0).float()
+                mask = F.interpolate(m, size=x.shape[-2:]).to(torch.bool)[0]
+                print(mask.shape)
+                out[name] = NestedTensor(x, mask)
+            return out
+        else:
+            masks = self.mask_out_padding(
+                [features_per_level.shape for features_per_level in features.values()],
+                images.image_sizes,
+                device,
+            )
+            assert len(features) == len(masks)
+            for i, k in enumerate(features.keys()):
+                features[k] = NestedTensor(features[k], masks[i])
+            return features
+
+    def mask_out_padding(self, feature_shapes, image_sizes, device):
+        masks = []
+        assert len(feature_shapes) == len(self.feature_strides)
+        for idx, shape in enumerate(feature_shapes):
+            N, _, H, W = shape
+            masks_per_feature_level = torch.ones(
+                (N, H, W), dtype=torch.bool, device=device)
+            for img_idx, (h, w) in enumerate(image_sizes):
+                # print('H', H, 'W', W, 'ceil: ', int(np.ceil(float(h) / self.feature_strides[idx])),)
+                masks_per_feature_level[
+                    img_idx,
+                    : int(np.ceil(float(h) / self.feature_strides[idx])),
+                    : int(np.ceil(float(w) / self.feature_strides[idx])),
+                ] = 0
+            masks.append(masks_per_feature_level)
+        return masks
+
+
+class MaskedBackbone(nn.Module):
+    """ This is a thin wrapper around D2's backbone to provide padding masking"""
+
+    def __init__(self, cfg):
+        super().__init__()
+        self.backbone = build_backbone(cfg)
+        backbone_shape = self.backbone.output_shape()
+        self.feature_strides = [
+            backbone_shape[f].stride for f in backbone_shape.keys()]
+        self.num_channels = backbone_shape[list(
+            backbone_shape.keys())[-1]].channels
+
+    def forward(self, images):
+        features = self.backbone(images.tensor)
+        masks = self.mask_out_padding(
+            [features_per_level.shape for features_per_level in features.values()],
+            images.image_sizes,
+            images.tensor.device,
+        )
+        assert len(features) == len(masks)
+        for i, k in enumerate(features.keys()):
+            features[k] = NestedTensor(features[k], masks[i])
+        return features
+
+    def mask_out_padding(self, feature_shapes, image_sizes, device):
+        masks = []
+        assert len(feature_shapes) == len(self.feature_strides)
+        for idx, shape in enumerate(feature_shapes):
+            N, _, H, W = shape
+            masks_per_feature_level = torch.ones(
+                (N, H, W), dtype=torch.bool, device=device)
+            for img_idx, (h, w) in enumerate(image_sizes):
+                masks_per_feature_level[
+                    img_idx,
+                    : int(np.ceil(float(h) / self.feature_strides[idx])),
+                    : int(np.ceil(float(w) / self.feature_strides[idx])),
+                ] = 0
+            masks.append(masks_per_feature_level)
+        return masks
 
 
 class DETR(nn.Module):
@@ -381,6 +372,7 @@ class DETR(nn.Module):
         self.transformer = transformer
         hidden_dim = transformer.d_model
         self.class_embed = nn.Linear(hidden_dim, num_classes + 1)
+        nn.init.constant_(self.class_embed.bias, bias_init_with_prob(0.01))
         self.bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
         self.query_embed = nn.Embedding(num_queries, hidden_dim)
         self.input_proj = nn.Conv2d(
@@ -406,14 +398,30 @@ class DETR(nn.Module):
         if isinstance(samples, (list, torch.Tensor)):
             samples = nested_tensor_from_tensor_list(samples)
         features, pos = self.backbone(samples)
+        # print(samples)
+        # print(samples[1])
+        # h_w = torch.stack([torch.stack([inst['size'] for inst in samples[1]])[:, 1],
+        #                    torch.stack([inst['size'] for inst in samples[1]])[:, 0]], dim=-1)
+        # h_w = h_w.unsqueeze(0)
+        h_w = torch.stack([torch.stack([torch.tensor(inst) for inst in samples.image_sizes])[:, 1],
+                           torch.stack([torch.tensor(inst) for inst in samples.image_sizes])[:, 0]], dim=-1)
+        # h_w = torch.tensor(samples.image_sizes).to(device)
+        h_w = h_w.unsqueeze(0).to(device)
+        print(h_w.shape)
 
         src, mask = features[-1].decompose()
         assert mask is not None
-        hs = self.transformer(self.input_proj(src), mask,
-                              self.query_embed.weight, pos[-1])[0]
+        hs, points = self.transformer(self.input_proj(
+            src), mask, self.query_embed.weight, pos[-1], h_w)
+        num_decoder = hs.shape[0]
 
         outputs_class = self.class_embed(hs)
-        outputs_coord = self.bbox_embed(hs).sigmoid()
+        outputs_coord = self.bbox_embed(hs)
+
+        points = points.unsqueeze(0).repeat(num_decoder, 1, 1, 1)
+
+        outputs_coord[..., :2] = outputs_coord[..., :2] + points
+        outputs_coord = outputs_coord.sigmoid()
         out = {'pred_logits': outputs_class[-1],
                'pred_boxes': outputs_coord[-1]}
         if self.aux_loss:
@@ -437,21 +445,45 @@ class SetCriterion(nn.Module):
         2) we supervise each pair of matched ground-truth / prediction (supervise class and box)
     """
 
-    def __init__(self, num_classes, matcher, weight_dict, losses, focal_alpha=0.25):
+    def __init__(self, num_classes, matcher, weight_dict, eos_coef, losses):
         """ Create the criterion.
         Parameters:
             num_classes: number of object categories, omitting the special no-object category
             matcher: module able to compute a matching between targets and proposals
             weight_dict: dict containing as key the names of the losses and as values their relative weight.
+            eos_coef: relative classification weight applied to the no-object category
             losses: list of all the losses to be applied. See get_loss for list of available losses.
-            focal_alpha: alpha in Focal Loss
         """
         super().__init__()
         self.num_classes = num_classes
         self.matcher = matcher
         self.weight_dict = weight_dict
+        self.eos_coef = eos_coef
         self.losses = losses
-        self.focal_alpha = focal_alpha
+        empty_weight = torch.ones(self.num_classes + 1)
+        empty_weight[-1] = self.eos_coef
+        self.register_buffer('empty_weight', empty_weight)
+
+    # def loss_labels(self, outputs, targets, indices, num_boxes, log=True):
+    #     """Classification loss (NLL)
+    #     targets dicts must contain the key "labels" containing a tensor of dim [nb_target_boxes]
+    #     """
+    #     assert 'pred_logits' in outputs
+    #     src_logits = outputs['pred_logits']
+
+    #     idx = self._get_src_permutation_idx(indices)
+    #     target_classes_o = torch.cat([t["labels"][J] for t, (_, J) in zip(targets, indices)])
+    #     target_classes = torch.full(src_logits.shape[:2], self.num_classes,
+    #                                 dtype=torch.int64, device=src_logits.device)
+    #     target_classes[idx] = target_classes_o
+
+    #     loss_ce = F.cross_entropy(src_logits.transpose(1, 2), target_classes, self.empty_weight)
+    #     losses = {'loss_ce': loss_ce}
+
+    #     if log:
+    #         # TODO this should probably be a separate loss, not hacked in this one here
+    #         losses['class_error'] = 100 - accuracy(src_logits[idx], target_classes_o)[0]
+    #     return losses
 
     def loss_labels(self, outputs, targets, indices, num_boxes, log=True):
         """Classification loss (NLL)
@@ -461,26 +493,26 @@ class SetCriterion(nn.Module):
         src_logits = outputs['pred_logits']
 
         idx = self._get_src_permutation_idx(indices)
-
         target_classes_o = torch.cat([t["labels"][J]
                                      for t, (_, J) in zip(targets, indices)])
         target_classes = torch.full(src_logits.shape[:2], self.num_classes,
                                     dtype=torch.int64, device=src_logits.device)
         target_classes[idx] = target_classes_o
 
-        target_classes_onehot = torch.zeros([src_logits.shape[0], src_logits.shape[1], src_logits.shape[2] + 1],
-                                            dtype=src_logits.dtype, layout=src_logits.layout, device=src_logits.device)
-        target_classes_onehot.scatter_(2, target_classes.unsqueeze(-1), 1)
-
-        target_classes_onehot = target_classes_onehot[:, :, :-1]
-        loss_ce = sigmoid_focal_loss(src_logits, target_classes_onehot, num_boxes, alpha=self.focal_alpha, gamma=2) * \
-            src_logits.shape[1]
+        src_logits_orig = src_logits
+        src_logits = src_logits.flatten(0, 1)
+        target_classes = target_classes.flatten(0, 1)
+        pos_inds = torch.nonzero(
+            target_classes != self.num_classes, as_tuple=True)[0]
+        labels = torch.zeros_like(src_logits)
+        labels[pos_inds, target_classes[pos_inds]] = 1
+        loss_ce = sigmoid_focal_loss(src_logits, labels, num_boxes, mode="box")
         losses = {'loss_ce': loss_ce}
 
         if log:
             # TODO this should probably be a separate loss, not hacked in this one here
             losses['class_error'] = 100 - \
-                accuracy(src_logits[idx], target_classes_o)[0]
+                accuracy(src_logits_orig[idx], target_classes_o)[0]
         return losses
 
     @torch.no_grad()
@@ -502,7 +534,7 @@ class SetCriterion(nn.Module):
     def loss_boxes(self, outputs, targets, indices, num_boxes):
         """Compute the losses related to the bounding boxes, the L1 regression loss and the GIoU loss
            targets dicts must contain the key "boxes" containing a tensor of dim [nb_target_boxes, 4]
-           The target boxes are expected in format (center_x, center_y, h, w), normalized by the image size.
+           The target boxes are expected in format (center_x, center_y, w, h), normalized by the image size.
         """
         assert 'pred_boxes' in outputs
         idx = self._get_src_permutation_idx(indices)
@@ -529,22 +561,21 @@ class SetCriterion(nn.Module):
 
         src_idx = self._get_src_permutation_idx(indices)
         tgt_idx = self._get_tgt_permutation_idx(indices)
-
         src_masks = outputs["pred_masks"]
-
-        # TODO use valid to mask invalid areas due to padding in loss
-        target_masks, valid = nested_tensor_from_tensor_list(
-            [t["masks"] for t in targets]).decompose()
-        target_masks = target_masks.to(src_masks)
-
         src_masks = src_masks[src_idx]
+        masks = [t["masks"] for t in targets]
+        # TODO use valid to mask invalid areas due to padding in loss
+        target_masks, valid = nested_tensor_from_tensor_list(masks).decompose()
+        target_masks = target_masks.to(src_masks)
+        target_masks = target_masks[tgt_idx]
+
         # upsample predictions to the target size
         src_masks = interpolate(src_masks[:, None], size=target_masks.shape[-2:],
                                 mode="bilinear", align_corners=False)
         src_masks = src_masks[:, 0].flatten(1)
 
-        target_masks = target_masks[tgt_idx].flatten(1)
-
+        target_masks = target_masks.flatten(1)
+        target_masks = target_masks.view(src_masks.shape)
         losses = {
             "loss_mask": sigmoid_focal_loss(src_masks, target_masks, num_boxes),
             "loss_dice": dice_loss(src_masks, target_masks, num_boxes),
@@ -582,8 +613,8 @@ class SetCriterion(nn.Module):
              targets: list of dicts, such that len(targets) == batch_size.
                       The expected keys in each dict depends on the losses applied, see each loss' doc
         """
-        outputs_without_aux = {k: v for k, v in outputs.items(
-        ) if k != 'aux_outputs' and k != 'enc_outputs'}
+        outputs_without_aux = {k: v for k,
+                               v in outputs.items() if k != 'aux_outputs'}
 
         # Retrieve the matching between the outputs of the last layer and the targets
         indices = self.matcher(outputs_without_aux, targets)
@@ -592,7 +623,7 @@ class SetCriterion(nn.Module):
         num_boxes = sum(len(t["labels"]) for t in targets)
         num_boxes = torch.as_tensor(
             [num_boxes], dtype=torch.float, device=next(iter(outputs.values())).device)
-        if comm.get_world_size() > 1:
+        if is_dist_avail_and_initialized():
             torch.distributed.all_reduce(num_boxes)
         num_boxes = torch.clamp(
             num_boxes / comm.get_world_size(), min=1).item()
@@ -600,10 +631,9 @@ class SetCriterion(nn.Module):
         # Compute all the requested losses
         losses = {}
         for loss in self.losses:
-            kwargs = {}
-            losses.update(self.get_loss(loss, outputs, targets,
-                          indices, num_boxes, **kwargs))
-        # print(losses)
+            losses.update(self.get_loss(
+                loss, outputs, targets, indices, num_boxes))
+
         # In case of auxiliary losses, we repeat this process with the output of each intermediate layer.
         if 'aux_outputs' in outputs:
             for i, aux_outputs in enumerate(outputs['aux_outputs']):
@@ -615,30 +645,12 @@ class SetCriterion(nn.Module):
                     kwargs = {}
                     if loss == 'labels':
                         # Logging is enabled only for the last layer
-                        kwargs['log'] = False
+                        kwargs = {'log': False}
                     l_dict = self.get_loss(
                         loss, aux_outputs, targets, indices, num_boxes, **kwargs)
                     l_dict = {k + f'_{i}': v for k, v in l_dict.items()}
                     losses.update(l_dict)
 
-        if 'enc_outputs' in outputs:
-            enc_outputs = outputs['enc_outputs']
-            bin_targets = copy.deepcopy(targets)
-            for bt in bin_targets:
-                bt['labels'] = torch.zeros_like(bt['labels'])
-            indices = self.matcher(enc_outputs, bin_targets)
-            for loss in self.losses:
-                if loss == 'masks':
-                    # Intermediate masks losses are too costly to compute, we ignore them.
-                    continue
-                kwargs = {}
-                if loss == 'labels':
-                    # Logging is enabled only for the last layer
-                    kwargs['log'] = False
-                l_dict = self.get_loss(
-                    loss, enc_outputs, bin_targets, indices, num_boxes, **kwargs)
-                l_dict = {k + f'_enc': v for k, v in l_dict.items()}
-                losses.update(l_dict)
         return losses
 
 
