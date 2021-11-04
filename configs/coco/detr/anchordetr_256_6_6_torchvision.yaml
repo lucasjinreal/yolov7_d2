@@ -46,7 +46,8 @@ INPUT:
   CROP:
     ENABLED: True
     TYPE: "absolute_range"
-    SIZE: (384, 600)
+    # SIZE: (384, 600)
+    SIZE: (384, 632)
   FORMAT: "RGB"
 TEST:
   EVAL_PERIOD: 10000
