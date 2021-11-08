@@ -274,7 +274,6 @@ def multi_head_attention_forward(
                 key_padding_mask.unsqueeze(1).unsqueeze(2), float('-inf'),)
             attn_output_weights = attn_output_weights.view(
                 bsz * num_heads, tgt_len, src_len)
-
         attn_output_weights = attn_output_weights + \
             gaussian[0].permute(2, 0, 1)
         attn_output_weights = torch.nn.functional.softmax(
