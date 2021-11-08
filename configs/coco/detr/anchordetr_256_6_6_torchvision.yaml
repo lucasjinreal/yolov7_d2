@@ -27,7 +27,7 @@ SOLVER:
   AMP:
     ENABLED: true
   IMS_PER_BATCH: 80
-  BASE_LR: 0.0001
+  BASE_LR: 0.00025 # 0.00025 is better
   STEPS: (369600,)
   MAX_ITER: 554400
   WARMUP_FACTOR: 1.0
@@ -46,7 +46,8 @@ INPUT:
   CROP:
     ENABLED: True
     TYPE: "absolute_range"
-    SIZE: (384, 600)
+    # SIZE: (384, 600)
+    SIZE: (384, 632)
   FORMAT: "RGB"
 TEST:
   EVAL_PERIOD: 10000

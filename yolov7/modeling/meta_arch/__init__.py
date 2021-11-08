@@ -11,3 +11,4 @@ from .solov2 import SOLOv2
 
 from .detr import Detr
 from .anchor_detr import AnchorDetr
+from .smca_detr import SMCADetr
