@@ -276,7 +276,6 @@ class TransformerDecoderLayer(nn.Module):
             point_sigmoid_ref = point_sigmoid_ref.repeat(1, 1, 8)
         else:
             point_sigmoid_ref = point_ref_previous
-
         point = point_sigmoid_ref + point_sigmoid_offset
         point = point.view(tgt_len, -1, 2)
         distance = (point.unsqueeze(1) - grid.unsqueeze(0)).pow(2)
@@ -303,7 +302,6 @@ class TransformerDecoderLayer(nn.Module):
             distance = (distance * scale).sum(-1)
 
         gaussian = -(distance - 0).abs() / self.smooth
-
         tgt2 = self.multihead_attn(query=self.with_pos_embed(tgt, query_pos),
                                    key=self.with_pos_embed(memory, pos),
                                    value=memory, attn_mask=memory_mask,

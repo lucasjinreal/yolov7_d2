@@ -27,9 +27,11 @@ SOLVER:
   AMP:
     ENABLED: true
   IMS_PER_BATCH: 80
-  BASE_LR: 0.00035
-  STEPS: (369600,)
-  MAX_ITER: 554400
+  BASE_LR: 0.00025
+  # STEPS: (369600,)
+  STEPS: (110880,)
+  # MAX_ITER: 554400
+  MAX_ITER: 238600
   WARMUP_FACTOR: 1.0
   WARMUP_ITERS: 10
   WEIGHT_DECAY: 0.0001
@@ -46,7 +48,7 @@ INPUT:
   CROP:
     ENABLED: True
     TYPE: "absolute_range"
-    SIZE: (384, 600)
+    SIZE: (384, 632)
   FORMAT: "RGB"
 TEST:
   EVAL_PERIOD: 10000
@@ -55,4 +57,4 @@ DATALOADER:
   NUM_WORKERS: 2
 VERSION: 2
 
-OUTPUT_DIR: "output/coco_anchordetr"
+OUTPUT_DIR: "output/coco_smcadetr"

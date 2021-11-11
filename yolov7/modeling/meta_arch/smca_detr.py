@@ -25,7 +25,7 @@ from alfred.utils.log import logger
 from alfred.dl.torch.common import device
 
 from ..backbone.smcadetr_backbone import Joiner, PositionEmbeddingSine, Transformer, MLP
-from .detr_seg import DETRsegm, PostProcessPanoptic, PostProcessSegm, sigmoid_focal_loss, dice_loss
+from .detr_seg import DETRsegm, PostProcessPanoptic, PostProcessSegm, sigmoid_focal_loss_with_mode, dice_loss
 
 __all__ = ["Detr"]
 
@@ -65,6 +65,8 @@ class SMCADetr(nn.Module):
             N_steps, normalize=True))
         backbone.num_channels = d2_backbone.num_channels
 
+        # type1 for no scale, type 2 for dynamic scale, type 3 for dyanmic xy scale, type 4 for covariance matrix scale
+        dynamic_scale = 'type1'
         transformer = Transformer(
             d_model=hidden_dim,
             dropout=dropout,
@@ -74,6 +76,7 @@ class SMCADetr(nn.Module):
             num_decoder_layers=dec_layers,
             normalize_before=pre_norm,
             return_intermediate_dec=deep_supervision,
+            dynamic_scale=dynamic_scale
         )
 
         self.detr = DETR(
@@ -102,7 +105,7 @@ class SMCADetr(nn.Module):
         # building criterion
         matcher = HungarianMatcherAnchorDETR(
             cost_class=1, cost_bbox=l1_weight, cost_giou=giou_weight)
-        weight_dict = {"loss_ce": 1, "loss_bbox": l1_weight}
+        weight_dict = {"loss_ce": 2, "loss_bbox": l1_weight}
         weight_dict["loss_giou"] = giou_weight
         if deep_supervision:
             aux_weight_dict = {}
@@ -153,10 +156,14 @@ class SMCADetr(nn.Module):
             targets = self.prepare_targets(gt_instances)
             loss_dict = self.criterion(output, targets)
             weight_dict = self.criterion.weight_dict
+            valid_loss_dict = {}
             for k in loss_dict.keys():
                 if k in weight_dict:
-                    loss_dict[k] *= weight_dict[k]
-            return loss_dict
+                    valid_loss_dict[k] = loss_dict[k] * weight_dict[k]
+                    # loss_dict[k] *= weight_dict[k]
+            # print(loss_dict)
+            # return loss_dict
+            return valid_loss_dict
         else:
             box_cls = output["pred_logits"]
             box_pred = output["pred_boxes"]
@@ -407,7 +414,6 @@ class DETR(nn.Module):
                            torch.stack([torch.tensor(inst) for inst in samples.image_sizes])[:, 0]], dim=-1)
         # h_w = torch.tensor(samples.image_sizes).to(device)
         h_w = h_w.unsqueeze(0).to(device)
-        print(h_w.shape)
 
         src, mask = features[-1].decompose()
         assert mask is not None
@@ -506,7 +512,7 @@ class SetCriterion(nn.Module):
             target_classes != self.num_classes, as_tuple=True)[0]
         labels = torch.zeros_like(src_logits)
         labels[pos_inds, target_classes[pos_inds]] = 1
-        loss_ce = sigmoid_focal_loss(src_logits, labels, num_boxes, mode="box")
+        loss_ce = sigmoid_focal_loss_with_mode(src_logits, labels, num_boxes, mode="box")
         losses = {'loss_ce': loss_ce}
 
         if log:
@@ -577,7 +583,7 @@ class SetCriterion(nn.Module):
         target_masks = target_masks.flatten(1)
         target_masks = target_masks.view(src_masks.shape)
         losses = {
-            "loss_mask": sigmoid_focal_loss(src_masks, target_masks, num_boxes),
+            "loss_mask": sigmoid_focal_loss_with_mode(src_masks, target_masks, num_boxes),
             "loss_dice": dice_loss(src_masks, target_masks, num_boxes),
         }
         return losses
