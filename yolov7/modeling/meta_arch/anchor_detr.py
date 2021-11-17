@@ -45,7 +45,6 @@ class AnchorDetr(nn.Module):
         self.num_classes = cfg.MODEL.DETR.NUM_CLASSES
         self.mask_on = cfg.MODEL.MASK_ON
         hidden_dim = cfg.MODEL.DETR.HIDDEN_DIM
-        num_queries = cfg.MODEL.DETR.NUM_OBJECT_QUERIES
         # Transformer parameters:
         nheads = cfg.MODEL.DETR.NHEADS
         dropout = cfg.MODEL.DETR.DROPOUT

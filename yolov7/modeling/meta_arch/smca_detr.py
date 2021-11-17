@@ -66,7 +66,7 @@ class SMCADetr(nn.Module):
         backbone.num_channels = d2_backbone.num_channels
 
         # type1 for no scale, type 2 for dynamic scale, type 3 for dyanmic xy scale, type 4 for covariance matrix scale
-        dynamic_scale = 'type1'
+        dynamic_scale = 'type3'
         transformer = Transformer(
             d_model=hidden_dim,
             dropout=dropout,
