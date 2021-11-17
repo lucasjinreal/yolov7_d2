@@ -52,6 +52,7 @@ class SMCADetr(nn.Module):
         enc_layers = cfg.MODEL.DETR.ENC_LAYERS
         dec_layers = cfg.MODEL.DETR.DEC_LAYERS
         pre_norm = cfg.MODEL.DETR.PRE_NORM
+        pretrained_weights = cfg.MODEL.WEIGHTS
 
         # Loss parameters:
         giou_weight = cfg.MODEL.DETR.GIOU_WEIGHT
@@ -60,7 +61,7 @@ class SMCADetr(nn.Module):
         no_object_weight = cfg.MODEL.DETR.NO_OBJECT_WEIGHT
 
         N_steps = hidden_dim // 2
-        d2_backbone = MaskedBackbone(cfg)
+        d2_backbone = MaskedBackboneTraceFriendly(cfg)
         backbone = Joiner(d2_backbone, PositionEmbeddingSine(
             N_steps, normalize=True))
         backbone.num_channels = d2_backbone.num_channels
@@ -99,6 +100,16 @@ class SMCADetr(nn.Module):
                 del new_weight
             self.detr = DETRsegm(self.detr, freeze_detr=(frozen_weights != ''))
             self.seg_postprocess = PostProcessSegm
+
+        if pretrained_weights:
+            logger.info(f'Loading pretrained weights from: {pretrained_weights}')
+            wgts = torch.load(pretrained_weights, map_location=lambda storage, loc: storage)
+            new_weight = {}
+            for k, v in wgts.items():
+                new_weight['detr.backbone.' + k] = v
+            del wgts
+            self.detr.load_state_dict(wgts)
+            del new_weight
 
         self.detr.to(self.device)
 
