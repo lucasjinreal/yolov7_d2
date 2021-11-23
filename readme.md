@@ -110,6 +110,14 @@ python3 demo_lazyconfig.py --config-file configs/new_baselines/panoptic_fpn_regn
   
   ```
 
+  this works has been down, inference script included inside `tools`.
+
+2. `AnchorDETR`:
+
+  anchorDETR also supported training and exporting to ONNX.
+
+
+
 ## More Advanced YOLO
 
 Here we show some highlights on multi-tasking:
@@ -174,6 +182,9 @@ Here is a dedicated performance compare with other packages.
 
 ## Some Phenomenon I don't Understand
 
-1. I found darknet-based YOLOv4 needs a so lower nms threshold (0.1 for me). I don't know why.
-2. I found resnet50-fpn based YOLOv4 can not get a better detection result than darknet.
+
+1. About DETR, AnchorDETR training
+
+  **This is really interesting**, I wrongly transfer original weights to this framework, using Resnet res2 as input of transformer, (It should using res5 as input of transformer), but the final result is the same!!!
+  I am not sure why got this result, but seems you can make transformer output same result by using lower resolution features.
 

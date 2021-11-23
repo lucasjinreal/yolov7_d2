@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import logging
 import math
-from typing import List, Dict
+from typing import List, Dict, OrderedDict
 
 import numpy as np
 import torch
@@ -26,6 +26,8 @@ from alfred.utils.log import logger
 from ..backbone.detr_backbone import Joiner, PositionEmbeddingSine
 from ..backbone.anchordetr_backbone import Transformer
 from .detr_seg import DETRsegm, PostProcessPanoptic, PostProcessSegm, sigmoid_focal_loss, dice_loss
+from alfred.dl.torch.common import device
+import pickle
 
 __all__ = ["AnchorDetr"]
 
@@ -40,8 +42,8 @@ class AnchorDetr(nn.Module):
         super().__init__()
 
         self.device = torch.device(cfg.MODEL.DEVICE)
-        self.ignore_thresh = cfg.MODEL.YOLO.CONF_THRESHOLD
-        # plus 1 here for Detr compatible
+        self.conf_thresh = cfg.MODEL.YOLO.CONF_THRESHOLD
+        self.ignore_thresh = cfg.MODEL.YOLO.IGNORE_THRESHOLD
         self.num_classes = cfg.MODEL.DETR.NUM_CLASSES
         self.mask_on = cfg.MODEL.MASK_ON
         hidden_dim = cfg.MODEL.DETR.HIDDEN_DIM
@@ -82,6 +84,7 @@ class AnchorDetr(nn.Module):
 
         self.detr = AnchorDETR(backbone,
                                transformer,
+                               num_feature_levels,
                                aux_loss=deep_supervision)
         if self.mask_on:
             frozen_weights = cfg.MODEL.DETR.FROZEN_WEIGHTS
@@ -260,12 +263,14 @@ class AnchorDetr(nn.Module):
         results = []
 
         # For each box we assign the best class or the second best if the best on is `no_object`.
-        scores, labels = F.softmax(box_cls, dim=-1)[:, :, :-1].max(-1)
+        scores, labels = box_cls.sigmoid()[:, :, :-1].max(-1)
 
         for i, (scores_per_image, labels_per_image, box_pred_per_image,
                 image_size) in enumerate(
                     zip(scores, labels, box_pred, image_sizes)):
-            indexes = scores_per_image > self.ignore_thresh
+            indexes = scores_per_image > self.conf_thresh
+            # indexes = scores_per_image > 0.0001
+            # indexes = scores_per_image > 0.39
             scores_per_image = scores_per_image[indexes]
             labels_per_image = labels_per_image[indexes]
             box_pred_per_image = box_pred_per_image[indexes]
@@ -334,11 +339,43 @@ class MaskedBackboneTraceFriendly(nn.Module):
         super().__init__()
         self.backbone = build_backbone(cfg)
         backbone_shape = self.backbone.output_shape()
-        self.feature_strides = [
-            backbone_shape[f].stride for f in backbone_shape.keys()
-        ]
-        self.num_channels = [
-            backbone_shape[k].channels for k in backbone_shape.keys()]
+        self.num_feature_levels = cfg.MODEL.DETR.NUM_FEATURE_LEVELS
+
+        # if comm.is_main_process():
+        #     a = torch.randn([1, 3, 256, 256])
+        #     b = self.backbone(a)
+        #     print('B: ', b)
+        # self.backbone = torchvision.models.resnet50(pretrained=True)
+        backbone_shape = self.backbone.output_shape()
+
+        # pretrained_weights = cfg.MODEL.WEIGHTS
+        # if pretrained_weights:
+        #     logger.info(f'Loading pretrained weights from: {pretrained_weights}')
+        #     with open(pretrained_weights, 'rb') as f:
+        #         wgts = pickle.load(f, encoding='latin1')['model']
+        #     # wgts = torch.load(pretrained_weights, map_location=lambda storage, loc: storage)
+        #     new_weight = {}
+        #     for k, v in wgts.items():
+        #         v = torch.from_numpy(v)
+        #         # new_weight['detr.' + k] = v
+        #         new_weight[k] = v
+        #     del wgts
+        #     self.backbone.load_state_dict(new_weight, strict=False)
+        #     del new_weight
+        
+        # if comm.is_main_process():
+        #     c = self.backbone(a)
+        #     print('C: ', c)
+
+        if self.num_feature_levels > 1:
+            self.num_channels = [512, 1024, 2048]
+            self.return_interm_layers = ['res3', 'res4', 'res5']
+            self.feature_strides = [8, 16, 32]
+        else:
+            self.num_channels = [2048]
+            self.return_interm_layers = ['res5']
+            self.feature_strides = [32]
+            
         print(self.num_channels)
         self.onnx_export = False
 
@@ -367,18 +404,24 @@ class MaskedBackboneTraceFriendly(nn.Module):
                 out[name] = NestedTensor(x, mask)
             return out
         else:
+            # features: res2, res3, res4, res5
+            features_returned = OrderedDict()
+            for l in self.return_interm_layers:
+                features_returned[l] = features[l]
+
             masks = self.mask_out_padding(
                 [
                     features_per_level.shape
-                    for features_per_level in features.values()
+                    for features_per_level in features_returned.values()
                 ],
                 images.image_sizes,
                 device,
             )
-            assert len(features) == len(masks)
+            assert len(features_returned) == len(masks)
             out_nested_features = []
-            for i, k in enumerate(features.keys()):
-                out_nested_features.append(NestedTensor(features[k], masks[i]))
+            
+            for i, k in enumerate(self.return_interm_layers):
+                out_nested_features.append(NestedTensor(features_returned[k], masks[i]))
             return out_nested_features
 
     def mask_out_padding(self, feature_shapes, image_sizes, device):
@@ -401,7 +444,7 @@ class MaskedBackboneTraceFriendly(nn.Module):
 class AnchorDETR(nn.Module):
     """ This is the AnchorDETR module that performs object detection """
 
-    def __init__(self, backbone, transformer, aux_loss=True):
+    def __init__(self, backbone, transformer, num_feature_levels, aux_loss=True):
         """ Initializes the model.
         Parameters:
             backbone: torch module of the backbone to be used. See backbone.py
@@ -413,13 +456,30 @@ class AnchorDETR(nn.Module):
         self.transformer = transformer
         hidden_dim = transformer.d_model
 
-        self.input_proj = nn.ModuleList([
-            nn.Sequential(
-                nn.Conv2d(backbone.num_channels[-1],
-                          hidden_dim, kernel_size=1),
-                nn.GroupNorm(32, hidden_dim),
-            )
-        ])
+        self.num_feature_levels = num_feature_levels
+        logger.info(f'{backbone.num_channels}')
+        if num_feature_levels > 1:
+            num_backbone_outs = len(backbone.strides)
+            input_proj_list = []
+            for _ in range(num_backbone_outs):
+                in_channels = backbone.num_channels[_]
+                if _ == 0:
+                    input_proj_list.append(nn.Sequential(
+                        nn.Conv2d(in_channels, hidden_dim, kernel_size=3, stride=2, padding=1),
+                        nn.GroupNorm(32, hidden_dim),
+                    ))
+                else:
+                    input_proj_list.append(nn.Sequential(
+                        nn.Conv2d(in_channels, hidden_dim, kernel_size=1),
+                        nn.GroupNorm(32, hidden_dim),
+                    ))
+            self.input_proj = nn.ModuleList(input_proj_list)
+        else:
+            self.input_proj = nn.ModuleList([
+                nn.Sequential(
+                    nn.Conv2d(backbone.num_channels[0], hidden_dim, kernel_size=1),
+                    nn.GroupNorm(32, hidden_dim),
+                )])
         self.backbone = backbone
         self.aux_loss = aux_loss
         self.onnx_export = False
@@ -449,14 +509,15 @@ class AnchorDETR(nn.Module):
         # print(features)
 
         srcs = []
-        masks: List[Tensor] = []
-
-        src, mask = features[-1].decompose()
-        srcs.append(self.input_proj[-1](src).unsqueeze(1))
-        masks.append(mask)
-        assert mask is not None
+        masks = []
+        for l, feat in enumerate(features):
+            src, mask = feat.decompose()
+            srcs.append(self.input_proj[l](src).unsqueeze(1))
+            masks.append(mask)
+            assert mask is not None
 
         srcs = torch.cat(srcs, dim=1)
+
         outputs_class, outputs_coord = self.transformer(srcs, masks)
 
         if self.onnx_export:

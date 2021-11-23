@@ -1,9 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+from collections import OrderedDict
 import logging
 import math
 from typing import List, Dict
 
 import numpy as np
+from numpy.core.fromnumeric import sort
 import torch
 import torch.distributed as dist
 import torch.nn.functional as F
@@ -16,13 +18,16 @@ from detectron2.modeling import META_ARCH_REGISTRY, build_backbone, detector_pos
 from detectron2.structures import Boxes, ImageList, Instances, BitMasks, PolygonMasks
 from detectron2.utils.logger import log_first_n
 from fvcore.nn import giou_loss, smooth_l1_loss
+import torchvision
 
-from yolov7.utils.detr_utils import HungarianMatcherAnchorDETR
+from yolov7.utils.detr_utils import HungarianMatcherSMCA
 from yolov7.utils.boxes import box_cxcywh_to_xyxy, box_xyxy_to_cxcywh, convert_coco_poly_to_mask, generalized_box_iou
 from yolov7.utils.misc import NestedTensor, nested_tensor_from_tensor_list, is_dist_avail_and_initialized, accuracy
 
 from alfred.utils.log import logger
 from alfred.dl.torch.common import device
+
+import pickle
 
 from ..backbone.smcadetr_backbone import Joiner, PositionEmbeddingSine, Transformer, MLP
 from .detr_seg import DETRsegm, PostProcessPanoptic, PostProcessSegm, sigmoid_focal_loss_with_mode, dice_loss
@@ -41,16 +46,19 @@ class SMCADetr(nn.Module):
 
         self.device = torch.device(cfg.MODEL.DEVICE)
 
+        self.conf_thresh = cfg.MODEL.YOLO.CONF_THRESHOLD
+        self.ignore_thresh = cfg.MODEL.YOLO.IGNORE_THRESHOLD
         self.num_classes = cfg.MODEL.DETR.NUM_CLASSES
         self.mask_on = cfg.MODEL.MASK_ON
         hidden_dim = cfg.MODEL.DETR.HIDDEN_DIM
-        num_queries = cfg.MODEL.DETR.NUM_OBJECT_QUERIES
+        self.num_queries = cfg.MODEL.DETR.NUM_OBJECT_QUERIES
         # Transformer parameters:
         nheads = cfg.MODEL.DETR.NHEADS
         dropout = cfg.MODEL.DETR.DROPOUT
         dim_feedforward = cfg.MODEL.DETR.DIM_FEEDFORWARD
         enc_layers = cfg.MODEL.DETR.ENC_LAYERS
         dec_layers = cfg.MODEL.DETR.DEC_LAYERS
+        num_feature_levels = cfg.MODEL.DETR.NUM_FEATURE_LEVELS
         pre_norm = cfg.MODEL.DETR.PRE_NORM
         pretrained_weights = cfg.MODEL.WEIGHTS
 
@@ -81,7 +89,7 @@ class SMCADetr(nn.Module):
         )
 
         self.detr = DETR(
-            backbone, transformer, num_classes=self.num_classes, num_queries=num_queries, aux_loss=deep_supervision
+            backbone, transformer, num_classes=self.num_classes, num_queries=self.num_queries, num_feature_levels=num_feature_levels, aux_loss=deep_supervision
         )
         if self.mask_on:
             frozen_weights = cfg.MODEL.DETR.FROZEN_WEIGHTS
@@ -101,20 +109,20 @@ class SMCADetr(nn.Module):
             self.detr = DETRsegm(self.detr, freeze_detr=(frozen_weights != ''))
             self.seg_postprocess = PostProcessSegm
 
-        if pretrained_weights:
-            logger.info(f'Loading pretrained weights from: {pretrained_weights}')
-            wgts = torch.load(pretrained_weights, map_location=lambda storage, loc: storage)
-            new_weight = {}
-            for k, v in wgts.items():
-                new_weight['detr.backbone.' + k] = v
-            del wgts
-            self.detr.load_state_dict(wgts)
-            del new_weight
+        # if pretrained_weights:
+        #     logger.info(f'Loading pretrained weights from: {pretrained_weights}')
+        #     wgts = torch.load(pretrained_weights, map_location=lambda storage, loc: storage)
+        #     new_weight = {}
+        #     for k, v in wgts.items():
+        #         new_weight[k] = v
+        #     del wgts
+        #     self.detr.load_state_dict(new_weight)
+        #     del new_weight
 
         self.detr.to(self.device)
 
         # building criterion
-        matcher = HungarianMatcherAnchorDETR(
+        matcher = HungarianMatcherSMCA(
             cost_class=1, cost_bbox=l1_weight, cost_giou=giou_weight)
         weight_dict = {"loss_ce": 2, "loss_bbox": l1_weight}
         weight_dict["loss_giou"] = giou_weight
@@ -214,7 +222,6 @@ class SMCADetr(nn.Module):
                 The tensor predicts 4-vector (x,y,w,h) box
                 regression values for every queryx
             image_sizes (List[torch.Size]): the input image sizes
-
         Returns:
             results (List[Instances]): a list of #images elements.
         """
@@ -222,25 +229,38 @@ class SMCADetr(nn.Module):
         results = []
 
         # For each box we assign the best class or the second best if the best on is `no_object`.
-        scores, labels = F.softmax(box_cls, dim=-1)[:, :, :-1].max(-1)
+        scores, labels = box_cls.sigmoid()[:, :, :-1].max(-1)
 
         for i, (scores_per_image, labels_per_image, box_pred_per_image, image_size) in enumerate(zip(
             scores, labels, box_pred, image_sizes
         )):
+            # print(scores_per_image)
+            # scores_per_image, indexes = torch.topk(scores_per_image, k=self.num_queries, sorted=False)
+            # scores_per_image, indexes = torch.topk(scores_per_image, k=60, sorted=False)
+            indexes = scores_per_image > self.conf_thresh
+            scores_per_image = scores_per_image[indexes]
+            labels_per_image = labels_per_image[indexes]
+            box_pred_per_image = box_pred_per_image[indexes]
+
             result = Instances(image_size)
             result.pred_boxes = Boxes(box_cxcywh_to_xyxy(box_pred_per_image))
 
             result.pred_boxes.scale(
                 scale_x=image_size[1], scale_y=image_size[0])
             if self.mask_on:
-                mask = F.interpolate(mask_pred[i].unsqueeze(
+                mask_pred_per_image = mask_pred[i]
+                mask_pred_per_image = mask_pred_per_image[indexes]
+
+                mask = F.interpolate(mask_pred_per_image.unsqueeze(
                     0), size=image_size, mode='bilinear', align_corners=False)
                 mask = mask[0].sigmoid() > 0.5
                 B, N, H, W = mask_pred.shape
-                mask = BitMasks(mask.cpu()).crop_and_resize(
-                    result.pred_boxes.tensor.cpu(), 32)
-                result.pred_masks = mask.unsqueeze(1).to(mask_pred[0].device)
-
+                # print('mask_pred shape: ', mask.shape)
+                # mask = BitMasks(mask.cpu()).crop_and_resize(result.pred_boxes.tensor.cpu(), 32)
+                mask = BitMasks(mask.cpu())
+                # result.pred_masks = mask.unsqueeze(1).to(mask_pred[0].device)
+                result.pred_bit_masks = mask.to(mask_pred_per_image.device)
+            # print('box_pred_per_image: ', box_pred_per_image.shape)
             result.scores = scores_per_image
             result.pred_classes = labels_per_image
             results.append(result)
@@ -271,11 +291,43 @@ class MaskedBackboneTraceFriendly(nn.Module):
     def __init__(self, cfg):
         super().__init__()
         self.backbone = build_backbone(cfg)
+        self.num_feature_levels = cfg.MODEL.DETR.NUM_FEATURE_LEVELS
+
+        # if comm.is_main_process():
+        #     a = torch.randn([1, 3, 256, 256]).to(device)
+        #     b = self.backbone.model(a)
+        #     print('B: ', b)
+        # self.backbone = torchvision.models.resnet50(pretrained=True)
         backbone_shape = self.backbone.output_shape()
-        self.feature_strides = [
-            backbone_shape[f].stride for f in backbone_shape.keys()]
-        self.num_channels = backbone_shape[list(
-            backbone_shape.keys())[-1]].channels
+
+        # pretrained_weights = cfg.MODEL.WEIGHTS
+        # if pretrained_weights:
+        #     logger.info(f'Loading pretrained weights from: {pretrained_weights}')
+        #     with open(pretrained_weights, 'rb') as f:
+        #         wgts = pickle.load(f, encoding='latin1')['model']
+        #     # wgts = torch.load(pretrained_weights, map_location=lambda storage, loc: storage)
+        #     new_weight = {}
+        #     for k, v in wgts.items():
+        #         v = torch.from_numpy(v)
+        #         # new_weight['detr.' + k] = v
+        #         new_weight[k] = v
+        #     del wgts
+        #     self.backbone.load_state_dict(new_weight, strict=False)
+        #     del new_weight
+
+        # if comm.is_main_process():
+        #     c = self.backbone.model(a)
+        #     print('C: ', c)
+
+        if self.num_feature_levels > 1:
+            self.num_channels = [512, 1024, 2048]
+            self.return_interm_layers = ['res3', 'res4', 'res5']
+            self.feature_strides = [8, 16, 32]
+        else:
+            self.num_channels = [2048]
+            self.return_interm_layers = ['res5']
+            self.feature_strides = [32]
+
         self.onnx_export = False
 
     def forward(self, images):
@@ -303,15 +355,35 @@ class MaskedBackboneTraceFriendly(nn.Module):
                 out[name] = NestedTensor(x, mask)
             return out
         else:
+            # masks = self.mask_out_padding(
+            #     [features_per_level.shape for features_per_level in features.values()],
+            #     images.image_sizes,
+            #     device,
+            # )
+            # assert len(features) == len(masks)
+            # for i, k in enumerate(features.keys()):
+            #     features[k] = NestedTensor(features[k], masks[i])
+            # return features
+            # features: res2, res3, res4, res5
+            features_returned = OrderedDict()
+            for l in self.return_interm_layers:
+                features_returned[l] = features[l]
+
             masks = self.mask_out_padding(
-                [features_per_level.shape for features_per_level in features.values()],
+                [
+                    features_per_level.shape
+                    for features_per_level in features_returned.values()
+                ],
                 images.image_sizes,
                 device,
             )
-            assert len(features) == len(masks)
-            for i, k in enumerate(features.keys()):
-                features[k] = NestedTensor(features[k], masks[i])
-            return features
+            assert len(features_returned) == len(masks)
+
+            out_nested_features = OrderedDict()
+            for i, k in enumerate(self.return_interm_layers):
+                out_nested_features[k] = NestedTensor(
+                    features_returned[k], masks[i])
+            return out_nested_features
 
     def mask_out_padding(self, feature_shapes, image_sizes, device):
         masks = []
@@ -375,7 +447,7 @@ class MaskedBackbone(nn.Module):
 class DETR(nn.Module):
     """ This is the DETR module that performs object detection """
 
-    def __init__(self, backbone, transformer, num_classes, num_queries, aux_loss=False):
+    def __init__(self, backbone, transformer, num_classes, num_queries, num_feature_levels, aux_loss=False):
         """ Initializes the model.
         Parameters:
             backbone: torch module of the backbone to be used. See backbone.py
@@ -393,8 +465,35 @@ class DETR(nn.Module):
         nn.init.constant_(self.class_embed.bias, bias_init_with_prob(0.01))
         self.bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
         self.query_embed = nn.Embedding(num_queries, hidden_dim)
-        self.input_proj = nn.Conv2d(
-            backbone.num_channels, hidden_dim, kernel_size=1)
+        # self.input_proj = nn.Conv2d(
+        #     backbone.num_channels, hidden_dim, kernel_size=1)
+        if num_feature_levels > 1:
+            num_backbone_outs = len(backbone.strides)
+            input_proj_list = []
+            for _ in range(num_backbone_outs):
+                in_channels = backbone.num_channels[_]
+                if _ == 0:
+                    input_proj_list.append(nn.Sequential(
+                        nn.Conv2d(in_channels, hidden_dim,
+                                  kernel_size=3, stride=2, padding=1),
+                        nn.GroupNorm(32, hidden_dim),
+                    ))
+                else:
+                    input_proj_list.append(nn.Sequential(
+                        nn.Conv2d(in_channels, hidden_dim, kernel_size=1),
+                        nn.GroupNorm(32, hidden_dim),
+                    ))
+            self.input_proj = nn.ModuleList(input_proj_list)
+        else:
+            # self.input_proj = nn.ModuleList([
+            #     nn.Sequential(
+            #         nn.Conv2d(
+            #             backbone.num_channels[0], hidden_dim, kernel_size=1),
+            #         nn.GroupNorm(32, hidden_dim),
+            #     )])
+            self.input_proj = nn.Conv2d(
+                backbone.num_channels[0], hidden_dim, kernel_size=1)
+
         self.backbone = backbone
         self.aux_loss = aux_loss
 
@@ -423,6 +522,7 @@ class DETR(nn.Module):
         # h_w = h_w.unsqueeze(0)
         h_w = torch.stack([torch.stack([torch.tensor(inst) for inst in samples.image_sizes])[:, 1],
                            torch.stack([torch.tensor(inst) for inst in samples.image_sizes])[:, 0]], dim=-1)
+        # print(h_w)
         # h_w = torch.tensor(samples.image_sizes).to(device)
         h_w = h_w.unsqueeze(0).to(device)
 
@@ -481,27 +581,6 @@ class SetCriterion(nn.Module):
         empty_weight[-1] = self.eos_coef
         self.register_buffer('empty_weight', empty_weight)
 
-    # def loss_labels(self, outputs, targets, indices, num_boxes, log=True):
-    #     """Classification loss (NLL)
-    #     targets dicts must contain the key "labels" containing a tensor of dim [nb_target_boxes]
-    #     """
-    #     assert 'pred_logits' in outputs
-    #     src_logits = outputs['pred_logits']
-
-    #     idx = self._get_src_permutation_idx(indices)
-    #     target_classes_o = torch.cat([t["labels"][J] for t, (_, J) in zip(targets, indices)])
-    #     target_classes = torch.full(src_logits.shape[:2], self.num_classes,
-    #                                 dtype=torch.int64, device=src_logits.device)
-    #     target_classes[idx] = target_classes_o
-
-    #     loss_ce = F.cross_entropy(src_logits.transpose(1, 2), target_classes, self.empty_weight)
-    #     losses = {'loss_ce': loss_ce}
-
-    #     if log:
-    #         # TODO this should probably be a separate loss, not hacked in this one here
-    #         losses['class_error'] = 100 - accuracy(src_logits[idx], target_classes_o)[0]
-    #     return losses
-
     def loss_labels(self, outputs, targets, indices, num_boxes, log=True):
         """Classification loss (NLL)
         targets dicts must contain the key "labels" containing a tensor of dim [nb_target_boxes]
@@ -523,7 +602,8 @@ class SetCriterion(nn.Module):
             target_classes != self.num_classes, as_tuple=True)[0]
         labels = torch.zeros_like(src_logits)
         labels[pos_inds, target_classes[pos_inds]] = 1
-        loss_ce = sigmoid_focal_loss_with_mode(src_logits, labels, num_boxes, mode="box")
+        loss_ce = sigmoid_focal_loss_with_mode(
+            src_logits, labels, num_boxes, mode="box")
         losses = {'loss_ce': loss_ce}
 
         if log:

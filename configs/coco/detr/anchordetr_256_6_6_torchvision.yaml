@@ -1,6 +1,7 @@
 MODEL:
   META_ARCHITECTURE: "AnchorDetr"
   WEIGHTS: "detectron2://ImageNetPretrained/torchvision/R-50.pkl"
+  # WEIGHTS: "weights/R-50.pkl"
   PIXEL_MEAN: [123.675, 116.280, 103.530]
   PIXEL_STD: [58.395, 57.120, 57.375]
   MASK_ON: False
@@ -18,6 +19,9 @@ MODEL:
     DEC_LAYERS: 6
     HIDDEN_DIM: 256
     NUM_CLASSES: 80
+  YOLO:
+    CONF_THRESHOLD: 0.001
+    IGNORE_THRESHOLD: 0.07
 
 DATASETS:
   TRAIN: ("coco_2017_train",)
@@ -27,7 +31,7 @@ SOLVER:
   AMP:
     ENABLED: true
   IMS_PER_BATCH: 64
-  BASE_LR: 0.00015 # 0.00025 is better
+  BASE_LR: 0.00011 # 0.00025 is better
   # STEPS: (369600,)
   STEPS: (95000, 159990)
   MAX_ITER: 354400
@@ -51,10 +55,11 @@ INPUT:
     # SIZE: (384, 632)
   FORMAT: "RGB"
 TEST:
-  EVAL_PERIOD: 5000
+  EVAL_PERIOD: 1848 # 1 epoch same as bs=2
 DATALOADER:
   FILTER_EMPTY_ANNOTATIONS: False
   NUM_WORKERS: 2
 VERSION: 2
 
+VIS_PERIOD: 100
 OUTPUT_DIR: "output/coco_anchordetr"

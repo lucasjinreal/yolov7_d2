@@ -11,6 +11,7 @@ import time
 from typing import Any, Dict, List, Set
 
 import torch
+from fvcore.nn.precise_bn import get_bn_modules
 
 import detectron2.utils.comm as comm
 from detectron2.checkpoint import DetectionCheckpointer
@@ -18,6 +19,7 @@ from detectron2.config import get_cfg
 from detectron2.data import MetadataCatalog, build_detection_train_loader
 from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, launch
 from detectron2.evaluation import COCOEvaluator, verify_results
+from detectron2.engine import hooks
 
 from detectron2.solver.build import maybe_add_gradient_clipping
 from yolov7.data.dataset_mapper import DetrDatasetMapper
@@ -44,7 +46,7 @@ class Trainer(DefaultTrainer):
 
     @classmethod
     def build_train_loader(cls, cfg):
-        if "Detr" == cfg.MODEL.META_ARCHITECTURE:
+        if "Detr" in cfg.MODEL.META_ARCHITECTURE:
             mapper = DetrDatasetMapper(cfg, True)
         else:
             mapper = None
@@ -99,6 +101,53 @@ class Trainer(DefaultTrainer):
             optimizer = maybe_add_gradient_clipping(cfg, optimizer)
         return optimizer
 
+    def build_hooks(self):
+        """
+        Build a list of default hooks, including timing, evaluation,
+        checkpointing, lr scheduling, precise BN, writing events.
+
+        Returns:
+            list[HookBase]:
+        """
+        cfg = self.cfg.clone()
+        cfg.defrost()
+        cfg.DATALOADER.NUM_WORKERS = 0  # save some memory and time for PreciseBN
+
+        ret = [
+            hooks.IterationTimer(),
+            hooks.LRScheduler(),
+            hooks.PreciseBN(
+                # Run at the same freq as (but before) evaluation.
+                cfg.TEST.EVAL_PERIOD,
+                self.model,
+                # Build a new data loader to not affect training
+                self.build_train_loader(cfg),
+                cfg.TEST.PRECISE_BN.NUM_ITER,
+            )
+            if cfg.TEST.PRECISE_BN.ENABLED and get_bn_modules(self.model)
+            else None,
+        ]
+
+        # Do PreciseBN before checkpointer, because it updates the model and need to
+        # be saved by checkpointer.
+        # This is not always the best: if checkpointing has a different frequency,
+        # some checkpoints may have more precise statistics than others.
+        if comm.is_main_process():
+            ret.append(hooks.PeriodicCheckpointer(self.checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD))
+
+        def test_and_save_results():
+            self._last_eval_results = self.test(self.cfg, self.model)
+            return self._last_eval_results
+
+        # Do evaluation after checkpointer, because then if it fails,
+        # we can use the saved checkpoint to debug.
+        ret.append(hooks.EvalHook(cfg.TEST.EVAL_PERIOD, test_and_save_results))
+
+        if comm.is_main_process():
+            # Here the default print/log frequency of each writer is used.
+            # run writers in the end, so that evaluation metrics are written
+            ret.append(hooks.PeriodicWriter(self.build_writers(), period=200))
+        return ret
 
 def setup(args):
     """
