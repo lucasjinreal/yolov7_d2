@@ -5,21 +5,21 @@ import torch
 import torch.nn.functional as F
 from detectron2.modeling import META_ARCH_REGISTRY, build_backbone, detector_postprocess
 from detectron2.structures import Boxes, ImageList, Instances, BitMasks
-from detr.datasets.coco import convert_coco_poly_to_mask
-from detr.models.backbone import Joiner
-from detr.models.deformable_detr import DeformableDETR
-from detr.models.deformable_transformer import DeformableTransformer
-from detr.models.detr import DETR
-from detr.models.matcher import HungarianMatcher
-from detr.models.position_encoding import PositionEmbeddingSine
-from detr.models.segmentation import DETRsegm, PostProcessSegm
-from detr.models.setcriterion import SetCriterion, FocalLossSetCriterion
-from detr.models.transformer import Transformer
-from detr.util.box_ops import box_cxcywh_to_xyxy, box_xyxy_to_cxcywh
-from detr.util.misc import NestedTensor
+from yolov7.utils.boxes import convert_coco_poly_to_mask
+from ..backbone.smcadetr_backbone import Joiner
+from ..backbone.detr_backbone import Transformer as DetrTransformer
+from ..backbone.smcadetr_backbone import Transformer as SMCATransformer
+from ..backbone.detr_backbone import PositionEmbeddingSine, MLP
+from yolov7.utils.detr_utils import HungarianMatcherD2go
+
+from yolov7.modeling.loss.setcriterion import SetCriterion, FocalLossSetCriterion
+from yolov7.utils.misc import NestedTensor, nested_tensor_from_tensor_list
+from yolov7.utils.boxes import box_cxcywh_to_xyxy, box_xyxy_to_cxcywh
+from .detr_seg import DETRsegm, PostProcessSegm
+from .smca_detr import DETR as SMCADETR
 from torch import nn
 
-__all__ = ["Detr"]
+__all__ = ["DetrD2go"]
 
 
 class ResNetMaskedBackbone(nn.Module):
@@ -40,8 +40,10 @@ class ResNetMaskedBackbone(nn.Module):
             self.backbone.stages[-1][0].conv2.padding = (1, 1)
             self.strides[-1] = self.strides[-1] // 2
 
-        self.feature_strides = [backbone_shape[f].stride for f in backbone_shape.keys()]
-        self.num_channels = [backbone_shape[k].channels for k in backbone_shape.keys()]
+        self.feature_strides = [
+            backbone_shape[f].stride for f in backbone_shape.keys()]
+        self.num_channels = [
+            backbone_shape[k].channels for k in backbone_shape.keys()]
 
     def forward(self, images):
         features = self.backbone(images.tensor)
@@ -81,7 +83,8 @@ class FBNetMaskedBackbone(ResNetMaskedBackbone):
         nn.Module.__init__(self)
         self.backbone = build_backbone(cfg)
         self.out_features = cfg.MODEL.FBNET_V2.OUT_FEATURES
-        self.feature_strides = list(self.backbone._out_feature_strides.values())
+        self.feature_strides = list(
+            self.backbone._out_feature_strides.values())
         self.num_channels = [
             self.backbone._out_feature_channels[k] for k in self.out_features
         ]
@@ -134,7 +137,7 @@ class SimpleSingleStageBackbone(ResNetMaskedBackbone):
 
 
 @META_ARCH_REGISTRY.register()
-class Detr(nn.Module):
+class DetrD2go(nn.Module):
     """
     Implement Detr
     """
@@ -184,35 +187,10 @@ class Detr(nn.Module):
         backbone.num_channels = d2_backbone.num_channels
         self.use_focal_loss = cfg.MODEL.DETR.USE_FOCAL_LOSS
 
-        if cfg.MODEL.DETR.DEFORMABLE:
-            transformer = DeformableTransformer(
-                d_model=hidden_dim,
-                nhead=nheads,
-                num_encoder_layers=enc_layers,
-                num_decoder_layers=dec_layers,
-                dim_feedforward=dim_feedforward,
-                dropout=dropout,
-                activation="relu",
-                return_intermediate_dec=True,
-                num_feature_levels=num_feature_levels,
-                dec_n_points=4,
-                enc_n_points=4,
-                two_stage=cfg.MODEL.DETR.TWO_STAGE,
-                two_stage_num_proposals=num_queries,
-            )
-
-            self.detr = DeformableDETR(
-                backbone,
-                transformer,
-                num_classes=self.num_classes,
-                num_queries=num_queries,
-                num_feature_levels=num_feature_levels,
-                aux_loss=deep_supervision,
-                with_box_refine=cfg.MODEL.DETR.WITH_BOX_REFINE,
-                two_stage=cfg.MODEL.DETR.TWO_STAGE,
-            )
-        else:
-            transformer = Transformer(
+        if cfg.MODEL.DETR.ATTENTION_TYPE == 'deformable':
+            print('Deformable not supported now.')
+        elif cfg.MODEL.DETR.ATTENTION_TYPE == 'DETR':
+            transformer = DetrTransformer(
                 d_model=hidden_dim,
                 dropout=dropout,
                 nhead=nheads,
@@ -222,7 +200,6 @@ class Detr(nn.Module):
                 normalize_before=pre_norm,
                 return_intermediate_dec=deep_supervision,
             )
-
             self.detr = DETR(
                 backbone,
                 transformer,
@@ -231,6 +208,26 @@ class Detr(nn.Module):
                 aux_loss=deep_supervision,
                 use_focal_loss=self.use_focal_loss,
             )
+        elif cfg.MODEL.DETR.ATTENTION_TYPE == 'SMCA':
+            transformer = SMCATransformer(
+                d_model=hidden_dim,
+                dropout=dropout,
+                nhead=nheads,
+                dim_feedforward=dim_feedforward,
+                num_encoder_layers=enc_layers,
+                num_decoder_layers=dec_layers,
+                normalize_before=pre_norm,
+                return_intermediate_dec=deep_supervision,
+            )
+            self.detr = SMCADETR(
+                backbone,
+                transformer,
+                num_classes=self.num_classes,
+                num_queries=num_queries,
+                aux_loss=deep_supervision,
+                use_focal_loss=self.use_focal_loss,
+            )
+
         if self.mask_on:
             frozen_weights = cfg.MODEL.DETR.FROZEN_WEIGHTS
             if frozen_weights != "":
@@ -253,7 +250,7 @@ class Detr(nn.Module):
         self.detr.to(self.device)
 
         # building criterion
-        matcher = HungarianMatcher(
+        matcher = HungarianMatcherD2go(
             cost_class=cls_weight,
             cost_bbox=l1_weight,
             cost_giou=giou_weight,
@@ -264,7 +261,8 @@ class Detr(nn.Module):
         if deep_supervision:
             aux_weight_dict = {}
             for i in range(dec_layers - 1):
-                aux_weight_dict.update({k + f"_{i}": v for k, v in weight_dict.items()})
+                aux_weight_dict.update(
+                    {k + f"_{i}": v for k, v in weight_dict.items()})
             weight_dict.update(aux_weight_dict)
         losses = ["labels", "boxes", "cardinality"]
         if self.mask_on:
@@ -286,8 +284,10 @@ class Detr(nn.Module):
             )
         self.criterion.to(self.device)
 
-        pixel_mean = torch.Tensor(cfg.MODEL.PIXEL_MEAN).to(self.device).view(3, 1, 1)
-        pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD).to(self.device).view(3, 1, 1)
+        pixel_mean = torch.Tensor(cfg.MODEL.PIXEL_MEAN).to(
+            self.device).view(3, 1, 1)
+        pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD).to(
+            self.device).view(3, 1, 1)
         self.normalizer = lambda x: (x - pixel_mean) / pixel_std
         self.to(self.device)
 
@@ -313,7 +313,8 @@ class Detr(nn.Module):
         output = self.detr(images)
 
         if self.training:
-            gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
+            gt_instances = [x["instances"].to(
+                self.device) for x in batched_inputs]
 
             # targets: List[Dict[str, torch.Tensor]]. Keys
             # "labels": [NUM_BOX,]
@@ -329,7 +330,8 @@ class Detr(nn.Module):
             box_cls = output["pred_logits"]
             box_pred = output["pred_boxes"]
             mask_pred = output["pred_masks"] if self.mask_on else None
-            results = self.inference(box_cls, box_pred, mask_pred, images.image_sizes)
+            results = self.inference(
+                box_cls, box_pred, mask_pred, images.image_sizes)
             processed_results = []
             for results_per_image, input_per_image, image_size in zip(
                 results, batched_inputs, images.image_sizes
@@ -394,10 +396,12 @@ class Detr(nn.Module):
             result = Instances(image_size)
             boxes = box_cxcywh_to_xyxy(box_pred_per_image)
             if self.use_focal_loss:
-                boxes = torch.gather(boxes, 0, topk_boxes[i].unsqueeze(-1).repeat(1, 4))
+                boxes = torch.gather(
+                    boxes, 0, topk_boxes[i].unsqueeze(-1).repeat(1, 4))
 
             result.pred_boxes = Boxes(boxes)
-            result.pred_boxes.scale(scale_x=image_size[1], scale_y=image_size[0])
+            result.pred_boxes.scale(
+                scale_x=image_size[1], scale_y=image_size[0])
             if self.mask_on:
                 mask = F.interpolate(
                     mask_pred[i].unsqueeze(0),
@@ -421,6 +425,92 @@ class Detr(nn.Module):
         """
         Normalize, pad and batch the input images.
         """
-        images = [self.normalizer(x["image"].to(self.device)) for x in batched_inputs]
+        images = [self.normalizer(x["image"].to(self.device))
+                  for x in batched_inputs]
         images = ImageList.from_tensors(images)
         return images
+
+
+class DETR(nn.Module):
+    """This is the DETR module that performs object detection"""
+
+    def __init__(
+        self,
+        backbone,
+        transformer,
+        num_classes,
+        num_queries,
+        aux_loss=False,
+        use_focal_loss=False,
+    ):
+        """Initializes the model.
+        Parameters:
+            backbone: torch module of the backbone to be used. See backbone.py
+            transformer: torch module of the transformer architecture. See transformer.py
+            num_classes: number of object classes
+            num_queries: number of object queries, ie detection slot. This is the maximal number of objects
+                         DETR can detect in a single image. For COCO, we recommend 100 queries.
+            aux_loss: True if auxiliary decoding losses (loss at each decoder layer) are to be used.
+        """
+        super().__init__()
+        self.num_queries = num_queries
+        self.transformer = transformer
+        hidden_dim = transformer.d_model
+        self.class_embed = nn.Linear(
+            hidden_dim, num_classes if use_focal_loss else num_classes + 1
+        )
+        self.bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
+        self.query_embed = nn.Embedding(num_queries, hidden_dim)
+        self.input_proj = nn.Conv2d(
+            backbone.num_channels[-1], hidden_dim, kernel_size=1
+        )
+        self.backbone = backbone
+        self.aux_loss = aux_loss
+
+    def forward(self, samples: NestedTensor):
+        """The forward expects a NestedTensor, which consists of:
+           - samples.tensor: batched images, of shape [batch_size x 3 x H x W]
+           - samples.mask: a binary mask of shape [batch_size x H x W], containing 1 on padded pixels
+
+        It returns a dict with the following elements:
+           - "pred_logits": the classification logits (including no-object) for all queries.
+                            Shape= [batch_size x num_queries x (num_classes + 1)]
+           - "pred_boxes": The normalized boxes coordinates for all queries, represented as
+                           (center_x, center_y, height, width). These values are normalized in [0, 1],
+                           relative to the size of each individual image (disregarding possible padding).
+                           See PostProcess for information on how to retrieve the unnormalized bounding box.
+           - "aux_outputs": Optional, only returned when auxilary losses are activated. It is a list of
+                            dictionnaries containing the two above keys for each decoder layer.
+        """
+        if isinstance(samples, (list, torch.Tensor)):
+            samples = nested_tensor_from_tensor_list(samples)
+        features, pos = self.backbone(samples)
+
+        # src shape (B, C, H, W)
+        # mask shape (B, H, W)
+        src, mask = features[-1].decompose()
+        assert mask is not None
+        # hs shape (NUM_LAYER, B, S, hidden_dim)
+        hs = self.transformer(
+            self.input_proj(src), mask, self.query_embed.weight, pos[-1]
+        )[0]
+        # shape (NUM_LAYER, B, S, NUM_CLASS + 1)
+        outputs_class = self.class_embed(hs)
+        # shape (NUM_LAYER, B, S, 4)
+        outputs_coord = self.bbox_embed(hs).sigmoid()
+        # pred_logits shape (B, S, NUM_CLASS + 1)
+        # pred_boxes shape (B, S, 4)
+        out = {"pred_logits": outputs_class[-1], "pred_boxes": outputs_coord[-1]}
+        if self.aux_loss:
+            out["aux_outputs"] = self._set_aux_loss(outputs_class, outputs_coord)
+        return out
+
+    @torch.jit.unused
+    def _set_aux_loss(self, outputs_class, outputs_coord):
+        # this is a workaround to make torchscript happy, as torchscript
+        # doesn't support dictionary with non-homogeneous values, such
+        # as a dict having both a Tensor and a list.
+        return [
+            {"pred_logits": a, "pred_boxes": b}
+            for a, b in zip(outputs_class[:-1], outputs_coord[:-1])
+        ]

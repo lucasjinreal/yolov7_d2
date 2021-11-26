@@ -4,17 +4,10 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..util import box_ops
-from ..util.misc import (
-    nested_tensor_from_tensor_list,
-    accuracy,
-    get_world_size,
-    interpolate,
-    is_dist_avail_and_initialized,
-)
 
-from yolov7.utils.
-from .segmentation import dice_loss, sigmoid_focal_loss
+import yolov7.utils.boxes as box_ops
+from yolov7.utils.misc import nested_tensor_from_tensor_list, accuracy, interpolate, is_dist_avail_and_initialized, get_world_size
+from .seg import dice_loss, sigmoid_focal_loss
 
 
 def _reduce_num_boxes(targets, device):
@@ -87,7 +80,8 @@ class SetCriterion(nn.Module):
 
         if log:
             # TODO this should probably be a separate loss, not hacked in this one here
-            losses["class_error"] = 100 - accuracy(src_logits[idx], target_classes_o)[0]
+            losses["class_error"] = 100 - \
+                accuracy(src_logits[idx], target_classes_o)[0]
         return losses
 
     def forground_background_loss_labels(
@@ -145,7 +139,8 @@ class SetCriterion(nn.Module):
             [len(v["labels"]) for v in targets], device=device
         )
         # Count the number of predictions that are NOT "no-object" (which is the last class)
-        card_pred = (pred_logits.argmax(-1) != pred_logits.shape[-1] - 1).sum(1)
+        card_pred = (pred_logits.argmax(-1) !=
+                     pred_logits.shape[-1] - 1).sum(1)
         card_err = F.l1_loss(card_pred.float(), tgt_lengths.float())
         losses = {"cardinality_error": card_err}
         return losses
@@ -216,7 +211,8 @@ class SetCriterion(nn.Module):
         batch_idx = torch.cat(
             [torch.full_like(src, i) for i, (src, _) in enumerate(indices)]
         )  # shape [\sum_b num_match_b]
-        src_idx = torch.cat([src for (src, _) in indices])  # shape [\sum_b num_match_b]
+        # shape [\sum_b num_match_b]
+        src_idx = torch.cat([src for (src, _) in indices])
         return batch_idx, src_idx
 
     def _get_tgt_permutation_idx(self, indices):
@@ -224,7 +220,8 @@ class SetCriterion(nn.Module):
         batch_idx = torch.cat(
             [torch.full_like(tgt, i) for i, (_, tgt) in enumerate(indices)]
         )  # shape [\sum_b num_match_b]
-        tgt_idx = torch.cat([tgt for (_, tgt) in indices])  # shape [\sum_b num_match_b]
+        # shape [\sum_b num_match_b]
+        tgt_idx = torch.cat([tgt for (_, tgt) in indices])
         return batch_idx, tgt_idx
 
     def get_loss(self, loss, outputs, targets, indices, num_boxes, **kwargs):
@@ -254,11 +251,13 @@ class SetCriterion(nn.Module):
         # A list where each item is [row_indices, col_indices]
         indices = self.matcher(outputs_without_aux, targets)
 
-        num_boxes = _reduce_num_boxes(targets, next(iter(outputs.values())).device)
+        num_boxes = _reduce_num_boxes(
+            targets, next(iter(outputs.values())).device)
         # Compute all the requested losses
         losses = {}
         for loss in self.losses:
-            losses.update(self.get_loss(loss, outputs, targets, indices, num_boxes))
+            losses.update(self.get_loss(
+                loss, outputs, targets, indices, num_boxes))
 
         # In case of auxiliary losses, we repeat this process with the output of each intermediate layer.
         if "aux_outputs" in outputs:
@@ -288,7 +287,8 @@ class SetCriterion(nn.Module):
         """
         # "pred_logits" shape (B, S, NUM_CLASS + 1)
         # "pred_boxes" shape (B, S, 4)
-        outputs_without_aux = {k: v for k, v in outputs.items() if k != "aux_outputs"}
+        outputs_without_aux = {k: v for k,
+                               v in outputs.items() if k != "aux_outputs"}
         return self._forward(outputs, outputs_without_aux, targets)
 
 
@@ -354,7 +354,8 @@ class FocalLossSetCriterion(SetCriterion):
 
         if log:
             # TODO this should probably be a separate loss, not hacked in this one here
-            losses["class_error"] = 100 - accuracy(src_logits[idx], target_classes_o)[0]
+            losses["class_error"] = 100 - \
+                accuracy(src_logits[idx], target_classes_o)[0]
         return losses
 
     def forward(self, outputs, targets):
@@ -373,7 +374,8 @@ class FocalLossSetCriterion(SetCriterion):
         losses = self._forward(outputs, outputs_without_aux, targets)
 
         if "enc_outputs" in outputs:
-            num_boxes = _reduce_num_boxes(targets, next(iter(outputs.values())).device)
+            num_boxes = _reduce_num_boxes(
+                targets, next(iter(outputs.values())).device)
             enc_outputs = outputs["enc_outputs"]
             bin_targets = copy.deepcopy(targets)
             for bt in bin_targets:
