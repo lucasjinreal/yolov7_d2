@@ -218,6 +218,7 @@ class DetrD2go(nn.Module):
                 num_decoder_layers=dec_layers,
                 normalize_before=pre_norm,
                 return_intermediate_dec=deep_supervision,
+                dynamic_scale='type3'
             )
             self.detr = SMCADETR(
                 backbone,
@@ -225,6 +226,7 @@ class DetrD2go(nn.Module):
                 num_classes=self.num_classes,
                 num_queries=num_queries,
                 aux_loss=deep_supervision,
+                num_feature_levels=num_feature_levels,
                 use_focal_loss=self.use_focal_loss,
             )
 
@@ -323,8 +325,11 @@ class DetrD2go(nn.Module):
             loss_dict = self.criterion(output, targets)
             weight_dict = self.criterion.weight_dict
             for k in loss_dict.keys():
+                if not loss_dict[k].requires_grad:
+                    loss_dict[k] = loss_dict[k].new_tensor(0)
                 if k in weight_dict:
                     loss_dict[k] *= weight_dict[k]
+            # print(loss_dict)
             return loss_dict
         else:
             box_cls = output["pred_logits"]

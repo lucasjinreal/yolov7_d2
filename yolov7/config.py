@@ -2,13 +2,15 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 from detectron2.config import CfgNode as CN
-
+from .utils.get_default_cfg import get_default_solver_configs
 
 def add_yolo_config(cfg):
     """
     Add config for tridentnet.
     """
     _C = cfg
+
+    get_default_solver_configs(_C)
 
     # Allowed values are 'normal', 'softnms-linear', 'softnms-gaussian', 'cluster'
     _C.MODEL.NMS_TYPE = "normal"
@@ -176,7 +178,7 @@ def add_yolo_config(cfg):
     cfg.MODEL.BACKBONE.CHANNEL = 0
 
     # FBNet
-    cfg.MODEL.FBNET_V2.OUT_FEATURES = ["trunk3"]
+    # cfg.MODEL.FBNET_V2.OUT_FEATURES = ["trunk3"]
 
     # For Segmentation
     cfg.MODEL.DETR.FROZEN_WEIGHTS = ''

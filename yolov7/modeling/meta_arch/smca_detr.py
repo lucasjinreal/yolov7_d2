@@ -228,30 +228,27 @@ class SMCADetr(nn.Module):
         assert len(box_cls) == len(image_sizes)
         results = []
 
-        # For each box we assign the best class or the second best if the best on is `no_object`.
-        scores, labels = box_cls.sigmoid()[:, :, :-1].max(-1)
+        prob = box_cls.sigmoid()
+        # TODO make top-100 as an option for non-focal-loss as well
+        scores, topk_indexes = torch.topk(
+            prob.view(box_cls.shape[0], -1), 100, dim=1
+        )
+        topk_boxes = topk_indexes // box_cls.shape[2]
+        labels = topk_indexes % box_cls.shape[2]
 
         for i, (scores_per_image, labels_per_image, box_pred_per_image, image_size) in enumerate(zip(
             scores, labels, box_pred, image_sizes
         )):
-            # print(scores_per_image)
-            # scores_per_image, indexes = torch.topk(scores_per_image, k=self.num_queries, sorted=False)
-            # scores_per_image, indexes = torch.topk(scores_per_image, k=60, sorted=False)
-            indexes = scores_per_image > self.conf_thresh
-            scores_per_image = scores_per_image[indexes]
-            labels_per_image = labels_per_image[indexes]
-            box_pred_per_image = box_pred_per_image[indexes]
-
             result = Instances(image_size)
-            result.pred_boxes = Boxes(box_cxcywh_to_xyxy(box_pred_per_image))
+            boxes = box_cxcywh_to_xyxy(box_pred_per_image)
+            boxes = torch.gather(
+                boxes, 0, topk_boxes[i].unsqueeze(-1).repeat(1, 4))
+            result.pred_boxes = Boxes(boxes)
 
             result.pred_boxes.scale(
                 scale_x=image_size[1], scale_y=image_size[0])
             if self.mask_on:
-                mask_pred_per_image = mask_pred[i]
-                mask_pred_per_image = mask_pred_per_image[indexes]
-
-                mask = F.interpolate(mask_pred_per_image.unsqueeze(
+                mask = F.interpolate(mask_pred[i].unsqueeze(
                     0), size=image_size, mode='bilinear', align_corners=False)
                 mask = mask[0].sigmoid() > 0.5
                 B, N, H, W = mask_pred.shape
@@ -259,7 +256,7 @@ class SMCADetr(nn.Module):
                 # mask = BitMasks(mask.cpu()).crop_and_resize(result.pred_boxes.tensor.cpu(), 32)
                 mask = BitMasks(mask.cpu())
                 # result.pred_masks = mask.unsqueeze(1).to(mask_pred[0].device)
-                result.pred_bit_masks = mask.to(mask_pred_per_image.device)
+                result.pred_bit_masks = mask.to(mask_pred[i].device)
             # print('box_pred_per_image: ', box_pred_per_image.shape)
             result.scores = scores_per_image
             result.pred_classes = labels_per_image
@@ -408,7 +405,7 @@ class MaskedBackboneTraceFriendly(nn.Module):
 class DETR(nn.Module):
     """ This is the DETR module that performs object detection """
 
-    def __init__(self, backbone, transformer, num_classes, num_queries, num_feature_levels, aux_loss=False):
+    def __init__(self, backbone, transformer, num_classes, num_queries, num_feature_levels, aux_loss=False, use_focal_loss=True,):
         """ Initializes the model.
         Parameters:
             backbone: torch module of the backbone to be used. See backbone.py
@@ -422,7 +419,10 @@ class DETR(nn.Module):
         self.num_queries = num_queries
         self.transformer = transformer
         hidden_dim = transformer.d_model
-        self.class_embed = nn.Linear(hidden_dim, num_classes + 1)
+        # self.class_embed = nn.Linear(hidden_dim, num_classes + 1)
+        self.class_embed = nn.Linear(
+            hidden_dim, num_classes if use_focal_loss else num_classes + 1
+        )
         nn.init.constant_(self.class_embed.bias, bias_init_with_prob(0.01))
         self.bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
         self.query_embed = nn.Embedding(num_queries, hidden_dim)
@@ -453,7 +453,7 @@ class DETR(nn.Module):
             #         nn.GroupNorm(32, hidden_dim),
             #     )])
             self.input_proj = nn.Conv2d(
-                backbone.num_channels[0], hidden_dim, kernel_size=1)
+                backbone.num_channels[-1], hidden_dim, kernel_size=1)
 
         self.backbone = backbone
         self.aux_loss = aux_loss

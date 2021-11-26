@@ -262,35 +262,36 @@ class AnchorDetr(nn.Module):
         assert len(box_cls) == len(image_sizes)
         results = []
 
-        # For each box we assign the best class or the second best if the best on is `no_object`.
-        scores, labels = box_cls.sigmoid()[:, :, :-1].max(-1)
+        prob = box_cls.sigmoid()
+        # TODO make top-100 as an option for non-focal-loss as well
+        scores, topk_indexes = torch.topk(
+            prob.view(box_cls.shape[0], -1), 100, dim=1
+        )
+        topk_boxes = topk_indexes // box_cls.shape[2]
+        labels = topk_indexes % box_cls.shape[2]
 
-        for i, (scores_per_image, labels_per_image, box_pred_per_image,
-                image_size) in enumerate(
-                    zip(scores, labels, box_pred, image_sizes)):
-            indexes = scores_per_image > self.conf_thresh
-            # indexes = scores_per_image > 0.0001
-            # indexes = scores_per_image > 0.39
-            scores_per_image = scores_per_image[indexes]
-            labels_per_image = labels_per_image[indexes]
-            box_pred_per_image = box_pred_per_image[indexes]
-
+        for i, (scores_per_image, labels_per_image, box_pred_per_image, image_size) in enumerate(zip(
+            scores, labels, box_pred, image_sizes
+        )):
             result = Instances(image_size)
-            result.pred_boxes = Boxes(box_cxcywh_to_xyxy(box_pred_per_image))
+            boxes = box_cxcywh_to_xyxy(box_pred_per_image)
+            boxes = torch.gather(
+                boxes, 0, topk_boxes[i].unsqueeze(-1).repeat(1, 4))
+            result.pred_boxes = Boxes(boxes)
 
-            result.pred_boxes.scale(scale_x=image_size[1],
-                                    scale_y=image_size[0])
+            result.pred_boxes.scale(
+                scale_x=image_size[1], scale_y=image_size[0])
             if self.mask_on:
-                mask = F.interpolate(mask_pred[i].unsqueeze(0),
-                                     size=image_size,
-                                     mode='bilinear',
-                                     align_corners=False)
+                mask = F.interpolate(mask_pred[i].unsqueeze(
+                    0), size=image_size, mode='bilinear', align_corners=False)
                 mask = mask[0].sigmoid() > 0.5
                 B, N, H, W = mask_pred.shape
-                mask = BitMasks(mask.cpu()).crop_and_resize(
-                    result.pred_boxes.tensor.cpu(), 32)
-                result.pred_masks = mask.unsqueeze(1).to(mask_pred[0].device)
-
+                # print('mask_pred shape: ', mask.shape)
+                # mask = BitMasks(mask.cpu()).crop_and_resize(result.pred_boxes.tensor.cpu(), 32)
+                mask = BitMasks(mask.cpu())
+                # result.pred_masks = mask.unsqueeze(1).to(mask_pred[0].device)
+                result.pred_bit_masks = mask.to(mask_pred[i].device)
+            # print('box_pred_per_image: ', box_pred_per_image.shape)
             result.scores = scores_per_image
             result.pred_classes = labels_per_image
             results.append(result)

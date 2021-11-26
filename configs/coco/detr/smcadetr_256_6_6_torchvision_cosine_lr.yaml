@@ -34,7 +34,7 @@ SOLVER:
     ENABLED: true
   IMS_PER_BATCH: 64
   # BASE_LR: 0.0001
-  BASE_LR: 0.00017
+  BASE_LR: 0.00018
   # STEPS: (369600,)
   # STEPS: (110880, 210039)
   STEPS: (73935, )
@@ -46,7 +46,8 @@ SOLVER:
   WARMUP_ITERS: 10
   WEIGHT_DECAY: 0.0001
   OPTIMIZER: "ADAMW"
-  BACKBONE_MULTIPLIER: 0.1
+  LR_MULTIPLIER_OVERWRITE:
+    [{ "backbone": 0.1 }, { "reference_points": 0.1, "sampling_offsets": 0.1 }]
   CLIP_GRADIENTS:
     ENABLED: True
     CLIP_TYPE: "full_model"
