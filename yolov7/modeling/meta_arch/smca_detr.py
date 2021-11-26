@@ -323,10 +323,12 @@ class MaskedBackboneTraceFriendly(nn.Module):
             self.num_channels = [512, 1024, 2048]
             self.return_interm_layers = ['res3', 'res4', 'res5']
             self.feature_strides = [8, 16, 32]
+            self.strides = [8, 16, 32]
         else:
             self.num_channels = [2048]
             self.return_interm_layers = ['res5']
             self.feature_strides = [32]
+            self.strides = [32]
 
         self.onnx_export = False
 
@@ -403,47 +405,6 @@ class MaskedBackboneTraceFriendly(nn.Module):
         return masks
 
 
-class MaskedBackbone(nn.Module):
-    """ This is a thin wrapper around D2's backbone to provide padding masking"""
-
-    def __init__(self, cfg):
-        super().__init__()
-        self.backbone = build_backbone(cfg)
-        backbone_shape = self.backbone.output_shape()
-        self.feature_strides = [
-            backbone_shape[f].stride for f in backbone_shape.keys()]
-        self.num_channels = backbone_shape[list(
-            backbone_shape.keys())[-1]].channels
-
-    def forward(self, images):
-        features = self.backbone(images.tensor)
-        masks = self.mask_out_padding(
-            [features_per_level.shape for features_per_level in features.values()],
-            images.image_sizes,
-            images.tensor.device,
-        )
-        assert len(features) == len(masks)
-        for i, k in enumerate(features.keys()):
-            features[k] = NestedTensor(features[k], masks[i])
-        return features
-
-    def mask_out_padding(self, feature_shapes, image_sizes, device):
-        masks = []
-        assert len(feature_shapes) == len(self.feature_strides)
-        for idx, shape in enumerate(feature_shapes):
-            N, _, H, W = shape
-            masks_per_feature_level = torch.ones(
-                (N, H, W), dtype=torch.bool, device=device)
-            for img_idx, (h, w) in enumerate(image_sizes):
-                masks_per_feature_level[
-                    img_idx,
-                    : int(np.ceil(float(h) / self.feature_strides[idx])),
-                    : int(np.ceil(float(w) / self.feature_strides[idx])),
-                ] = 0
-            masks.append(masks_per_feature_level)
-        return masks
-
-
 class DETR(nn.Module):
     """ This is the DETR module that performs object detection """
 
@@ -468,7 +429,7 @@ class DETR(nn.Module):
         # self.input_proj = nn.Conv2d(
         #     backbone.num_channels, hidden_dim, kernel_size=1)
         if num_feature_levels > 1:
-            num_backbone_outs = len(backbone.strides)
+            num_backbone_outs = len(backbone[0].strides)
             input_proj_list = []
             for _ in range(num_backbone_outs):
                 in_channels = backbone.num_channels[_]
@@ -527,6 +488,7 @@ class DETR(nn.Module):
         h_w = h_w.unsqueeze(0).to(device)
 
         src, mask = features[-1].decompose()
+        # print(f'{src.shape} {mask.shape}')
         assert mask is not None
         hs, points = self.transformer(self.input_proj(
             src), mask, self.query_embed.weight, pos[-1], h_w)
