@@ -158,7 +158,7 @@ def main(args):
 
     trainer = Trainer(cfg)
     if comm.is_main_process():
-        mlflow.set_experiment("traffic_light")
+        mlflow.set_experiment("tidal_plate")
         run = mlflow.start_run(run_name="yolox_s_tl")
         print(f"mlflow run_id: {run.info.run_id}")
         mlflow.log_param("max_iter", cfg.SOLVER.MAX_ITER)
