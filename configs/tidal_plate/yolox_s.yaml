@@ -15,7 +15,7 @@ MODEL:
     OUT_FEATURES: ["dark3", "dark4", "dark5"]
 
   YOLO:
-    CLASSES: 5
+    CLASSES: 13
     IN_FEATURES: ["dark3", "dark4", "dark5"]
     # CONF_THRESHOLD: 0.01
     CONF_THRESHOLD: 0.01
@@ -74,7 +74,7 @@ SOLVER:
 TEST:
   EVAL_PERIOD: 5000
   # EVAL_PERIOD: 0
-OUTPUT_DIR: "output/tl_yolox_s"
+OUTPUT_DIR: "output/tidal_plate_yolox_s"
 VIS_PERIOD: 5000
 
 DATALOADER:
