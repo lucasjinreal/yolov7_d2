@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+from typing import Dict
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -18,6 +19,8 @@ from yolov7.utils.boxes import box_cxcywh_to_xyxy, box_xyxy_to_cxcywh
 from .detr_seg import DETRsegm, PostProcessSegm
 from .smca_detr import DETR as SMCADETR
 from torch import nn
+from alfred.utils.log import logger
+
 
 __all__ = ["DetrD2go"]
 
@@ -46,17 +49,41 @@ class ResNetMaskedBackbone(nn.Module):
             backbone_shape[k].channels for k in backbone_shape.keys()]
 
     def forward(self, images):
-        features = self.backbone(images.tensor)
-        # one tensor per feature level. Each tensor has shape (B, maxH, maxW)
-        masks = self.mask_out_padding(
-            [features_per_level.shape for features_per_level in features.values()],
-            images.image_sizes,
-            images.tensor.device,
-        )
-        assert len(features) == len(masks)
-        for i, k in enumerate(features.keys()):
-            features[k] = NestedTensor(features[k], masks[i])
-        return features
+        if isinstance(images, ImageList):
+            features = self.backbone(images.tensor)
+            device = images.tensor.device
+        else:
+            features = self.backbone(images.tensors)
+            device = images.tensors.device
+
+        if torch.onnx.is_in_onnx_export():
+            logger.info('[onnx export] in MaskedBackbone...')
+            out: Dict[str, NestedTensor] = {}
+            for name, x in features.items():
+                m = images.mask
+                print('m: ', m)
+                print('m: ', m.shape)
+                assert m is not None
+                sp = x.shape[-2:]
+                # mask = F.interpolate(m.to(torch.float), size=sp).to(torch.bool)[0]
+                # mask = F.interpolate(m[None].float(), size=x.shape[-2:]).to(torch.bool)[0]
+                m = m.unsqueeze(0).float()
+                mask = F.interpolate(m, size=x.shape[-2:]).to(torch.bool)[0]
+                print(mask.shape)
+                out[name] = NestedTensor(x, mask)
+            return out
+        else:
+            features = self.backbone(images.tensor)
+            # one tensor per feature level. Each tensor has shape (B, maxH, maxW)
+            masks = self.mask_out_padding(
+                [features_per_level.shape for features_per_level in features.values()],
+                images.image_sizes,
+                images.tensor.device,
+            )
+            assert len(features) == len(masks)
+            for i, k in enumerate(features.keys()):
+                features[k] = NestedTensor(features[k], masks[i])
+            return features
 
     def mask_out_padding(self, feature_shapes, image_sizes, device):
         masks = []
@@ -229,6 +256,10 @@ class DetrD2go(nn.Module):
                 num_feature_levels=num_feature_levels,
                 use_focal_loss=self.use_focal_loss,
             )
+        else:
+            logger.error(
+                f'attention type: {cfg.MODEL.DETR.ATTENTION_TYPE} not support')
+            exit(1)
 
         if self.mask_on:
             frozen_weights = cfg.MODEL.DETR.FROZEN_WEIGHTS
@@ -293,6 +324,16 @@ class DetrD2go(nn.Module):
         self.normalizer = lambda x: (x - pixel_mean) / pixel_std
         self.to(self.device)
 
+    def preprocess_input(self, x):
+        # x = x.permute(0, 3, 1, 2)
+        # x = F.interpolate(x, size=(640, 640))
+        # x = F.interpolate(x, size=(512, 960))
+        """
+        x is N, CHW aleady permuted
+        """
+        x = [self.normalizer(i) for i in x]
+        return x
+
     def forward(self, batched_inputs):
         """
         Args:
@@ -311,7 +352,15 @@ class DetrD2go(nn.Module):
             dict[str: Tensor]:
                 mapping from a named loss to a tensor storing the loss. Used during training only.
         """
-        images = self.preprocess_image(batched_inputs)
+        if torch.onnx.is_in_onnx_export():
+            logger.info('[WARN] exporting onnx...')
+            assert isinstance(batched_inputs, (list, torch.Tensor)) or isinstance(
+                batched_inputs, list), 'onnx export, batched_inputs only needs image tensor or list of tensors'
+            images = self.preprocess_input(batched_inputs)
+            # batched_inputs = batched_inputs.permute(0, 3, 1, 2)
+            # image_ori_sizes = [batched_inputs.shape[1:3]]
+        else:
+            images = self.preprocess_image(batched_inputs)
         output = self.detr(images)
 
         if self.training:
@@ -332,20 +381,49 @@ class DetrD2go(nn.Module):
             # print(loss_dict)
             return loss_dict
         else:
-            box_cls = output["pred_logits"]
-            box_pred = output["pred_boxes"]
-            mask_pred = output["pred_masks"] if self.mask_on else None
-            results = self.inference(
-                box_cls, box_pred, mask_pred, images.image_sizes)
-            processed_results = []
-            for results_per_image, input_per_image, image_size in zip(
-                results, batched_inputs, images.image_sizes
-            ):
-                height = input_per_image.get("height", image_size[0])
-                width = input_per_image.get("width", image_size[1])
-                r = detector_postprocess(results_per_image, height, width)
-                processed_results.append({"instances": r})
-            return processed_results
+            if torch.onnx.is_in_onnx_export():
+                box_cls = output["pred_logits"]
+                box_pred = output["pred_boxes"]
+                if self.use_focal_loss:
+                    prob = box_cls.sigmoid()
+                    # TODO make top-100 as an option for non-focal-loss as well
+                    scores, topk_indexes = torch.topk(
+                        prob.view(box_cls.shape[0], -1), 100, dim=1
+                    )
+                    topk_boxes = topk_indexes // box_cls.shape[2]
+                    labels = topk_indexes % box_cls.shape[2]
+
+                    print('topk_boxes: ', topk_boxes.shape)
+                    print('box_pred: ', box_pred.shape)
+                    topk_boxes = topk_boxes.to(torch.int64)
+                    topk_boxes = topk_boxes.unsqueeze(-1).repeat(1, 1, 4)
+                    print('topk_boxes: ', topk_boxes.shape)
+                    box_pred = torch.gather(box_pred, 1, topk_boxes)
+                else:
+                    scores, labels = F.softmax(
+                        box_cls, dim=-1)[:, :, :-1].max(-1)
+                box_pred = box_cxcywh_to_xyxy(box_pred)
+                labels = labels.to(torch.float)
+                # print(scores.shape)
+                # print(scores.unsqueeze(0).shape)
+                a = torch.cat([box_pred, scores.unsqueeze(-1),
+                              labels.unsqueeze(-1)], dim=-1)
+                return a
+            else:
+                box_cls = output["pred_logits"]
+                box_pred = output["pred_boxes"]
+                mask_pred = output["pred_masks"] if self.mask_on else None
+                results = self.inference(
+                    box_cls, box_pred, mask_pred, images.image_sizes)
+                processed_results = []
+                for results_per_image, input_per_image, image_size in zip(
+                    results, batched_inputs, images.image_sizes
+                ):
+                    height = input_per_image.get("height", image_size[0])
+                    width = input_per_image.get("width", image_size[1])
+                    r = detector_postprocess(results_per_image, height, width)
+                    processed_results.append({"instances": r})
+                return processed_results
 
     def prepare_targets(self, targets):
         new_targets = []
@@ -505,9 +583,11 @@ class DETR(nn.Module):
         outputs_coord = self.bbox_embed(hs).sigmoid()
         # pred_logits shape (B, S, NUM_CLASS + 1)
         # pred_boxes shape (B, S, 4)
-        out = {"pred_logits": outputs_class[-1], "pred_boxes": outputs_coord[-1]}
+        out = {"pred_logits": outputs_class[-1],
+               "pred_boxes": outputs_coord[-1]}
         if self.aux_loss:
-            out["aux_outputs"] = self._set_aux_loss(outputs_class, outputs_coord)
+            out["aux_outputs"] = self._set_aux_loss(
+                outputs_class, outputs_coord)
         return out
 
     @torch.jit.unused
