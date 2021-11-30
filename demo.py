@@ -137,7 +137,7 @@ def get_parser():
     return parser
 
 
-def vis_res_fast(res, img, meta, colors, thresh):
+def vis_res_fast(res, img, class_names, colors, thresh):
     ins = res['instances']
     bboxes = ins.pred_boxes.tensor.cpu().numpy()
     scores = ins.scores.cpu().numpy()
@@ -152,14 +152,15 @@ def vis_res_fast(res, img, meta, colors, thresh):
             bit_masks = bit_masks.tensor.cpu().numpy()
         # img = vis_bitmasks_with_classes(img, clss, bit_masks)
         # img = vis_bitmasks_with_classes(img, clss, bit_masks, force_colors=colors, mask_border_color=(255, 255, 255), thickness=2)
-        img = vis_bitmasks_with_classes(img, clss, bit_masks, force_colors=None, draw_contours=False)
+        img = vis_bitmasks_with_classes(
+            img, clss, bit_masks, force_colors=None, draw_contours=False)
         # img = vis_bitmasks(img, bit_masks, thickness=2, draw_contours=False)
         # img = vis_bitmasks(img, bit_masks, thickness=2, draw_contours=False, fill_mask=True)
     # print('img shape: ', img.shape)
     thickness = 1 if ins.has('pred_bit_masks') else 2
     font_scale = 0.3 if ins.has('pred_bit_masks') else 0.4
     img = visualize_det_cv2_part(
-        img, scores, clss, bboxes, force_color=colors, line_thickness=thickness, font_scale=font_scale, thresh=thresh)
+        img, scores, clss, bboxes, class_names=class_names, force_color=colors, line_thickness=thickness, font_scale=font_scale, thresh=thresh)
     # img = cv2.addWeighted(img, 0.9, m, 0.6, 0.9)
     return img
 
@@ -174,6 +175,7 @@ if __name__ == "__main__":
     cfg = setup_cfg(args)
 
     metadata = MetadataCatalog.get(cfg.DATASETS.TEST[0])
+    class_names = cfg.DATASETS.CLASS_NAMES
     predictor = DefaultPredictor(cfg)
 
     print(cfg.INPUT.MIN_SIZE_TEST, cfg.INPUT.MIN_SIZE_TEST, cfg.INPUT.MAX_SIZE_TEST)
@@ -191,7 +193,7 @@ if __name__ == "__main__":
                 img = cv2.imread(path)
                 print('ori img shape: ', img.shape)
                 res = predictor(img)
-                res = vis_res_fast(res, img, metadata, colors, conf_thresh)
+                res = vis_res_fast(res, img, class_names, colors, conf_thresh)
                 # cv2.imshow('frame', res)
                 cv2.imshow('frame', res)
                 if cv2.waitKey(0) & 0xFF == ord('q'):
@@ -199,7 +201,7 @@ if __name__ == "__main__":
         else:
             img = cv2.imread(args.input)
             res = predictor(img)
-            res = vis_res_fast(res, img, metadata, colors, conf_thresh)
+            res = vis_res_fast(res, img, class_names, colors, conf_thresh)
             # cv2.imshow('frame', res)
             cv2.imshow('frame', res)
             cv2.waitKey(0)
@@ -217,7 +219,7 @@ if __name__ == "__main__":
             ret, frame = video.read()
             # frame = cv2.resize(frame, (640, 640))
             res = predictor(frame)
-            res = vis_res_fast(res, frame, metadata, colors, conf_thresh)
+            res = vis_res_fast(res, frame, class_names, colors, conf_thresh)
             # cv2.imshow('frame', res)
             cv2.imshow('frame', res)
             if cv2.waitKey(1) & 0xFF == ord('q'):

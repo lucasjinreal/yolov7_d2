@@ -30,6 +30,22 @@ MODEL:
 DATASETS:
   TRAIN: ("tl_train",)
   TEST: ("tl_val",)
+  CLASS_NAMES:
+    [
+      "tidal_plate.forward",
+      "tidal_plate.left",
+      "tidal_plate.right",
+      "tidal_plate.left_forward",
+      "tidal_plate.right_forward",
+      "tidal_plate.u_turn",
+      "tidal_plate.u_turn_left",
+      "tidal_plate.u_turn_forward",
+      "tidal_plate.u_turn_left_forward",
+      "tidal_plate.left_forward_right",
+      "tidal_plate.unknown",
+      "tidal_plate.cross_forbidden",
+      "tidal_plate.black_screen",
+    ]
 
 INPUT:
   # FORMAT: "RGB" # using BGR default

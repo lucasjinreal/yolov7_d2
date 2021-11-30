@@ -12,6 +12,8 @@ def add_yolo_config(cfg):
 
     get_default_solver_configs(_C)
 
+    _C.DATASETS.CLASS_NAMES = []
+
     # Allowed values are 'normal', 'softnms-linear', 'softnms-gaussian', 'cluster'
     _C.MODEL.NMS_TYPE = "normal"
     _C.MODEL.ONNX_EXPORT = False
