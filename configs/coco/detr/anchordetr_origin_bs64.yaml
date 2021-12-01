@@ -32,7 +32,7 @@ SOLVER:
     ENABLED: true
   IMS_PER_BATCH: 64
   # BASE_LR: 0.0002 # 0.00025 is better
-  BASE_LR: 0.0002 # lr should be a little bit larger
+  BASE_LR: 0.00025 # lr should be a little bit larger
   # STEPS: (295720, )
   STEPS: (73930, )
   # MAX_ITER: 369650

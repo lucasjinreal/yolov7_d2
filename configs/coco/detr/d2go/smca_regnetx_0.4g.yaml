@@ -49,12 +49,12 @@ SOLVER:
     CLIP_VALUE: 0.1
     NORM_TYPE: 2.0
   LR_MULTIPLIER_OVERWRITE:
-    [{ "backbone": 1.2}, { "reference_points": 0.1, "sampling_offsets": 0.1 }]
+    [{ "backbone": 0.6}, { "reference_points": 0.1, "sampling_offsets": 0.1 }]
 
 # 0.00013, 0.1, 29.9, 24.86, 23.57
 # 0.00013, 0.9, 27.26,23.95
 # 0.0001, 0.9, 26.38, 23.74, 23.01, 22.52
-# 0.0001, 1.2, 2
+# 0.0001, 1.2, 29.43
 
 INPUT:
   MIN_SIZE_TRAIN: (480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800)

@@ -74,4 +74,4 @@ DATALOADER:
   NUM_WORKERS: 4
 VERSION: 2
 
-OUTPUT_DIR: "output/coco_smcadetr_d2go_regnetx"
+OUTPUT_DIR: "output/coco_smcadetr_d2go_fbv3"
