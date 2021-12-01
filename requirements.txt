@@ -4,4 +4,5 @@ nbnb
 mmpycocotools
 omegaconf
 mlflow[aliyun-oss]==1.20.2 --no-binary=mlflow
+git+https://github.com/facebookresearch/mobile-vision.git@master#egg=mobile_cv
 

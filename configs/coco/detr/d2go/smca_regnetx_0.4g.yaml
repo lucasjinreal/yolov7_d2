@@ -4,10 +4,14 @@ MODEL:
   PIXEL_STD: [58.395, 57.120, 57.375]
   MASK_ON: False
   WEIGHTS: "detectron2://ImageNetPretrained/torchvision/R-50.pkl"
-  RESNETS:
-    DEPTH: 50
-    STRIDE_IN_1X1: False
-    OUT_FEATURES: ["res2", "res3", "res4", "res5"]
+  BACKBONE:
+    NAME: "build_regnet_backbone"
+    SIMPLE: true
+    STRIDE: 32
+    CHANNEL: 384
+  REGNETS:
+    TYPE: "RegNetX_400MF"
+    OUT_FEATURES: ["s2", "s3", "s4"] # fpn produce 4 levels, only using 3 for now
 
   DETR:
     NUM_CLASSES: 80
@@ -29,12 +33,12 @@ SOLVER:
   AMP:
     ENABLED: true
   IMS_PER_BATCH: 64
-  BASE_LR: 0.00016
+  BASE_LR: 0.0001
   # STEPS: (295720,)
   # MAX_ITER: 369650
   STEPS: (73930, )
   # MAX_ITER: 369650
-  MAX_ITER: 140000 # 14w we can get a 41 AP
+  MAX_ITER: 429650
   WARMUP_FACTOR: 1.0
   WARMUP_ITERS: 10
   WEIGHT_DECAY: 0.0001
@@ -45,7 +49,12 @@ SOLVER:
     CLIP_VALUE: 0.1
     NORM_TYPE: 2.0
   LR_MULTIPLIER_OVERWRITE:
-    [{ "backbone": 0.1 }, { "reference_points": 0.1, "sampling_offsets": 0.1 }]
+    [{ "backbone": 1.2}, { "reference_points": 0.1, "sampling_offsets": 0.1 }]
+
+# 0.00013, 0.1, 29.9, 24.86, 23.57
+# 0.00013, 0.9, 27.26,23.95
+# 0.0001, 0.9, 26.38, 23.74, 23.01, 22.52
+# 0.0001, 1.2, 2
 
 INPUT:
   MIN_SIZE_TRAIN: (480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800)
@@ -65,4 +74,4 @@ DATALOADER:
   NUM_WORKERS: 4
 VERSION: 2
 
-OUTPUT_DIR: "output/coco_smcadetr_d2go"
+OUTPUT_DIR: "output/coco_smcadetr_d2go_regnetx"

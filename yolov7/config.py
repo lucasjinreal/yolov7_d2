@@ -3,6 +3,7 @@
 
 from detectron2.config import CfgNode as CN
 from .utils.get_default_cfg import get_default_solver_configs
+from .modeling.backbone.cfg import add_fbnet_v2_default_configs
 
 def add_yolo_config(cfg):
     """
@@ -11,6 +12,7 @@ def add_yolo_config(cfg):
     _C = cfg
 
     get_default_solver_configs(_C)
+    add_fbnet_v2_default_configs(_C)
 
     _C.DATASETS.CLASS_NAMES = []
 
@@ -20,6 +22,8 @@ def add_yolo_config(cfg):
     _C.MODEL.PADDED_VALUE = 114.0
     _C.MODEL.FPN.REPEAT = 2
     _C.MODEL.FPN.OUT_CHANNELS_LIST = [256, 512, 1024]
+    # _C.MODEL.BACKBONE.STRIDE = []
+    # _C.MODEL.BACKBONE.CHANNEL = []
 
     # Add Bi-FPN support
     _C.MODEL.BIFPN = CN()
@@ -180,7 +184,7 @@ def add_yolo_config(cfg):
     cfg.MODEL.BACKBONE.CHANNEL = 0
 
     # FBNet
-    # cfg.MODEL.FBNET_V2.OUT_FEATURES = ["trunk3"]
+    cfg.MODEL.FBNET_V2.OUT_FEATURES = ["trunk3"]
 
     # For Segmentation
     cfg.MODEL.DETR.FROZEN_WEIGHTS = ''

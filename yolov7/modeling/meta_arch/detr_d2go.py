@@ -151,7 +151,11 @@ class SimpleSingleStageBackbone(ResNetMaskedBackbone):
         self.strides = [cfg.MODEL.BACKBONE.STRIDE]
 
     def forward(self, images):
+        # print(images.tensor.shape)
         y = self.backbone(images.tensor)
+        if isinstance(y, Dict):
+            y = list(y.values())[-1]
+            # print(y.shape)
         masks = self.mask_out_padding(
             [y.shape],
             images.image_sizes,
