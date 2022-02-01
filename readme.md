@@ -3,7 +3,7 @@
 
 <img src="https://s4.ax1x.com/2022/02/01/Hk2dtP.png">
 
-**YOLOv7 - Framework Beyond Detection**
+<h1>YOLOv7 - Framework Beyond Detection</h1>
 
 ______________________________________________________________________
 
@@ -17,7 +17,7 @@ ______________________________________________________________________
 
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/yolort)](https://pypi.org/project/yolort/)
 [![PyPI version](https://badge.fury.io/py/yolort.svg)](https://badge.fury.io/py/yolort)
-[![PyPI downloads](https://static.pepy.tech/personalized-badge/yolort?period=total&units=international_system&left_color=grey&right_color=blue&left_text=pypi%20downloads)](https://pepy.tech/project/yolort)
+[![PyPI downloads](https://static.pepy.tech/personalized-badge/alfred-py?period=total&units=international_system&left_color=grey&right_color=blue&left_text=pypi%20downloads)](https://pepy.tech/project/yolort)
 [![Github downloads](https://img.shields.io/github/downloads/jinfagang/yolov7/total?color=blue&label=downloads&logo=github&logoColor=lightgrey)](https://img.shields.io/github/downloads/jinfagang/yolov7/total?color=blue&label=Downloads&logo=github&logoColor=lightgrey)
 
 [![codecov](https://codecov.io/gh/zhiqwang/yolov5-rt-stack/branch/main/graph/badge.svg?token=1GX96EA72Y)](https://codecov.io/gh/zhiqwang/yolov5-rt-stack)
