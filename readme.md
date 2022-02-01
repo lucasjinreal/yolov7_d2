@@ -85,6 +85,8 @@ Some highlights of YOLOv7 are:
 - A simple and standard training framework for any detection && instance detection tasks, based on detectron2;
 - Supports DETR and many transformer based detection framework out-of-box;
 - Supports easy to deploy pipeline thought onnx.
+- **This is the only framework support YOLOv4 + InstanceSegmentation** in single stage style;
+- Easily plugin into transformers based detector;
 
 We are strongly recommend you send PR if you have any further development on this project, **the only reason for opensource it is just for using community power to make it stronger and further**. It's very welcome for anyone contribute on any features!
 
