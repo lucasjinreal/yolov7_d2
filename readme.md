@@ -78,8 +78,17 @@ The supported matrix in YOLOv7 are:
 ![](https://z3.ax1x.com/2021/09/08/hHP7xe.png)  |  ![](https://z3.ax1x.com/2021/07/22/WDr5V0.png)
 
 
+## 🤔 Features
 
-## Rules
+Some highlights of YOLOv7 are:
+
+- A simple and standard training framework for any detection && instance detection tasks, based on detectron2;
+- Supports DETR and many transformer based detection framework out-of-box;
+- Supports easy to deploy pipeline thought onnx.
+
+We are strongly recommend you send PR if you have any further development on this project, **the only reason for opensource it is just for using community power to make it stronger and further**. It's very welcome for anyone contribute on any features!
+
+## 😎 Rules
 
 There are some rules you must follow to if you want train on your own dataset:
 
@@ -92,7 +101,7 @@ Make sure you have read **rules** before ask me any questions.
 
 
 
-## News!
+## 🆕 News!
 
 - **2021.09.16**: First transformer based DETR model added, will explore more DETR series models;
 - **2021.08.02**: **YOLOX** arch added, you can train YOLOX as well in this repo;
