@@ -1,5 +1,7 @@
 # YOLOv7 - Beyond Detection
 
+![](https://s4.ax1x.com/2022/02/01/Hk2dtP.png)
+
 ![](https://z3.ax1x.com/2021/09/08/hHPhUx.png)
 ![](https://z3.ax1x.com/2021/09/08/hHPIPK.png)
 ![](https://z3.ax1x.com/2021/09/08/hHP7xe.png)
@@ -107,10 +109,11 @@ python3 demo_lazyconfig.py --config-file configs/new_baselines/panoptic_fpn_regn
 1. `detr`:
 
   ```
+  python export_onnx.py --config-file detr/config/file
   
   ```
 
-  this works has been down, inference script included inside `tools`.
+  this works has been done, inference script included inside `tools`.
 
 2. `AnchorDETR`:
 
@@ -180,11 +183,7 @@ Here is a dedicated performance compare with other packages.
 
 
 
-## Some Phenomenon I don't Understand
+## License
 
-
-1. About DETR, AnchorDETR training
-
-  **This is really interesting**, I wrongly transfer original weights to this framework, using Resnet res2 as input of transformer, (It should using res5 as input of transformer), but the final result is the same!!!
-  I am not sure why got this result, but seems you can make transformer output same result by using lower resolution features.
+Code released under GPL license. Please pull request to this source repo before you make your changes public or commercial usage. All rights reserved by Lucas Jin.
 
