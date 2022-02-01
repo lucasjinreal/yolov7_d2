@@ -82,7 +82,7 @@ The supported matrix in YOLOv7 are:
 
 Some highlights of YOLOv7 are:
 
-- A simple and standard training framework for any detection && instance detection tasks, based on detectron2;
+- A simple and standard training framework for any detection && instance segmentation tasks, based on detectron2;
 - Supports DETR and many transformer based detection framework out-of-box;
 - Supports easy to deploy pipeline thought onnx.
 - **This is the only framework support YOLOv4 + InstanceSegmentation** in single stage style;
