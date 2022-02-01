@@ -1,7 +1,7 @@
 
 <div align="center">
 
-<img src="https://s4.ax1x.com/2022/02/01/Hk2dtP.png" width="400px">
+<img src="https://s4.ax1x.com/2022/02/01/Hk2dtP.png">
 
 **YOLOv7 - Framework Beyond Detection**
 
@@ -28,13 +28,6 @@ ______________________________________________________________________
 ______________________________________________________________________
 
 </div>
-
-
-| YOLOv7             |  Face & Instance |
-:-------------------------:|:-------------------------:
-![](https://z3.ax1x.com/2021/09/08/hHPhUx.png)  |  ![](https://z3.ax1x.com/2021/09/08/hHPhUx.png)
-![](https://z3.ax1x.com/2021/09/08/hHP7xe.png)  |  ![](https://z3.ax1x.com/2021/07/22/WDr5V0.png)
-
 
 
 > This is the first and only (for now) **`YOLO family variant with transformers!`** and more advanced YOLO with multi-tasking such as detect & segmentation at the same time!
@@ -75,6 +68,14 @@ The supported matrix in YOLOv7 are:
 - [x] YOLOX arch added, now you can train YOLOX model (**anchor free yolo**) as well;
 - [x] DETR: transformer based detection model and **onnx export supported, as well as TensorRT acceleration**;
 - [x] AnchorDETR: Faster converge version of detr, now supported!
+  
+
+## Results
+
+| YOLOv7 Instance             |  Face & Detection |
+:-------------------------:|:-------------------------:
+![](https://z3.ax1x.com/2021/09/08/hHPhUx.png)  |  ![](https://z3.ax1x.com/2021/07/19/WGVhlj.png)
+![](https://z3.ax1x.com/2021/09/08/hHP7xe.png)  |  ![](https://z3.ax1x.com/2021/07/22/WDr5V0.png)
 
 
 
