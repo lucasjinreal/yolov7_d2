@@ -1,10 +1,40 @@
-# YOLOv7 - Beyond Detection
 
-![](https://s4.ax1x.com/2022/02/01/Hk2dtP.png)
+<div align="center">
 
-![](https://z3.ax1x.com/2021/09/08/hHPhUx.png)
-![](https://z3.ax1x.com/2021/09/08/hHPIPK.png)
-![](https://z3.ax1x.com/2021/09/08/hHP7xe.png)
+<img src="https://s4.ax1x.com/2022/02/01/Hk2dtP.png" width="400px">
+
+**YOLOv7 - Framework Beyond Detection**
+
+______________________________________________________________________
+
+[Documentation](https://github.com/jinfagang/yolov7) •
+[Installation Instructions](https://github.com/jinfagang/yolov7) •
+[Deployment](#deploy) •
+[Contributing](.github/CONTRIBUTING.md) •
+[Reporting Issues](https://github.com/jinfagang/yolov7/issues/new?assignees=&labels=&template=bug-report.yml)
+
+______________________________________________________________________
+
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/yolort)](https://pypi.org/project/yolort/)
+[![PyPI version](https://badge.fury.io/py/yolort.svg)](https://badge.fury.io/py/yolort)
+[![PyPI downloads](https://static.pepy.tech/personalized-badge/yolort?period=total&units=international_system&left_color=grey&right_color=blue&left_text=pypi%20downloads)](https://pepy.tech/project/yolort)
+[![Github downloads](https://img.shields.io/github/downloads/jinfagang/yolov7/total?color=blue&label=downloads&logo=github&logoColor=lightgrey)](https://img.shields.io/github/downloads/jinfagang/yolov7/total?color=blue&label=Downloads&logo=github&logoColor=lightgrey)
+
+[![codecov](https://codecov.io/gh/zhiqwang/yolov5-rt-stack/branch/main/graph/badge.svg?token=1GX96EA72Y)](https://codecov.io/gh/zhiqwang/yolov5-rt-stack)
+[![license](https://img.shields.io/github/license/zhiqwang/yolov5-rt-stack?color=dfd)](LICENSE)
+[![Slack](https://img.shields.io/badge/slack-chat-aff.svg?logo=slack)](https://join.slack.com/t/yolort/shared_invite/zt-mqwc7235-940aAh8IaKYeWclrJx10SA)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-pink.svg)](https://github.com/jinfagang/yolov7/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
+
+______________________________________________________________________
+
+</div>
+
+
+| YOLOv7             |  Face & Instance |
+:-------------------------:|:-------------------------:
+![](https://z3.ax1x.com/2021/09/08/hHPhUx.png)  |  ![](https://z3.ax1x.com/2021/09/08/hHPhUx.png)
+![](https://z3.ax1x.com/2021/09/08/hHP7xe.png)  |  ![](https://z3.ax1x.com/2021/07/22/WDr5V0.png)
+
 
 
 > This is the first and only (for now) **`YOLO family variant with transformers!`** and more advanced YOLO with multi-tasking such as detect & segmentation at the same time!
