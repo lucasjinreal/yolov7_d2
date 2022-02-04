@@ -68,7 +68,12 @@ The supported matrix in YOLOv7 are:
 - [x] YOLOX arch added, now you can train YOLOX model (**anchor free yolo**) as well;
 - [x] DETR: transformer based detection model and **onnx export supported, as well as TensorRT acceleration**;
 - [x] AnchorDETR: Faster converge version of detr, now supported!
-  
+
+what's more, there are some features awesome inside repo:
+
+- [x] Almost all models can export to onnx;
+- [x] Supports TensorRT deployment for DETR and other transformer models;
+- [ ] It will integrate with [wanwu](https://github.com/jinfagang/wanwu_release), a torch-free deploy framework run fastest on your target platform.
 
 ## Results
 
@@ -89,6 +94,12 @@ Some highlights of YOLOv7 are:
 - Easily plugin into transformers based detector;
 
 We are strongly recommend you send PR if you have any further development on this project, **the only reason for opensource it is just for using community power to make it stronger and further**. It's very welcome for anyone contribute on any features!
+
+
+## 🙌 Tasks Want Community to Finish
+
+- [ ] train a hand detection model, with YOLOX;
+- [ ] add more instance segmentation models into YOLOv7;
 
 ## 😎 Rules
 
