@@ -34,7 +34,7 @@ ______________________________________________________________________
 
 
 
-Just another yolo variant implemented based on **`detectron2`**. Be note that **YOLOv7 doesn't meant to be a successor of yolo family, 7 is just my magic and lucky number**. In our humble opinion, a good opensource project must have these features:
+🔥🔥🔥 Just another yolo variant implemented based on **`detectron2`**. Be note that **YOLOv7 doesn't meant to be a successor of yolo family, 7 is just my magic and lucky number**. In our humble opinion, a good opensource project must have these features:
 
 - It must be reproduceble;
 - It must be simple and understandable;
@@ -75,7 +75,7 @@ what's more, there are some features awesome inside repo:
 - [x] Supports TensorRT deployment for DETR and other transformer models;
 - [ ] It will integrate with [wanwu](https://github.com/jinfagang/wanwu_release), a torch-free deploy framework run fastest on your target platform.
 
-## Results
+## 💁‍♂️ Results
 
 | YOLOv7 Instance             |  Face & Detection |
 :-------------------------:|:-------------------------:
