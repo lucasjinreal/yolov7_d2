@@ -124,8 +124,11 @@ Make sure you have read **rules** before ask me any questions.
 - more
 
 
+## 🧑‍🦯 Installation && Quick Start
 
-## Train
+- See [install.md](install.md)
+
+## 😎 Train
 
 For training, quit simple, same as detectron2:
 
@@ -142,7 +145,7 @@ If you want train YOLOX, you can using config file `configs/coco/yolox_s.yaml`. 
 - **YOLOInsSeg**: instance segmentation based on YOLO detection (tbd);
 
 
-## Demo
+## 🥰 Demo
 
 Run a quick demo would be like:
 
