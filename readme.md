@@ -130,7 +130,7 @@ Make sure you have read **rules** before ask me any questions.
 
 ## 😎 Train
 
-For training, quit simple, same as detectron2:
+For training, quite simple, same as detectron2:
 
 ```
 python train_net.py --config-file configs/coco/darknet53.yaml --num-gpus 8
