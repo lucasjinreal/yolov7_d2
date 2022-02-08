@@ -207,8 +207,13 @@ Here is a dedicated performance compare with other packages.
 
 
 
+## Dicussion Group
 
+| Wechat             |  QQ |
+:-------------------------:|:-------------------------:
+![](https://s4.ax1x.com/2022/02/08/H3WR9P.jpg)  |  ![](https://s4.ax1x.com/2022/02/08/H3W5ng.jpg)
 
+* if wechat expired, please contact me update via github issue. group for general discussion, not only for yolov7.
 
 ## Some Exp Visualizations
 
