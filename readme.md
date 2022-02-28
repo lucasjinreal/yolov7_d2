@@ -75,6 +75,25 @@ what's more, there are some features awesome inside repo:
 - [x] Supports TensorRT deployment for DETR and other transformer models;
 - [ ] It will integrate with [wanwu](https://github.com/jinfagang/wanwu_release), a torch-free deploy framework run fastest on your target platform.
 
+
+**Help wanted!** If you have spare time or if you have GPU card, then help YOLOv7 become more stronger! Here is the guidance of contribute:
+
+1. **`Claim task`**: I have some ideas but do not have enough time to do it, if you want implement it, claim the task, **I will give u fully advise on how to do, and you can learn a lot from it**;
+2. **`Test mAP`**: When you finished new idea implementation, create a thread to report experiment mAP, if it work, then merge into our main master branch;
+3. **`Pull request`**: YOLOv7 is open and always tracking on SOTA and **light** models, if a model is useful, we will merge it and deploy it, distribute to all users want to try.
+
+Here are some tasks need to be claimed:
+
+- [ ] VAN: Visual Attention Network, [paper](https://arxiv.org/abs/2202.09741), [VAN-Segmentation](https://github.com/Visual-Attention-Network/VAN-Segmentation), it was better than Swin and PVT and DeiT:
+  - [ ] D2 VAN backbone integration;
+  - [ ] Test with YOLOv7 arch;
+- [ ] ViDet: [code](https://github.com/naver-ai/vidt), this provides a realtime detector based on transformer, Swin-Nano mAP: 40, while 20 FPS, it can be integrated into YOLOv7;
+  - [ ] Integrate into D2 backbone, remove MSAtten deps;
+  - [ ] Test with YOLOv7 or DETR arch;
+
+
+
+
 ## 💁‍♂️ Results
 
 | YOLOv7 Instance             |  Face & Detection |
@@ -96,10 +115,6 @@ Some highlights of YOLOv7 are:
 We are strongly recommend you send PR if you have any further development on this project, **the only reason for opensource it is just for using community power to make it stronger and further**. It's very welcome for anyone contribute on any features!
 
 
-## 🙌 Tasks Want Community to Finish
-
-- [ ] train a hand detection model, with YOLOX;
-- [ ] add more instance segmentation models into YOLOv7;
 
 ## 😎 Rules
 
