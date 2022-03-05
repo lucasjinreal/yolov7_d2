@@ -1,5 +1,7 @@
 # YOLOv7 Install
 
+> Please install detectron2 first, this is the basic dependency. For detectron2 just clone official repo and install follow their instructions.
+
 yolov7 is not a lib, it's a project ready for use. But to install dependencies, there still need some process. 
 
 First, please consider install 2 important lib that you might not familliar with:
