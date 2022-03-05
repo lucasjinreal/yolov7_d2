@@ -13,6 +13,12 @@ Both of them can be installed from pip. The first one provides enhanced and full
 
 `nbnb` is a lib that provides some useful common network blocks.
 
+Also, if you need fbnetv3, you need install mobilecv from FaceBook:
+
+```
+pip install git+https://github.com/facebookresearch/mobile-vision.git
+```
+
 After install, you can now ready to train with YOLOv7.
 
 ```
