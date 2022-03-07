@@ -90,6 +90,7 @@ Here are some tasks need to be claimed:
 - [ ] ViDet: [code](https://github.com/naver-ai/vidt), this provides a realtime detector based on transformer, Swin-Nano mAP: 40, while 20 FPS, it can be integrated into YOLOv7;
   - [ ] Integrate into D2 backbone, remove MSAtten deps;
   - [ ] Test with YOLOv7 or DETR arch;
+- [ ] ConvNext: https://github.com/facebookresearch/ConvNeXt, combined convolution and transformer.
 
 
 
