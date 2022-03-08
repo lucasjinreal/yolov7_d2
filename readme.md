@@ -92,6 +92,7 @@ Here are some tasks need to be claimed:
   - [ ] Test with YOLOv7 or DETR arch;
 - [ ] DINO: 63.3mAP highest in 2022 on coco. https://github.com/IDEACVR/DINO
   - [ ] waiting for DINO opensource code.
+- [ ] ConvNext: https://github.com/facebookresearch/ConvNeXt, combined convolution and transformer.
 
 
 
