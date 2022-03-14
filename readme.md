@@ -229,7 +229,7 @@ Here is a dedicated performance compare with other packages.
 
 | Wechat             |  QQ |
 :-------------------------:|:-------------------------:
-![image.png](https://s2.loli.net/2022/02/28/nt3les8pViDKUWF.png)  |  ![image.png](https://s2.loli.net/2022/02/28/C4gjf6DcwdHvnO8.png)
+![image.png](https://s2.loli.net/2022/03/14/9uxaEnDA6vdByr2.png)  |  ![image.png](https://s2.loli.net/2022/02/28/C4gjf6DcwdHvnO8.png)
 
 * if wechat expired, please contact me update via github issue. group for general discussion, not only for yolov7.
 
