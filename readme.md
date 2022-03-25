@@ -176,7 +176,20 @@ python3 demo_lazyconfig.py --config-file configs/new_baselines/panoptic_fpn_regn
 ```
 
 
-## Export ONNX && TensorRTT && TVM
+## 🧙‍♂️ Pretrained Models
+
+| model | backbone | input | aug | AP<sup>val</sup> |  AP  | FPS | weights |
+| :---- | :------  | :---: | :-: |:--------------: | :--: | :-: | :-----: |
+| [SparseInst](configs/sparse_inst_r50_base.yaml) | [R-50]() | 640 | &#x2718; | 32.8 | - | 44.3 | [model](https://drive.google.com/file/d/12RQLHD5EZKIOvlqW3avUCeYjFG1NPKDy/view?usp=sharing) |
+| [SparseInst](sparse_inst_r50vd_base.yaml) | [R-50-vd](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 640 | &#x2718; | 34.1 | - | 42.6 | [model]()|
+| [SparseInst (G-IAM)](configs/sparse_inst_r50_giam.yaml) | [R-50]() | 608 | &#x2718; | 33.4 | - | 44.6 | [model](https://drive.google.com/file/d/1pXU7Dsa1L7nUiLU9ULG2F6Pl5m5NEguL/view?usp=sharing) |
+| [SparseInst (G-IAM)](configs/sparse_inst_r50_giam_aug.yaml) | [R-50]() | 608 | &#10003; | 34.2 | 34.7 | 44.6 | [model](https://drive.google.com/file/d/1MK8rO3qtA7vN9KVSBdp0VvZHCNq8-bvz/view?usp=sharing) |
+| [SparseInst (G-IAM)](configs/sparse_inst_r50_dcn_giam_aug.yaml) | [R-50-DCN]() | 608 | &#10003;| 36.4 | 36.8 | 41.6 | [model](https://drive.google.com/file/d/1qxdLRRHbIWEwRYn-NPPeCCk6fhBjc946/view?usp=sharing) |
+| [SparseInst (G-IAM)](configs/sparse_inst_r50vd_giam_aug.yaml) | [R-50-vd](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 608 | &#10003;| 35.6 | 36.1 | 42.8| [model](https://drive.google.com/file/d/1dlamg7ych_BdWpPUCuiBXbwE0SXpsfGx/view?usp=sharing) |
+| [SparseInst (G-IAM)](configs/sparse_inst_r50vd_dcn_giam_aug.yaml) | [R-50-vd-DCN](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 608 | &#10003; | 37.4 | 37.9 | 40.0  | [model](https://drive.google.com/file/d/1clYPdCNrDNZLbmlAEJ7wjsrOLn1igOpT/view?usp=sharing)|
+| [SparseInst (G-IAM)](sparse_inst_r50vd_dcn_giam_aug.yaml) | [R-50-vd-DCN](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 640 | &#10003; | 37.7 | 38.1 | 39.3 |  [model](https://drive.google.com/file/d/1clYPdCNrDNZLbmlAEJ7wjsrOLn1igOpT/view?usp=sharing)| 
+
+## 🔨 Export ONNX && TensorRTT && TVM
 
 1. `detr`:
 
@@ -193,19 +206,17 @@ python3 demo_lazyconfig.py --config-file configs/new_baselines/panoptic_fpn_regn
 
 
 
-## More Advanced YOLO
-
-Here we show some highlights on multi-tasking:
 
 
-
-## Performance
+## 🤒️ Performance
 
 Here is a dedicated performance compare with other packages. 
 
+tbd.
 
 
-## Some Tiny Object Datasets supported
+
+## 🪜 Some Tiny Object Datasets supported
 
 - **Wearmask**:
   support VOC, Yolo, coco 3 format. You can using coco format here. Download from: 链接: https://pan.baidu.com/s/1ozAgUFLqfTXLp-iOecddqQ 提取码: xgep . Using `configs/wearmask` to train this dataset.
@@ -214,7 +225,7 @@ Here is a dedicated performance compare with other packages.
 
 
 
-## Detection Results
+## 👋 Detection Results
 
 ![](https://z3.ax1x.com/2021/07/22/WDs9PO.png)
 ![](https://z3.ax1x.com/2021/07/22/WDr5V0.png)
@@ -223,7 +234,7 @@ Here is a dedicated performance compare with other packages.
 
 
 
-## Dicussion Group
+## 😯 Dicussion Group
 
 | Wechat             |  QQ |
 :-------------------------:|:-------------------------:
@@ -231,7 +242,7 @@ Here is a dedicated performance compare with other packages.
 
 * if wechat expired, please contact me update via github issue. group for general discussion, not only for yolov7.
 
-## Some Exp Visualizations
+## 🀄️ Some Exp Visualizations
 
 1. GridMask
 
@@ -260,7 +271,7 @@ Here is a dedicated performance compare with other packages.
 
 
 
-## License
+## ©️ License
 
 Code released under GPL license. Please pull request to this source repo before you make your changes public or commercial usage. All rights reserved by Lucas Jin.
 

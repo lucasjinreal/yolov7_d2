@@ -13,3 +13,4 @@ from .detr import Detr
 from .anchor_detr import AnchorDetr
 from .smca_detr import SMCADetr
 from .detr_d2go import DetrD2go
+from .sparseinst import SparseInst
