@@ -5,7 +5,6 @@
 
 <h1>YOLOv7 - Framework Beyond Detection</h1>
 
-______________________________________________________________________
 
 [Documentation](https://github.com/jinfagang/yolov7) •
 [Installation Instructions](https://github.com/jinfagang/yolov7) •
@@ -13,7 +12,6 @@ ______________________________________________________________________
 [Contributing](.github/CONTRIBUTING.md) •
 [Reporting Issues](https://github.com/jinfagang/yolov7/issues/new?assignees=&labels=&template=bug-report.yml)
 
-______________________________________________________________________
 
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/yolort)](https://pypi.org/project/yolort/)
 [![PyPI version](https://badge.fury.io/py/yolort.svg)](https://badge.fury.io/py/yolort)
@@ -25,14 +23,13 @@ ______________________________________________________________________
 [![Slack](https://img.shields.io/badge/slack-chat-aff.svg?logo=slack)](https://join.slack.com/t/yolort/shared_invite/zt-mqwc7235-940aAh8IaKYeWclrJx10SA)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-pink.svg)](https://github.com/jinfagang/yolov7/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
 
-______________________________________________________________________
 
 </div>
 
 
-> This is the first and only (for now) **`YOLO family variant with transformers!`** and more advanced YOLO with multi-tasking such as detect & segmentation at the same time!
+>  **`YOLO family variant with transformers!`**, Instance Segmentation in YOLO, DETR, AnchorDETR all supported!
 
-
+update: we also provide a private version of yolov7, please visit: https://manaai.cn for more details. Our latest update will appear on mana first.
 
 🔥🔥🔥 Just another yolo variant implemented based on **`detectron2`**. Be note that **YOLOv7 doesn't meant to be a successor of yolo family, 7 is just my magic and lucky number**. In our humble opinion, a good opensource project must have these features:
 
