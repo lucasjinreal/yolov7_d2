@@ -1,0 +1,15 @@
+_BASE_: "Base-SparseInst.yaml"
+MODEL:
+  BACKBONE:
+    FREEZE_AT: 0
+    NAME: "build_resnet_vd_backbone"
+  RESNETS:
+    DEFORM_ON_PER_STAGE: [False, False, True, True] # dcn on res4, res5
+INPUT:
+  CROP:
+    ENABLED: True
+    TYPE: "absolute_range"
+    SIZE: (384, 600)
+  MASK_FORMAT: "polygon"
+OUTPUT_DIR: "output/sparse_inst_r50vd_dcn_giam_aug"
+  

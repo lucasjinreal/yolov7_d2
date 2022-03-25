@@ -1,0 +1,8 @@
+_BASE_: "Base-SparseInst.yaml"
+INPUT:
+  CROP:
+    ENABLED: True
+    TYPE: "absolute_range"
+    SIZE: (384, 600)
+  MASK_FORMAT: "polygon"
+OUTPUT_DIR: "output/sparse_inst_r50_giam_aug"

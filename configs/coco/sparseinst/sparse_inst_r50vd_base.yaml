@@ -1,0 +1,11 @@
+_BASE_: "Base-SparseInst.yaml"
+MODEL:
+MODEL:
+  WEIGHTS: "../../pretrained_models/resnet50d_ra2-464e36ba.pth"
+  BACKBONE:
+    FREEZE_AT: 0
+    NAME: "build_resnet_vd_backbone"
+  SPARSE_INST:
+    DECODER:
+      NAME: "BaseIAMDecoder"
+OUTPUT_DIR: "output/sparse_inst_r50_base"
