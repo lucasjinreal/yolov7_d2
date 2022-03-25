@@ -66,7 +66,6 @@ class DefaultPredictor:
 
 
 def setup_cfg(args):
-    # load config from file and command-line arguments
     cfg = get_cfg()
     add_yolo_config(cfg)
     cfg.merge_from_file(args.config_file)
@@ -75,15 +74,9 @@ def setup_cfg(args):
     cfg.MODEL.YOLO.CONF_THRESHOLD = args.confidence_threshold
     cfg.MODEL.YOLO.NMS_THRESHOLD = args.nms_threshold
     cfg.MODEL.YOLO.IGNORE_THRESHOLD = 0.1
-
-    # cfg.INPUT.MIN_SIZE_TEST = 672  # 90ms
-    # cfg.INPUT.MIN_SIZE_TEST = 2560  # 90ms
-    # cfg.INPUT.MAX_SIZE_TEST = 3060  # 90ms
-    cfg.INPUT.MAX_SIZE_TEST = 900  # 90ms
-    # cfg.INPUT.MIN_SIZE_TEST = 512 # 70ms
-    # cfg.INPUT.MIN_SIZE_TEST = 1080  # 40ms
-    # cfg.INPUT.MAX_SIZE_TEST = 512 # 40ms
-    # cfg.INPUT.MAX_SIZE_TEST = 1080  # 70ms
+    # force devices based on user device
+    cfg.MODEL.DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+    cfg.INPUT.MAX_SIZE_TEST = 600  # 90ms
     cfg.freeze()
     return cfg
 
@@ -186,7 +179,6 @@ if __name__ == "__main__":
     logger.info("Arguments: " + str(args))
 
     cfg = setup_cfg(args)
-
     metadata = MetadataCatalog.get(cfg.DATASETS.TEST[0])
     class_names = cfg.DATASETS.CLASS_NAMES
     predictor = DefaultPredictor(cfg)

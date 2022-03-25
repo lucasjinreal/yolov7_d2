@@ -100,6 +100,7 @@ Here are some tasks need to be claimed:
 :-------------------------:|:-------------------------:
 ![](https://z3.ax1x.com/2021/09/08/hHPhUx.png)  |  ![](https://z3.ax1x.com/2021/07/19/WGVhlj.png)
 ![](https://z3.ax1x.com/2021/09/08/hHP7xe.png)  |  ![](https://z3.ax1x.com/2021/07/22/WDr5V0.png)
+![](https://s1.ax1x.com/2022/03/25/qN5zp6.png)  |  ![](https://s2.loli.net/2022/03/25/MBwq9YT7zC5Sd1A.png)
 
 
 ## 🤔 Features
@@ -142,7 +143,7 @@ Make sure you have read **rules** before ask me any questions.
 
 ## 🧑‍🦯 Installation && Quick Start
 
-- See [install.md](install.md)
+- See [docs/install.md](install.md)
 
 ## 😎 Train
 
@@ -167,6 +168,12 @@ Run a quick demo would be like:
 
 ```
 python3 demo.py --config-file configs/wearmask/darknet53.yaml --input ./datasets/wearmask/images/val2017 --opts MODEL.WEIGHTS output/model_0009999.pth
+```
+
+Run SparseInst:
+
+```
+python demo.py --config-file configs/coco/sparseinst/sparse_inst_r50vd_giam_aug.yaml --video-input ~/Movies/Videos/86277963_nb2-1-80.flv -c 0.4 --opts MODEL.WEIGHTS weights/sparse_inst_r50vd_giam_aug_8bc5b3.pth
 ```
 
 **an update based on detectron2 newly introduced LazyConfig system, run with a LazyConfig model using**:
