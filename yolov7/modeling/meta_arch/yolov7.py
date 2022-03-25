@@ -31,7 +31,6 @@ from alfred.dl.torch.common import device
 from .utils import generalized_batched_nms
 
 from yolov7.utils.boxes import postprocess, bboxes_iou
-from nb.torch.blocks.head_blocks import SPP, PANet
 from alfred.vis.image.det import visualize_det_cv2_part, visualize_det_cv2_fancy
 
 from yolov7.modeling.neck.yolo_fpn import YOLOFPN

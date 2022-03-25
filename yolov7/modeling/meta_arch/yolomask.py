@@ -33,8 +33,6 @@ from alfred.dl.torch.common import print_tensor, device
 from alfred.vis.image.det import visualize_det_cv2_part, visualize_det_cv2_fancy
 from alfred.vis.image.mask import label2color_mask, vis_bitmasks
 
-from nb.torch.blocks.head_blocks import SPP, PANet
-
 from ..neck.yolo_pafpn import YOLOPAFPN
 from yolov7.utils.boxes import postprocess, bbox_ious2, BoxModeMy, postprocessv5, anchor_ious, postprocess_yolomask
 from ..backbone.layers.wrappers import BaseConv, NearestUpsample, ConvBNRelu

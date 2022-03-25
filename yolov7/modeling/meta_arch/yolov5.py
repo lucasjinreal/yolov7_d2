@@ -34,8 +34,6 @@ from alfred.utils.log import logger
 from alfred.dl.torch.common import print_tensor, device
 from alfred.vis.image.det import visualize_det_cv2_part, visualize_det_cv2_fancy
 
-from nb.torch.blocks.head_blocks import SPP, PANet
-
 from ..neck.yolo_pafpn import YOLOPAFPN
 from yolov7.utils.boxes import postprocess, bboxes_iou, BoxModeMy, postprocessv5
 import time

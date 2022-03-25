@@ -5,7 +5,13 @@
 import copy
 
 from .fbnet_v2 import FBNetV2ModelArch
-from mobile_cv.arch.fbnet_v2.modeldef_utils import _ex, e1, e2, e1p, e3, e4, e6
+try:
+    from mobile_cv.arch.fbnet_v2.modeldef_utils import _ex, e1, e2, e1p, e3, e4, e6
+except Exception as e:
+    e1 = None
+    e3 = None
+    e4 = None
+    e6 = None
 
 
 def _mutated_tuple(tp, pos, value):
