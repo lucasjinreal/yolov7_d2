@@ -4,6 +4,7 @@
 from detectron2.config import CfgNode as CN
 from .utils.get_default_cfg import get_default_solver_configs
 from .modeling.backbone.cfg import add_fbnet_v2_default_configs
+from .configs.config_sparseinst import add_sparse_inst_config
 
 def add_yolo_config(cfg):
     """
@@ -13,6 +14,7 @@ def add_yolo_config(cfg):
 
     get_default_solver_configs(_C)
     add_fbnet_v2_default_configs(_C)
+    add_sparse_inst_config(_C)
 
     _C.DATASETS.CLASS_NAMES = []
 
