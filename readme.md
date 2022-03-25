@@ -131,6 +131,7 @@ Make sure you have read **rules** before ask me any questions.
 
 ## 🆕 News!
 
+- **2022.03.25**: New instance seg supported! 40 FPS @ 37 mAP!! Which is fast;
 - **2021.09.16**: First transformer based DETR model added, will explore more DETR series models;
 - **2021.08.02**: **YOLOX** arch added, you can train YOLOX as well in this repo;
 - **2021.07.25**: We found **YOLOv7-Res2net50** beat res50 and darknet53 at same speed level! 5% AP boost on custom dataset;
