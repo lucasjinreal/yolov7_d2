@@ -1,5 +1,5 @@
 MODEL:
-  META_ARCHITECTURE: "YOLO" # default is YOLO, can be YOLOV7, YOLOX, YOLOMASK as well
+  META_ARCHITECTURE: "YOLOV7" # default is YOLO, can be YOLOV7, YOLOX, YOLOMASK as well
   PIXEL_MEAN: [0.406, 0.485, 0.456] # same value as PP-YOLOv2, BGR order
   PIXEL_STD: [0.225, 0.229, 0.224]
   PADDED_VALUE: 114.0
