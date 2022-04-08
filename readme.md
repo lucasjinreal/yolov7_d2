@@ -143,7 +143,7 @@ Make sure you have read **rules** before ask me any questions.
 
 ## 🧑‍🦯 Installation && Quick Start
 
-- See [docs/install.md](install.md)
+- See [docs/install.md](docs/install.md)
 
 ## 😎 Train
 
