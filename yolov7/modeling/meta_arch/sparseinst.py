@@ -14,6 +14,7 @@ from yolov7.modeling.transcoders.decoder_sparseinst import build_sparse_inst_dec
 from ..loss.sparseinst_loss import build_sparse_inst_criterion
 # from .utils import nested_tensor_from_tensor_list
 from yolov7.utils.misc import nested_tensor_from_tensor_list
+from alfred.utils.log import logger
 
 __all__ = ["SparseInst"]
 
@@ -50,7 +51,7 @@ class SparseInst(nn.Module):
 
         self.pixel_mean = torch.Tensor(cfg.MODEL.PIXEL_MEAN).to(self.device).view(3, 1, 1)
         self.pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD).to(self.device).view(3, 1, 1)
-        # self.normalizer = lambda x: (x - pixel_mean) / pixel_std
+        self.normalizer_trans = lambda x: (x - self.pixel_mean) / self.pixel_std
 
         # inference
         self.cls_threshold = cfg.MODEL.SPARSE_INST.CLS_THRESHOLD
@@ -88,9 +89,23 @@ class SparseInst(nn.Module):
             new_targets.append(target)
 
         return new_targets
+    
+    def preprocess_inputs_onnx(self, x):
+        x = x.permute(0, 3, 1, 2)
+        # x = F.interpolate(x, size=(640, 640))
+        # x = F.interpolate(x, size=(512, 960))
+        x = self.normalizer_trans(x)
+        return x
 
     def forward(self, batched_inputs):
-        images = self.preprocess_inputs(batched_inputs)
+        if torch.onnx.is_in_onnx_export():
+            logger.info('[WARN] exporting onnx...')
+            assert isinstance(batched_inputs, (list, torch.Tensor)) or isinstance(
+                batched_inputs, list), 'onnx export, batched_inputs only needs image tensor or list of tensors'
+            images = self.preprocess_inputs_onnx(batched_inputs)
+        else:
+            images = self.preprocess_inputs(batched_inputs)
+
         if isinstance(images, (list, torch.Tensor)):
             images = nested_tensor_from_tensor_list(images)
         max_shape = images.tensor.shape[2:]
