@@ -1,3 +1,4 @@
+from bitarray import test
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -8,11 +9,12 @@ from torchvision.models.resnet import resnet50, resnet18
 from torch.quantization.quantize_fx import prepare_fx, convert_fx
 from torch.ao.quantization.fx.graph_module import ObservedGraphModule
 from torch.quantization import (
+    default_dynamic_qconfig,
+    float_qparams_weight_only_qconfig,
     get_default_qconfig,
 )
 from torch import optim
 import os
-import time
 
 
 def train_model(model, train_loader, test_loader, device):
@@ -109,7 +111,6 @@ def prepare_dataloader(num_workers=8, train_batch_size=128, eval_batch_size=256)
 
 
 def evaluate_model(model, test_loader, device=torch.device("cpu"), criterion=None):
-    t0 = time.time()
     model.eval()
     model.to(device)
     running_loss = 0
@@ -132,8 +133,7 @@ def evaluate_model(model, test_loader, device=torch.device("cpu"), criterion=Non
 
     eval_loss = running_loss / len(test_loader.dataset)
     eval_accuracy = running_corrects / len(test_loader.dataset)
-    t1 = time.time()
-    print(f"eval loss: {eval_loss}, eval acc: {eval_accuracy}, cost: {t1 - t0}")
+    print(f"eval loss: {eval_loss}, eval acc: {eval_accuracy}")
     return eval_loss, eval_accuracy
 
 
@@ -145,9 +145,7 @@ def get_output_from_logits(logits):
 
 
 def calib_quant_model(model, calib_dataloader):
-    assert isinstance(
-        model, ObservedGraphModule
-    ), "model must be a perpared fx ObservedGraphModule."
+    # assert isinstance(model, ObservedGraphModule), 'model must be a perpared fx ObservedGraphModule.'
     model.eval()
     with torch.inference_mode():
         for inputs, labels in calib_dataloader:
@@ -172,7 +170,7 @@ def quant_fx(model):
     torch.save(quantized_model.state_dict(), "r18_quant.pth")
 
 
-def quant_calib_and_eval(model):
+def quant2(model):
     # test only on CPU
     model.to(torch.device("cpu"))
     model.eval()
@@ -184,8 +182,8 @@ def quant_calib_and_eval(model):
     }
 
     model2 = copy.deepcopy(model)
-    model_prepared = prepare_fx(model2, qconfig_dict)
-    model_int8 = convert_fx(model_prepared)
+    model_prepared = torch.quantization.prepare(model2, qconfig_dict)
+    model_int8 = torch.quantization.convert(model_prepared, inplace=True)
     model_int8.load_state_dict(torch.load("r18_quant.pth"))
     model_int8.eval()
 
@@ -206,62 +204,14 @@ def quant_calib_and_eval(model):
 
     # calib quant model
     model2 = copy.deepcopy(model)
-    model_prepared = prepare_fx(model2, qconfig_dict)
-    model_int8 = convert_fx(model_prepared)
-    torch.save(model_int8.state_dict(), "r18.pth")
-    model_int8.eval()
-
-    model_prepared = prepare_fx(model2, qconfig_dict)
+    model_prepared = torch.quantization.prepare(model2, qconfig_dict)
     calib_quant_model(model_prepared, test_loader)
-    model_int8 = convert_fx(model_prepared)
+    model_int8 = torch.quantization.convert(model_prepared, inplace=True)
     torch.save(model_int8.state_dict(), "r18_quant_calib.pth")
+    model_int8.eval()
+
+    calib_quant_model(model, test_loader)
     evaluate_model(model_int8, test_loader)
-
-
-def export_quant_onnx(model):
-    model.to(torch.device("cpu"))
-    model.eval()
-
-    qconfig = get_default_qconfig("fbgemm")
-    qconfig_dict = {
-        "": qconfig,
-        # 'object_type': []
-    }
-    model2 = copy.deepcopy(model)
-    model_prepared = prepare_fx(model2, qconfig_dict)
-    model_int8 = convert_fx(model_prepared)
-    model_int8.load_state_dict(torch.load("r18_quant_calib.pth"))
-    model_int8.eval()
-
-    a = torch.randn([1, 3, 224, 224])
-    torch.onnx.export(model_int8, a, "r18_int8.onnx")
-    print("int8 onnx saved.")
-
-def export_quant_torchscript(model):
-    model.to(torch.device("cpu"))
-    model.eval()
-
-    qconfig = get_default_qconfig("fbgemm")
-    qconfig_dict = {
-        "": qconfig,
-        # 'object_type': []
-    }
-    model2 = copy.deepcopy(model)
-    model_prepared = prepare_fx(model2, qconfig_dict)
-    model_int8 = convert_fx(model_prepared)
-    model_int8.load_state_dict(torch.load("r18_quant_calib.pth"))
-    model_int8.eval()
-
-    a = torch.randn([1, 3, 224, 224])
-    # torch.jit.save.export(model_int8, a, "r18_int8.onnx")
-    sm = torch.jit.trace(model_int8, a)
-    sm.save('r18_int8.torchscript')
-
-    dm = torch.jit.load('r18_int8.torchscript')
-    torch.onnx.export(dm, a, "r18_int8.onnx", opset_version=13)
-    print("int8 onnx saved.")
-
-    evaluate_model(dm, test_loader)
 
 
 if __name__ == "__main__":
@@ -279,5 +229,4 @@ if __name__ == "__main__":
 
     with torch.no_grad():
         quant_fx(model)
-        quant_calib_and_eval(model)
-        # export_quant_torchscript(model)
+        quant2(model)
