@@ -12,6 +12,7 @@ from yolov7.modeling.transcoders.encoder_sparseinst import build_sparse_inst_enc
 from yolov7.modeling.transcoders.decoder_sparseinst import build_sparse_inst_decoder
 
 from ..loss.sparseinst_loss import build_sparse_inst_criterion
+
 # from .utils import nested_tensor_from_tensor_list
 from yolov7.utils.misc import nested_tensor_from_tensor_list
 from alfred.utils.log import logger
@@ -27,7 +28,6 @@ def rescoring_mask(scores, mask_pred, masks):
 
 @META_ARCH_REGISTRY.register()
 class SparseInst(nn.Module):
-
     def __init__(self, cfg):
         super().__init__()
 
@@ -49,7 +49,9 @@ class SparseInst(nn.Module):
         # data and preprocessing
         self.mask_format = cfg.INPUT.MASK_FORMAT
 
-        self.pixel_mean = torch.Tensor(cfg.MODEL.PIXEL_MEAN).to(self.device).view(3, 1, 1)
+        self.pixel_mean = (
+            torch.Tensor(cfg.MODEL.PIXEL_MEAN).to(self.device).view(3, 1, 1)
+        )
         self.pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD).to(self.device).view(3, 1, 1)
         self.normalizer_trans = lambda x: (x - self.pixel_mean) / self.pixel_std
 
@@ -57,7 +59,7 @@ class SparseInst(nn.Module):
         self.cls_threshold = cfg.MODEL.SPARSE_INST.CLS_THRESHOLD
         self.mask_threshold = cfg.MODEL.SPARSE_INST.MASK_THRESHOLD
         self.max_detections = cfg.MODEL.SPARSE_INST.MAX_DETECTIONS
-    
+
     def normalizer(self, image):
         image = (image - self.pixel_mean) / self.pixel_std
         return image
@@ -75,7 +77,7 @@ class SparseInst(nn.Module):
             gt_classes = targets_per_image.gt_classes
             target["labels"] = gt_classes.to(self.device)
             h, w = targets_per_image.image_size
-            if not targets_per_image.has('gt_masks'):
+            if not targets_per_image.has("gt_masks"):
                 gt_masks = BitMasks(torch.empty(0, h, w))
             else:
                 gt_masks = targets_per_image.gt_masks
@@ -89,28 +91,35 @@ class SparseInst(nn.Module):
             new_targets.append(target)
 
         return new_targets
-    
+
     def preprocess_inputs_onnx(self, x):
-        x = x.permute(0, 3, 1, 2)
+        x = [xx.permute(2, 1, 0) for xx in x]
+        # print(x.shape)
         # x = F.interpolate(x, size=(640, 640))
         # x = F.interpolate(x, size=(512, 960))
-        x = self.normalizer_trans(x)
+        x = [self.normalizer_trans(xx) for xx in x]
         return x
 
     def forward(self, batched_inputs):
         if torch.onnx.is_in_onnx_export():
-            logger.info('[WARN] exporting onnx...')
+            logger.info("[WARN] exporting onnx...")
             assert isinstance(batched_inputs, (list, torch.Tensor)) or isinstance(
-                batched_inputs, list), 'onnx export, batched_inputs only needs image tensor or list of tensors'
+                batched_inputs, list
+            ), "onnx export, batched_inputs only needs image tensor or list of tensors"
             images = self.preprocess_inputs_onnx(batched_inputs)
         else:
             images = self.preprocess_inputs(batched_inputs)
 
         if isinstance(images, (list, torch.Tensor)):
             images = nested_tensor_from_tensor_list(images)
-        max_shape = images.tensor.shape[2:]
-        # forward
-        features = self.backbone(images.tensor)
+
+        if isinstance(images, ImageList):
+            max_shape = images.tensor.shape[2:]
+            features = self.backbone(images.tensor)
+        else:
+            max_shape = images.tensors.shape[2:]
+            features = self.backbone(images.tensors)
+
         features = self.encoder(features)
         output = self.decoder(features)
 
@@ -120,13 +129,20 @@ class SparseInst(nn.Module):
             losses = self.criterion(output, targets, max_shape)
             return losses
         else:
-            results = self.inference(output, batched_inputs, max_shape, images.image_sizes)
+            if torch.onnx.is_in_onnx_export():
+                results = self.inference_onnx(
+                    output, batched_inputs, max_shape, images.image_sizes
+                )
+                return results
+            else:
+                results = self.inference(
+                    output, batched_inputs, max_shape, images.image_sizes
+                )
             processed_results = [{"instances": r} for r in results]
             return processed_results
 
     def forward_test(self, images):
         pass
-
 
     def inference(self, output, batched_inputs, max_shape, image_sizes):
         # max_detections = self.max_detections
@@ -135,9 +151,13 @@ class SparseInst(nn.Module):
         pred_masks = output["pred_masks"].sigmoid()
         pred_objectness = output["pred_scores"].sigmoid()
         pred_scores = torch.sqrt(pred_scores * pred_objectness)
-    
-        for _, (scores_per_image, mask_pred_per_image, batched_input, img_shape) in enumerate(zip(
-                pred_scores, pred_masks, batched_inputs, image_sizes)):
+
+        for _, (
+            scores_per_image,
+            mask_pred_per_image,
+            batched_input,
+            img_shape,
+        ) in enumerate(zip(pred_scores, pred_masks, batched_inputs, image_sizes)):
 
             ori_shape = (batched_input["height"], batched_input["width"])
             result = Instances(ori_shape)
@@ -157,15 +177,25 @@ class SparseInst(nn.Module):
 
             h, w = img_shape
             # rescoring mask using maskness
-            scores = rescoring_mask(scores, mask_pred_per_image > self.mask_threshold, mask_pred_per_image)
+            scores = rescoring_mask(
+                scores, mask_pred_per_image > self.mask_threshold, mask_pred_per_image
+            )
 
             # upsample the masks to the original resolution:
             # (1) upsampling the masks to the padded inputs, remove the padding area
             # (2) upsampling/downsampling the masks to the original sizes
             mask_pred_per_image = F.interpolate(
-                mask_pred_per_image.unsqueeze(1), size=max_shape, mode="bilinear", align_corners=False)[:, :, :h, :w]
+                mask_pred_per_image.unsqueeze(1),
+                size=max_shape,
+                mode="bilinear",
+                align_corners=False,
+            )[:, :, :h, :w]
             mask_pred_per_image = F.interpolate(
-                mask_pred_per_image, size=ori_shape, mode='bilinear', align_corners=False).squeeze(1)
+                mask_pred_per_image,
+                size=ori_shape,
+                mode="bilinear",
+                align_corners=False,
+            ).squeeze(1)
 
             mask_pred = mask_pred_per_image > self.mask_threshold
             mask_pred = BitMasks(mask_pred)
@@ -175,8 +205,59 @@ class SparseInst(nn.Module):
             result.scores = scores
             result.pred_classes = labels
             results.append(result)
-
         return results
 
-    
+    def inference_onnx(self, output, batched_inputs, max_shape, image_sizes):
+        # max_detections = self.max_detections
+        results = []
+        pred_scores = output["pred_logits"].sigmoid()
+        pred_masks = output["pred_masks"].sigmoid()
+        pred_objectness = output["pred_scores"].sigmoid()
+        pred_scores = torch.sqrt(pred_scores * pred_objectness)
 
+        all_scores = []
+        all_labels = []
+        all_masks = []
+        for _, (
+            scores_per_image,
+            mask_pred_per_image,
+            batched_input,
+            img_shape,
+        ) in enumerate(zip(pred_scores, pred_masks, batched_inputs, image_sizes)):
+
+            # max/argmax
+            scores, labels = scores_per_image.max(dim=-1)
+            # cls threshold
+            # keep = scores > self.cls_threshold
+            _, keep = torch.topk(scores, k=50)
+            print(keep.shape, scores.shape)
+            scores = scores[keep]
+            labels = labels[keep]
+            mask_pred_per_image = mask_pred_per_image[keep]
+
+            all_scores.append(scores)
+            all_labels.append(labels)
+
+            h, w = img_shape
+            # rescoring mask using maskness
+            scores = rescoring_mask(
+                scores, mask_pred_per_image > self.mask_threshold, mask_pred_per_image
+            )
+
+            # upsample the masks to the original resolution:
+            # (1) upsampling the masks to the padded inputs, remove the padding area
+            # (2) upsampling/downsampling the masks to the original sizes
+            mask_pred_per_image = F.interpolate(
+                mask_pred_per_image.unsqueeze(1),
+                size=max_shape,
+                mode="bilinear",
+                align_corners=False,
+            )[:, :, :h, :w]
+
+            mask_pred = mask_pred_per_image > self.mask_threshold
+            all_masks.append(mask_pred)
+
+        all_scores = torch.stack(all_scores)
+        all_labels = torch.stack(all_labels)
+        all_masks = torch.stack(all_masks)
+        return all_masks, all_scores, all_labels

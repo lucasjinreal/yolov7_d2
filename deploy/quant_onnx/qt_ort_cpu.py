@@ -83,14 +83,14 @@ def evaluate_onnx_model(model_p, test_loader, criterion=None):
     session = ort.InferenceSession(model_p)
     input_name = session.get_inputs()[0].name
 
-    total = 0.
+    total = 0.0
     for inputs, labels in test_loader:
         inputs = inputs.cpu().numpy()
         labels = labels.cpu().numpy()
 
         start = time.perf_counter()
         outputs = session.run([], {input_name: inputs})
-        end = (time.perf_counter() - start)
+        end = (time.perf_counter() - start) * 1000
         total += end
 
         outputs = outputs[0]
@@ -142,7 +142,7 @@ if __name__ == "__main__":
         quant_format=QuantFormat.QOperator,
         per_channel=True,
         weight_type=QuantType.QInt8,
-        calibrate_method=CalibrationMethod.MinMax
+        calibrate_method=CalibrationMethod.MinMax,
     )
     print("Calibrated and quantied.")
 

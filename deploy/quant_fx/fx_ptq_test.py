@@ -270,12 +270,13 @@ if __name__ == "__main__":
     # first finetune model on cifar, we don't have imagnet so using cifar as test
     model = resnet18(pretrained=True)
     model.fc = nn.Linear(512, 10)
-    if os.path.exists("r18_row.pth"):
-        model.load_state_dict(torch.load("r18_row.pth", map_location="cpu"))
+    if os.path.exists("r18_raw.pth"):
+        model.load_state_dict(torch.load("r18_raw.pth", map_location="cpu"))
     else:
-        train_model(model, train_loader, test_loader, torch.device("cuda"))
+        from alfred.dl.torch.common import device
+        train_model(model, train_loader, test_loader, device)
         print("train finished.")
-        torch.save(model.state_dict(), "r18_row.pth")
+        torch.save(model.state_dict(), "r18_raw.pth")
 
     with torch.no_grad():
         quant_fx(model)

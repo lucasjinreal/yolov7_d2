@@ -45,7 +45,6 @@ torch.set_grad_enabled(False)
 
 
 class DefaultPredictor:
-
     def __init__(self, cfg):
         self.cfg = cfg.clone()  # cfg can be modified by model
         self.model = build_model(self.cfg)
@@ -68,15 +67,13 @@ class DefaultPredictor:
             if self.input_format == "RGB":
                 original_image = original_image[:, :, ::-1]
             height, width = original_image.shape[:2]
-            image = self.aug.get_transform(
-                original_image).apply_image(original_image)
-            print('image after transform: ', image.shape)
-            image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
+            image = self.aug.get_transform(original_image).apply_image(original_image)
+            print("image after transform: ", image.shape)
+            # image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
+            # do not do transpose here
+            image = torch.as_tensor(image.astype("float32"))
             inputs = {"image": image, "height": height, "width": width}
-            tic = time.time()
             predictions = self.model([inputs])[0]
-            c = time.time() - tic
-            print('cost: {}, fps: {}'.format(c, 1/c))
             return predictions
 
 
@@ -102,21 +99,21 @@ def setup_cfg(args):
 
 
 def get_parser():
-    parser = argparse.ArgumentParser(
-        description="Detectron2 demo for builtin configs")
+    parser = argparse.ArgumentParser(description="Detectron2 demo for builtin configs")
     parser.add_argument(
         "--config-file",
         default="configs/quick_schedules/mask_rcnn_R_50_FPN_inference_acc_test.yaml",
         metavar="FILE",
         help="path to config file",
     )
-    parser.add_argument("--webcam", action="store_true",
-                        help="Take inputs from webcam.")
+    parser.add_argument(
+        "--webcam", action="store_true", help="Take inputs from webcam."
+    )
     parser.add_argument("--video-input", help="Path to video file.")
     parser.add_argument(
         "--input",
         # nargs="+",
-        default='./images/COCO_val2014_000000001722.jpg',
+        default="./images/COCO_val2014_000000001722.jpg",
         help="A list of space separated input images; "
         "or a single glob pattern such as 'directory/*.jpg'",
     )
@@ -136,7 +133,7 @@ def get_parser():
         "-v",
         "--verbose",
         default=False,
-        action='store_true',
+        action="store_true",
         help="verbose when onnx export",
     )
     parser.add_argument(
@@ -149,18 +146,23 @@ def get_parser():
 
 
 def change_detr_onnx(onnx_path):
-    '''
+    """
     Fix default detr onnx model output all 0
-    '''
-    node_configs = [(1660, 1662), (2775, 2777), (2961, 2963),
-                    (3333, 3335), (4077, 4079)]
-    if 'batch_2' in onnx_path:
+    """
+    node_configs = [
+        (1660, 1662),
+        (2775, 2777),
+        (2961, 2963),
+        (3333, 3335),
+        (4077, 4079),
+    ]
+    if "batch_2" in onnx_path:
         node_number = node_configs[1]
-    elif 'batch_4' in onnx_path:
+    elif "batch_4" in onnx_path:
         node_number = node_configs[2]
-    elif 'batch_8' in onnx_path:
+    elif "batch_8" in onnx_path:
         node_number = node_configs[3]
-    elif 'batch_16' in onnx_path:
+    elif "batch_16" in onnx_path:
         node_number = node_configs[4]
     else:
         node_number = node_configs[0]
@@ -176,25 +178,33 @@ def change_detr_onnx(onnx_path):
             node.inputs[1].values = np.int64(5)
             print(node.inputs[1])
 
-    onnx.save(gs.export_onnx(graph), onnx_path + '_changed.onnx')
+    onnx.save(gs.export_onnx(graph), onnx_path + "_changed.onnx")
     print(f"[INFO] onnx修改完成, 保存在{onnx_path + '_changed.onnx'}.")
 
 
 def load_test_image(f, h, w):
     a = cv2.imread(f)
     a = cv2.resize(a, (w, h))
-    a_t = torch.tensor(a.astype(np.float32)).to(device).unsqueeze(0)
+    # a_t = torch.tensor(a.astype(np.float32)).to(device).unsqueeze(0)
+    a_t = torch.tensor(a.astype(np.float32)).to(device)
     return a_t, a
 
 
 def load_test_image_detr(f, h, w):
     """
-    detr do not using 
+    detr do not using
     """
     a = cv2.imread(f)
     a = cv2.resize(a, (w, h))
     a_t = torch.tensor(a.astype(np.float32)).permute(2, 0, 1).to(device)
-    return torch.stack([a_t, ]), a
+    return (
+        torch.stack(
+            [
+                a_t,
+            ]
+        ),
+        a,
+    )
     # return torch.stack([a_t, a_t]), a
 
 
@@ -222,7 +232,8 @@ def vis_res_fast(res, img, colors):
     clss = clss[indices]
 
     img = visualize_det_cv2_part(
-        img, scores, clss, bboxes, force_color=colors, is_show=True)
+        img, scores, clss, bboxes, force_color=colors, is_show=True
+    )
     # img = cv2.addWeighted(img, 0.9, m, 0.6, 0.9)
     return img
 
@@ -233,44 +244,53 @@ if __name__ == "__main__":
     setup_logger(name="fvcore")
     logger = setup_logger()
     logger.info("Arguments: " + str(args))
-    assert os.path.isfile(
-        args.input), 'onnx export only support send a image file.'
+    assert os.path.isfile(args.input), "onnx export only support send a image file."
 
     cfg = setup_cfg(args)
-    colors = [[random.randint(0, 255) for _ in range(3)]
-              for _ in range(cfg.MODEL.YOLO.CLASSES)]
+    colors = [
+        [random.randint(0, 255) for _ in range(3)]
+        for _ in range(cfg.MODEL.YOLO.CLASSES)
+    ]
 
     metadata = MetadataCatalog.get(cfg.DATASETS.TEST[0])
     predictor = DefaultPredictor(cfg)
 
-    h = 1080
-    w = 1960
+    h = 1056
+    w = 1920
     # h = 640
     # w = 640
-    # inp, ori_img = load_test_image(args.input, h, w)
-    inp, ori_img = load_test_image_detr(args.input, h, w)
-    print('input shape: ', inp.shape)
-    # inp = inp.to(torch.device('cuda'))
+    inp, ori_img = load_test_image(args.input, h, w)
+    # TODO: remove hard coded for detr
+    # inp, ori_img = load_test_image_detr(args.input, h, w)
+    print("input shape: ", inp.shape)
 
     model = predictor.model
     model = model.float()
     model.onnx_export = True
 
     onnx_f = os.path.join(
-        'weights', os.path.basename(cfg.MODEL.WEIGHTS).split('.')[0] + '.onnx')
-    torch.onnx.export(model, inp, onnx_f, output_names={
-                      'out'}, opset_version=12, do_constant_folding=True, verbose=args.verbose)
-    logger.info('Model saved into: {}'.format(onnx_f))
+        "weights", os.path.basename(cfg.MODEL.WEIGHTS).split(".")[0] + ".onnx"
+    )
+    torch.onnx.export(
+        model,
+        [inp],
+        onnx_f,
+        output_names={"out"},
+        opset_version=12,
+        do_constant_folding=True,
+        verbose=args.verbose,
+    )
+    logger.info("Model saved into: {}".format(onnx_f))
 
     # use onnxsimplify to reduce reduent model.
-    sim_onnx = onnx_f.replace('.onnx', '_sim.onnx')
+    sim_onnx = onnx_f.replace(".onnx", "_sim.onnx")
     os.system("python3 -m onnxsim {} {}".format(onnx_f, sim_onnx))
     logger.info("generate simplify onnx to: {}".format(sim_onnx))
-    if 'detr' in sim_onnx:
+    if "detr" in sim_onnx:
         # this is need for detr onnx model
         change_detr_onnx(sim_onnx)
 
-    logger.info('test if onnx export logic is right...')
+    logger.info("test if onnx export logic is right...")
     model.onnx_vis = True
     out = model(inp)
     out = detr_postprocess(out, ori_img)
