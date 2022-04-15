@@ -252,10 +252,10 @@ class SparseInst(nn.Module):
                 size=max_shape,
                 mode="bilinear",
                 align_corners=False,
-            )[:, :, :h, :w]
+            )[:, :h, :w]
 
             mask_pred = mask_pred_per_image > self.mask_threshold
-            all_masks.append(mask_pred)
+            all_masks.append(mask_pred.squeeze(1))
 
         all_scores = torch.stack(all_scores)
         all_labels = torch.stack(all_labels)
