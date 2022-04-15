@@ -1,12 +1,11 @@
-
-
 import argparse
+from cProfile import label
 import os
 import cv2
 import numpy as np
 import onnxruntime
 from alfred.vis.image.det import visualize_det_cv2_part
-
+from alfred.vis.image.mask import vis_bitmasks_with_classes
 
 """
 
@@ -62,7 +61,8 @@ def multiclass_nms(boxes, scores, nms_thr, score_thr):
             if len(keep) > 0:
                 cls_inds = np.ones((len(keep), 1)) * cls_ind
                 dets = np.concatenate(
-                    [valid_boxes[keep], valid_scores[keep, None], cls_inds], 1)
+                    [valid_boxes[keep], valid_scores[keep, None], cls_inds], 1
+                )
                 final_dets.append(dets)
     return np.concatenate(final_dets, 0)
 
@@ -76,8 +76,8 @@ def demo_postprocess(outputs, img_size, p6=False):
     else:
         strides = [8, 16, 32, 64]
 
-    hsizes = [img_size[0]//stride for stride in strides]
-    wsizes = [img_size[1]//stride for stride in strides]
+    hsizes = [img_size[0] // stride for stride in strides]
+    wsizes = [img_size[1] // stride for stride in strides]
 
     for hsize, wsize, stride in zip(hsizes, wsizes, strides):
         # xv, yv = np.meshgrid(np.arange(hsize), np.arange(wsize))
@@ -103,12 +103,14 @@ def preproc(image, input_size, mean, std, swap=(2, 0, 1)):
     img = np.array(image)
     r = min(input_size[0] / img.shape[0], input_size[1] / img.shape[1])
     resized_img = cv2.resize(
-        img, (int(img.shape[1] * r), int(img.shape[0] * r)), interpolation=cv2.INTER_LINEAR
+        img,
+        (int(img.shape[1] * r), int(img.shape[0] * r)),
+        interpolation=cv2.INTER_LINEAR,
     ).astype(np.float32)
     padded_img[: int(img.shape[0] * r), : int(img.shape[1] * r)] = resized_img
     image = padded_img
 
-    cv2.imshow('aad', image.astype(np.uint8))
+    cv2.imshow("aad", image.astype(np.uint8))
     # cv2.waitKey()
 
     image = image.astype(np.float32)
@@ -136,14 +138,14 @@ def make_parser():
         "-i",
         "--image_path",
         type=str,
-        default='test_image.png',
+        default="test_image.png",
         help="Path to your input image.",
     )
     parser.add_argument(
         "-o",
         "--output_dir",
         type=str,
-        default='demo_output',
+        default="demo_output",
         help="Path to your output directory.",
     )
     parser.add_argument(
@@ -167,45 +169,68 @@ def make_parser():
     return parser
 
 
+def vis_res_fast(img, boxes, masks, scores, labels):
+    if masks is not None:
+        img = vis_bitmasks_with_classes(
+            img, labels, masks, force_colors=None, draw_contours=False
+        )
+    thickness = 1 if masks is None else 2
+    font_scale = 0.3 if masks is None else 0.4
+    if boxes:
+        img = visualize_det_cv2_part(
+            img,
+            scores,
+            labels,
+            boxes,
+            line_thickness=thickness,
+            font_scale=font_scale,
+        )
+    return img
+
 def load_test_image(f, h, w):
     a = cv2.imread(f)
     a = cv2.resize(a, (w, h))
-    a_t = [a]
+    a_t = np.expand_dims(np.array(a).astype(np.float32), axis=0)
     return a_t, a
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     args = make_parser().parse_args()
 
-    input_shape = tuple(map(int, args.input_shape.split(',')))
+    input_shape = tuple(map(int, args.input_shape.split(",")))
     # origin_img = cv2.imread(args.image_path)
     # img, ratio = preproc(origin_img, input_shape)
     inp, ori_img = load_test_image(args.image_path, h=input_shape[0], w=input_shape[1])
-
+    print('input shape: ', inp.shape)
     session = onnxruntime.InferenceSession(args.model)
-
+    print(inp)
     ort_inputs = {session.get_inputs()[0].name: inp}
     output = session.run(None, ort_inputs)
     print(output[0].shape)
+    print(output)
 
-    predictions = demo_postprocess(output[0], input_shape, p6=args.with_p6)[0]
+    if 'sparse' in args.model:
+        masks = output[0][0]
+        scores = output[1][0]
+        labels = output[2][0]
+        print(masks.shape)
+        print(scores.shape)
+        img = vis_res_fast(ori_img, None, masks, scores, labels)
+        cv2.imshow("aa", img)
+        cv2.waitKey(0)
+    else:
+        predictions = demo_postprocess(output[0], input_shape, p6=args.with_p6)[0]
+        boxes = predictions[:, :4]
+        scores = predictions[:, 4:5] * predictions[:, 5:]
 
-    boxes = predictions[:, :4]
-    scores = predictions[:, 4:5] * predictions[:, 5:]
-
-    boxes_xyxy = np.ones_like(boxes)
-    boxes_xyxy[:, 0] = boxes[:, 0] - boxes[:, 2]/2.
-    boxes_xyxy[:, 1] = boxes[:, 1] - boxes[:, 3]/2.
-    boxes_xyxy[:, 2] = boxes[:, 0] + boxes[:, 2]/2.
-    boxes_xyxy[:, 3] = boxes[:, 1] + boxes[:, 3]/2.
-    # boxes_xyxy /= ratio
-    dets = multiclass_nms(boxes_xyxy, scores, nms_thr=0.65, score_thr=0.1)
-
-    final_boxes, final_scores, final_cls_inds = dets[:,
-                                                     :4], dets[:, 4], dets[:, 5]
-
-    img = visualize_det_cv2_part(
-        ori_img, final_scores, final_cls_inds, final_boxes)
-
-    cv2.imshow('aa', img)
-    cv2.waitKey(0)
+        boxes_xyxy = np.ones_like(boxes)
+        boxes_xyxy[:, 0] = boxes[:, 0] - boxes[:, 2] / 2.0
+        boxes_xyxy[:, 1] = boxes[:, 1] - boxes[:, 3] / 2.0
+        boxes_xyxy[:, 2] = boxes[:, 0] + boxes[:, 2] / 2.0
+        boxes_xyxy[:, 3] = boxes[:, 1] + boxes[:, 3] / 2.0
+        # boxes_xyxy /= ratio
+        dets = multiclass_nms(boxes_xyxy, scores, nms_thr=0.65, score_thr=0.1)
+        final_boxes, final_scores, final_cls_inds = dets[:, :4], dets[:, 4], dets[:, 5]
+        img = visualize_det_cv2_part(ori_img, final_scores, final_cls_inds, final_boxes)
+        cv2.imshow("aa", img)
+        cv2.waitKey(0)

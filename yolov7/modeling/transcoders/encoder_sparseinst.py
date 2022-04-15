@@ -46,11 +46,8 @@ class PyramidPoolingModule(nn.Module):
         self.bottleneck = Conv2d(in_channels + len(sizes) * channels, in_channels, 1)
 
     def _make_stage(self, features, out_features, size):
-        if torch.onnx.is_in_onnx_export:
-            logger.warning(f'Replace nn.AdaptiveAvgPool2d for onnx export, size: {size}x{size}')
-            prior = MyAdaptiveAvgPool2d((size, size))
-        else:
-            prior = nn.AdaptiveAvgPool2d(output_size=(size, size))
+        # prior = nn.AdaptiveAvgPool2d(output_size=(size, size))
+        prior = MyAdaptiveAvgPool2d((size, size))
         conv = Conv2d(features, out_features, 1)
         return nn.Sequential(prior, conv)
 

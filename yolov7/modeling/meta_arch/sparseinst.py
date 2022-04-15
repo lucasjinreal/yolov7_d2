@@ -53,6 +53,7 @@ class SparseInst(nn.Module):
             torch.Tensor(cfg.MODEL.PIXEL_MEAN).to(self.device).view(3, 1, 1)
         )
         self.pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD).to(self.device).view(3, 1, 1)
+        # only for onnx export
         self.normalizer_trans = lambda x: (x - self.pixel_mean) / self.pixel_std
 
         # inference
@@ -93,7 +94,7 @@ class SparseInst(nn.Module):
         return new_targets
 
     def preprocess_inputs_onnx(self, x):
-        x = [xx.permute(2, 1, 0) for xx in x]
+        x = [xx.permute(2, 0, 1) for xx in x]
         # print(x.shape)
         # x = F.interpolate(x, size=(640, 640))
         # x = F.interpolate(x, size=(512, 960))
@@ -209,11 +210,11 @@ class SparseInst(nn.Module):
 
     def inference_onnx(self, output, batched_inputs, max_shape, image_sizes):
         # max_detections = self.max_detections
-        results = []
         pred_scores = output["pred_logits"].sigmoid()
         pred_masks = output["pred_masks"].sigmoid()
         pred_objectness = output["pred_scores"].sigmoid()
-        pred_scores = torch.sqrt(pred_scores * pred_objectness)
+        # solve Nan problems with a minimal epsilon
+        pred_scores = torch.sqrt(pred_scores * pred_objectness + 1e-3)
 
         all_scores = []
         all_labels = []
@@ -226,18 +227,16 @@ class SparseInst(nn.Module):
         ) in enumerate(zip(pred_scores, pred_masks, batched_inputs, image_sizes)):
 
             # max/argmax
-            scores, labels = scores_per_image.max(dim=-1)
+            scores, labels = torch.max(scores_per_image, dim=scores_per_image.dim()-1)
             # cls threshold
             # keep = scores > self.cls_threshold
             _, keep = torch.topk(scores, k=50)
             print(keep.shape, scores.shape)
             scores = scores[keep]
             labels = labels[keep]
+            # print(scores, labels)
             mask_pred_per_image = mask_pred_per_image[keep]
-
-            all_scores.append(scores)
-            all_labels.append(labels)
-
+            
             h, w = img_shape
             # rescoring mask using maskness
             scores = rescoring_mask(
@@ -255,11 +254,14 @@ class SparseInst(nn.Module):
             )[:, :h, :w]
 
             mask_pred = mask_pred_per_image > self.mask_threshold
+
+            all_scores.append(scores)
+            all_labels.append(labels)
             all_masks.append(mask_pred.squeeze(1))
 
         all_scores = torch.stack(all_scores)
         all_labels = torch.stack(all_labels)
-        all_masks = torch.stack(all_masks).to(torch.int64)
+        all_masks = torch.stack(all_masks).to(torch.long)
         logger.info(f'all_scores: {all_scores.shape}')
         logger.info(f'all_labels: {all_labels.shape}')
         logger.info(f'all_masks: {all_masks.shape}')

@@ -221,10 +221,11 @@ class GroupInstanceBranch(nn.Module):
         normalizer = iam_prob.sum(-1).clamp(min=1e-6)
         inst_features = inst_features / normalizer[:, :, None]
 
+        d4 = torch.div(N, 4, rounding_mode='floor')
         inst_features = (
-            inst_features.reshape(B, 4, N // 4, -1)
+            inst_features.reshape(B, 4, d4, -1)
             .transpose(1, 2)
-            .reshape(B, N // 4, -1)
+            .reshape(B, d4, -1)
         )
 
         inst_features = F.relu_(self.fc(inst_features))

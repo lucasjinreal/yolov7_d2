@@ -186,7 +186,6 @@ def load_test_image(f, h, w, bs=1):
     a = cv2.imread(f)
     a = cv2.resize(a, (w, h))
     a_t = torch.tensor(a.astype(np.float32)).to(device).unsqueeze(0).repeat(bs, 1, 1, 1)
-    # a_t = torch.tensor(a.astype(np.float32)).to(device)
     return a_t, a
 
 
