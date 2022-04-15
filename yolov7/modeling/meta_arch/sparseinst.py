@@ -259,5 +259,8 @@ class SparseInst(nn.Module):
 
         all_scores = torch.stack(all_scores)
         all_labels = torch.stack(all_labels)
-        all_masks = torch.stack(all_masks)
+        all_masks = torch.stack(all_masks).to(torch.int64)
+        logger.info(f'all_scores: {all_scores.shape}')
+        logger.info(f'all_labels: {all_labels.shape}')
+        logger.info(f'all_masks: {all_masks.shape}')
         return all_masks, all_scores, all_labels

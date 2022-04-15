@@ -182,11 +182,11 @@ def change_detr_onnx(onnx_path):
     print(f"[INFO] onnx修改完成, 保存在{onnx_path + '_changed.onnx'}.")
 
 
-def load_test_image(f, h, w):
+def load_test_image(f, h, w, bs=1):
     a = cv2.imread(f)
     a = cv2.resize(a, (w, h))
-    # a_t = torch.tensor(a.astype(np.float32)).to(device).unsqueeze(0)
-    a_t = torch.tensor(a.astype(np.float32)).to(device)
+    a_t = torch.tensor(a.astype(np.float32)).to(device).unsqueeze(0).repeat(bs, 1, 1, 1)
+    # a_t = torch.tensor(a.astype(np.float32)).to(device)
     return a_t, a
 
 
@@ -238,6 +238,15 @@ def vis_res_fast(res, img, colors):
     return img
 
 
+def get_output_names_from_config_file(config_file):
+    if 'sparse_inst' in config_file:
+        return ['masks', 'scores', 'labels']
+    elif 'detr' in config_file:
+        return ['boxes', 'scores', 'labels']
+    else:
+        return ['outs']
+
+
 if __name__ == "__main__":
     mp.set_start_method("spawn", force=True)
     args = get_parser().parse_args()
@@ -255,14 +264,14 @@ if __name__ == "__main__":
     metadata = MetadataCatalog.get(cfg.DATASETS.TEST[0])
     predictor = DefaultPredictor(cfg)
 
-    h = 1056
-    w = 1920
-    # h = 640
-    # w = 640
+    # h = 1056
+    # w = 1920
+    h = 640
+    w = 640
     inp, ori_img = load_test_image(args.input, h, w)
     # TODO: remove hard coded for detr
     # inp, ori_img = load_test_image_detr(args.input, h, w)
-    print("input shape: ", inp.shape)
+    logger.info(f"input shape: {inp.shape}")
 
     model = predictor.model
     model = model.float()
@@ -273,9 +282,9 @@ if __name__ == "__main__":
     )
     torch.onnx.export(
         model,
-        [inp],
+        inp,
         onnx_f,
-        output_names={"out"},
+        output_names=get_output_names_from_config_file(args.config_file),
         opset_version=12,
         do_constant_folding=True,
         verbose=args.verbose,

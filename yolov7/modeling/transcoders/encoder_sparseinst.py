@@ -9,9 +9,31 @@ from fvcore.nn.weight_init import c2_msra_fill, c2_xavier_fill
 
 from detectron2.utils.registry import Registry
 from detectron2.layers import Conv2d
+from alfred.utils.log import logger
 
 SPARSE_INST_ENCODER_REGISTRY = Registry("SPARSE_INST_ENCODER")
 SPARSE_INST_ENCODER_REGISTRY.__doc__ = "registry for SparseInst decoder"
+
+
+class MyAdaptiveAvgPool2d(nn.Module):
+    def __init__(self, sz=None):
+        super().__init__()
+        self.sz = sz
+
+    def forward(self, x):
+        inp_size = x.size()
+        kernel_width, kernel_height = inp_size[2], inp_size[3]
+        if self.sz is not None:
+            if isinstance(self.sz, int):
+                kernel_width = math.ceil(inp_size[2] / self.sz)
+                kernel_height = math.ceil(inp_size[3] / self.sz)
+        elif isinstance(self.sz, list) or isinstance(self.sz, tuple):
+            assert len(self.sz) == 2
+            kernel_width = math.ceil(inp_size[2] / self.sz[0])
+            kernel_height = math.ceil(inp_size[3] / self.sz[1])
+        return F.avg_pool2d(
+            input=x, ceil_mode=False, kernel_size=(kernel_width, kernel_height)
+        )
 
 
 class PyramidPoolingModule(nn.Module):
@@ -24,7 +46,11 @@ class PyramidPoolingModule(nn.Module):
         self.bottleneck = Conv2d(in_channels + len(sizes) * channels, in_channels, 1)
 
     def _make_stage(self, features, out_features, size):
-        prior = nn.AdaptiveAvgPool2d(output_size=(size, size))
+        if torch.onnx.is_in_onnx_export:
+            logger.warning(f'Replace nn.AdaptiveAvgPool2d for onnx export, size: {size}x{size}')
+            prior = MyAdaptiveAvgPool2d((size, size))
+        else:
+            prior = nn.AdaptiveAvgPool2d(output_size=(size, size))
         conv = Conv2d(features, out_features, 1)
         return nn.Sequential(prior, conv)
 

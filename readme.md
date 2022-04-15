@@ -93,7 +93,6 @@ Here are some tasks need to be claimed:
 
 
 
-
 ## 💁‍♂️ Results
 
 | YOLOv7 Instance             |  Face & Detection |
@@ -101,6 +100,24 @@ Here are some tasks need to be claimed:
 ![](https://z3.ax1x.com/2021/09/08/hHPhUx.png)  |  ![](https://z3.ax1x.com/2021/07/19/WGVhlj.png)
 ![](https://z3.ax1x.com/2021/09/08/hHP7xe.png)  |  ![](https://z3.ax1x.com/2021/07/22/WDr5V0.png)
 ![](https://s1.ax1x.com/2022/03/25/qN5zp6.png)  |  ![](https://s2.loli.net/2022/03/25/MBwq9YT7zC5Sd1A.png)
+
+
+## 🆕 News!
+
+- **2022.04.15**: Now, we support the `SparseInst` onnx expport!
+- **2022.03.25**: New instance seg supported! 40 FPS @ 37 mAP!! Which is fast;
+- **2021.09.16**: First transformer based DETR model added, will explore more DETR series models;
+- **2021.08.02**: **YOLOX** arch added, you can train YOLOX as well in this repo;
+- **2021.07.25**: We found **YOLOv7-Res2net50** beat res50 and darknet53 at same speed level! 5% AP boost on custom dataset;
+- **2021.07.04**: Added YOLOF and we can have a anchor free support as well, YOLOF achieves a better trade off on speed and accuracy;
+- **2021.06.25**: this project first started.
+- more
+
+
+## 🧑‍🦯 Installation && Quick Start
+
+- See [docs/install.md](docs/install.md)
+
 
 
 ## 🤔 Features
@@ -115,51 +132,18 @@ Some highlights of YOLOv7 are:
 
 We are strongly recommend you send PR if you have any further development on this project, **the only reason for opensource it is just for using community power to make it stronger and further**. It's very welcome for anyone contribute on any features!
 
+## 🧙‍♂️ Pretrained Models
 
-
-## 😎 Rules
-
-There are some rules you must follow to if you want train on your own dataset:
-
-- Rule No.1: Always set your own anchors on your dataset, using `tools/compute_anchors.py`, this applys to any other anchor-based detection methods as well (EfficientDet etc.);
-- Rule No.2: Keep a faith on your loss will goes down eventually, if not, dig deeper to find out why (but do not post issues repeated caused I might don't know either.).
-- Rule No.3: No one will tells u but it's real: *do not change backbone easily, whole params coupled with your backbone, dont think its simple as you think it should be*, also a Deeplearning engineer **is not an easy work as you think**, the whole knowledge like an ocean, and your knowledge is just a tiny drop of water...
-- Rule No.4: **must** using pretrain weights for **transoformer based backbone**, otherwise your loss will bump;
-
-Make sure you have read **rules** before ask me any questions.
-
-
-
-## 🆕 News!
-
-- **2022.03.25**: New instance seg supported! 40 FPS @ 37 mAP!! Which is fast;
-- **2021.09.16**: First transformer based DETR model added, will explore more DETR series models;
-- **2021.08.02**: **YOLOX** arch added, you can train YOLOX as well in this repo;
-- **2021.07.25**: We found **YOLOv7-Res2net50** beat res50 and darknet53 at same speed level! 5% AP boost on custom dataset;
-- **2021.07.04**: Added YOLOF and we can have a anchor free support as well, YOLOF achieves a better trade off on speed and accuracy;
-- **2021.06.25**: this project first started.
-- more
-
-
-## 🧑‍🦯 Installation && Quick Start
-
-- See [docs/install.md](docs/install.md)
-
-## 😎 Train
-
-For training, quite simple, same as detectron2:
-
-```
-python train_net.py --config-file configs/coco/darknet53.yaml --num-gpus 8
-```
-
-If you want train YOLOX, you can using config file `configs/coco/yolox_s.yaml`. All support arch are:
-
-- **YOLOX**: anchor free yolo;
-- **YOLOv7**: traditional yolo with some explorations, mainly focus on loss experiments;
-- **YOLOv7P**: traditional yolo merged with decent arch from YOLOX;
-- **YOLOMask**: arch do detection and segmentation at the same time (tbd);
-- **YOLOInsSeg**: instance segmentation based on YOLO detection (tbd);
+| model | backbone | input | aug | AP<sup>val</sup> |  AP  | FPS | weights |
+| :---- | :------  | :---: | :-: |:--------------: | :--: | :-: | :-----: |
+| [SparseInst](configs/sparse_inst_r50_base.yaml) | [R-50]() | 640 | &#x2718; | 32.8 | - | 44.3 | [model](https://drive.google.com/file/d/12RQLHD5EZKIOvlqW3avUCeYjFG1NPKDy/view?usp=sharing) |
+| [SparseInst](sparse_inst_r50vd_base.yaml) | [R-50-vd](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 640 | &#x2718; | 34.1 | - | 42.6 | [model]()|
+| [SparseInst (G-IAM)](configs/sparse_inst_r50_giam.yaml) | [R-50]() | 608 | &#x2718; | 33.4 | - | 44.6 | [model](https://drive.google.com/file/d/1pXU7Dsa1L7nUiLU9ULG2F6Pl5m5NEguL/view?usp=sharing) |
+| [SparseInst (G-IAM)](configs/sparse_inst_r50_giam_aug.yaml) | [R-50]() | 608 | &#10003; | 34.2 | 34.7 | 44.6 | [model](https://drive.google.com/file/d/1MK8rO3qtA7vN9KVSBdp0VvZHCNq8-bvz/view?usp=sharing) |
+| [SparseInst (G-IAM)](configs/sparse_inst_r50_dcn_giam_aug.yaml) | [R-50-DCN]() | 608 | &#10003;| 36.4 | 36.8 | 41.6 | [model](https://drive.google.com/file/d/1qxdLRRHbIWEwRYn-NPPeCCk6fhBjc946/view?usp=sharing) |
+| [SparseInst (G-IAM)](configs/sparse_inst_r50vd_giam_aug.yaml) | [R-50-vd](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 608 | &#10003;| 35.6 | 36.1 | 42.8| [model](https://drive.google.com/file/d/1dlamg7ych_BdWpPUCuiBXbwE0SXpsfGx/view?usp=sharing) |
+| [SparseInst (G-IAM)](configs/sparse_inst_r50vd_dcn_giam_aug.yaml) | [R-50-vd-DCN](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 608 | &#10003; | 37.4 | 37.9 | 40.0  | [model](https://drive.google.com/file/d/1clYPdCNrDNZLbmlAEJ7wjsrOLn1igOpT/view?usp=sharing)|
+| [SparseInst (G-IAM)](sparse_inst_r50vd_dcn_giam_aug.yaml) | [R-50-vd-DCN](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 640 | &#10003; | 37.7 | 38.1 | 39.3 |  [model](https://drive.google.com/file/d/1clYPdCNrDNZLbmlAEJ7wjsrOLn1igOpT/view?usp=sharing)| 
 
 
 ## 🥰 Demo
@@ -182,19 +166,34 @@ python demo.py --config-file configs/coco/sparseinst/sparse_inst_r50vd_giam_aug.
 python3 demo_lazyconfig.py --config-file configs/new_baselines/panoptic_fpn_regnetx_0.4g.py --opts train.init_checkpoint=output/model_0004999.pth
 ```
 
+## 😎 Train
 
-## 🧙‍♂️ Pretrained Models
+For training, quite simple, same as detectron2:
 
-| model | backbone | input | aug | AP<sup>val</sup> |  AP  | FPS | weights |
-| :---- | :------  | :---: | :-: |:--------------: | :--: | :-: | :-----: |
-| [SparseInst](configs/sparse_inst_r50_base.yaml) | [R-50]() | 640 | &#x2718; | 32.8 | - | 44.3 | [model](https://drive.google.com/file/d/12RQLHD5EZKIOvlqW3avUCeYjFG1NPKDy/view?usp=sharing) |
-| [SparseInst](sparse_inst_r50vd_base.yaml) | [R-50-vd](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 640 | &#x2718; | 34.1 | - | 42.6 | [model]()|
-| [SparseInst (G-IAM)](configs/sparse_inst_r50_giam.yaml) | [R-50]() | 608 | &#x2718; | 33.4 | - | 44.6 | [model](https://drive.google.com/file/d/1pXU7Dsa1L7nUiLU9ULG2F6Pl5m5NEguL/view?usp=sharing) |
-| [SparseInst (G-IAM)](configs/sparse_inst_r50_giam_aug.yaml) | [R-50]() | 608 | &#10003; | 34.2 | 34.7 | 44.6 | [model](https://drive.google.com/file/d/1MK8rO3qtA7vN9KVSBdp0VvZHCNq8-bvz/view?usp=sharing) |
-| [SparseInst (G-IAM)](configs/sparse_inst_r50_dcn_giam_aug.yaml) | [R-50-DCN]() | 608 | &#10003;| 36.4 | 36.8 | 41.6 | [model](https://drive.google.com/file/d/1qxdLRRHbIWEwRYn-NPPeCCk6fhBjc946/view?usp=sharing) |
-| [SparseInst (G-IAM)](configs/sparse_inst_r50vd_giam_aug.yaml) | [R-50-vd](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 608 | &#10003;| 35.6 | 36.1 | 42.8| [model](https://drive.google.com/file/d/1dlamg7ych_BdWpPUCuiBXbwE0SXpsfGx/view?usp=sharing) |
-| [SparseInst (G-IAM)](configs/sparse_inst_r50vd_dcn_giam_aug.yaml) | [R-50-vd-DCN](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 608 | &#10003; | 37.4 | 37.9 | 40.0  | [model](https://drive.google.com/file/d/1clYPdCNrDNZLbmlAEJ7wjsrOLn1igOpT/view?usp=sharing)|
-| [SparseInst (G-IAM)](sparse_inst_r50vd_dcn_giam_aug.yaml) | [R-50-vd-DCN](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 640 | &#10003; | 37.7 | 38.1 | 39.3 |  [model](https://drive.google.com/file/d/1clYPdCNrDNZLbmlAEJ7wjsrOLn1igOpT/view?usp=sharing)| 
+```
+python train_net.py --config-file configs/coco/darknet53.yaml --num-gpus 8
+```
+
+If you want train YOLOX, you can using config file `configs/coco/yolox_s.yaml`. All support arch are:
+
+- **YOLOX**: anchor free yolo;
+- **YOLOv7**: traditional yolo with some explorations, mainly focus on loss experiments;
+- **YOLOv7P**: traditional yolo merged with decent arch from YOLOX;
+- **YOLOMask**: arch do detection and segmentation at the same time (tbd);
+- **YOLOInsSeg**: instance segmentation based on YOLO detection (tbd);
+
+
+## 😎 Rules
+
+There are some rules you must follow to if you want train on your own dataset:
+
+- Rule No.1: Always set your own anchors on your dataset, using `tools/compute_anchors.py`, this applys to any other anchor-based detection methods as well (EfficientDet etc.);
+- Rule No.2: Keep a faith on your loss will goes down eventually, if not, dig deeper to find out why (but do not post issues repeated caused I might don't know either.).
+- Rule No.3: No one will tells u but it's real: *do not change backbone easily, whole params coupled with your backbone, dont think its simple as you think it should be*, also a Deeplearning engineer **is not an easy work as you think**, the whole knowledge like an ocean, and your knowledge is just a tiny drop of water...
+- Rule No.4: **must** using pretrain weights for **transoformer based backbone**, otherwise your loss will bump;
+
+Make sure you have read **rules** before ask me any questions.
+
 
 ## 🔨 Export ONNX && TensorRTT && TVM
 
@@ -202,7 +201,6 @@ python3 demo_lazyconfig.py --config-file configs/new_baselines/panoptic_fpn_regn
 
   ```
   python export_onnx.py --config-file detr/config/file
-  
   ```
 
   this works has been done, inference script included inside `tools`.
@@ -211,7 +209,8 @@ python3 demo_lazyconfig.py --config-file configs/new_baselines/panoptic_fpn_regn
 
   anchorDETR also supported training and exporting to ONNX.
 
-
+3. `SparseInst`:
+   Sparsinst already supported exporting to onnx!!
 
 
 
