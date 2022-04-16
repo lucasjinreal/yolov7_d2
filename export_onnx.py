@@ -237,13 +237,16 @@ def vis_res_fast(res, img, colors):
     return img
 
 
-def get_output_names_from_config_file(config_file):
-    if 'sparse_inst' in config_file:
-        return ['masks', 'scores', 'labels']
-    elif 'detr' in config_file:
-        return ['boxes', 'scores', 'labels']
+def get_model_infos(config_file):
+    if "sparse_inst" in config_file:
+        output_names = ["masks", "scores", "labels"]
+        input_names = ["images"]
+        dynamic_axes = {"images": {0: "batch"}}
+        return input_names, output_names, dynamic_axes
+    elif "detr" in config_file:
+        return ["boxes", "scores", "labels"]
     else:
-        return ['outs']
+        return ["outs"]
 
 
 if __name__ == "__main__":
@@ -279,20 +282,24 @@ if __name__ == "__main__":
     onnx_f = os.path.join(
         "weights", os.path.basename(cfg.MODEL.WEIGHTS).split(".")[0] + ".onnx"
     )
+
+    input_names, output_names, dynamic_axes = get_model_infos(args.config_file)
     torch.onnx.export(
         model,
         inp,
         onnx_f,
-        output_names=get_output_names_from_config_file(args.config_file),
+        input_names=input_names,
+        output_names=output_names,
         opset_version=12,
         do_constant_folding=True,
         verbose=args.verbose,
+        dynamic_axes=dynamic_axes,
     )
     logger.info("Model saved into: {}".format(onnx_f))
 
     # use onnxsimplify to reduce reduent model.
     sim_onnx = onnx_f.replace(".onnx", "_sim.onnx")
-    os.system("python3 -m onnxsim {} {}".format(onnx_f, sim_onnx))
+    os.system(f"python3 -m onnxsim {onnx_f} {sim_onnx} --dynamic-input-shape --input-shape 1,{h},{w},3")
     logger.info("generate simplify onnx to: {}".format(sim_onnx))
     if "detr" in sim_onnx:
         # this is need for detr onnx model

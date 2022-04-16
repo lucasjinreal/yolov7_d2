@@ -172,7 +172,12 @@ def make_parser():
 def vis_res_fast(img, boxes, masks, scores, labels):
     if masks is not None:
         img = vis_bitmasks_with_classes(
-            img, labels, masks, force_colors=None, draw_contours=False
+            img,
+            labels,
+            masks,
+            force_colors=None,
+            draw_contours=True,
+            mask_border_color=[255, 255, 255],
         )
     thickness = 1 if masks is None else 2
     font_scale = 0.3 if masks is None else 0.4
@@ -187,6 +192,7 @@ def vis_res_fast(img, boxes, masks, scores, labels):
         )
     return img
 
+
 def load_test_image(f, h, w):
     a = cv2.imread(f)
     a = cv2.resize(a, (w, h))
@@ -196,25 +202,24 @@ def load_test_image(f, h, w):
 
 if __name__ == "__main__":
     args = make_parser().parse_args()
-
     input_shape = tuple(map(int, args.input_shape.split(",")))
-    # origin_img = cv2.imread(args.image_path)
-    # img, ratio = preproc(origin_img, input_shape)
     inp, ori_img = load_test_image(args.image_path, h=input_shape[0], w=input_shape[1])
-    print('input shape: ', inp.shape)
+    print("input shape: ", inp.shape)
     session = onnxruntime.InferenceSession(args.model)
-    print(inp)
     ort_inputs = {session.get_inputs()[0].name: inp}
     output = session.run(None, ort_inputs)
     print(output[0].shape)
-    print(output)
 
-    if 'sparse' in args.model:
+    if "sparse" in args.model:
         masks = output[0][0]
         scores = output[1][0]
         labels = output[2][0]
-        print(masks.shape)
-        print(scores.shape)
+        keep = scores > 0.3
+        scores = scores[keep]
+        labels = labels[keep]
+        masks = masks[keep]
+        print(scores)
+        print(labels)
         img = vis_res_fast(ori_img, None, masks, scores, labels)
         cv2.imshow("aa", img)
         cv2.waitKey(0)

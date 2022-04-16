@@ -246,6 +246,7 @@ class SparseInst(nn.Module):
             # upsample the masks to the original resolution:
             # (1) upsampling the masks to the padded inputs, remove the padding area
             # (2) upsampling/downsampling the masks to the original sizes
+            print('mask_pred_per_image: ', mask_pred_per_image.shape)
             mask_pred_per_image = F.interpolate(
                 mask_pred_per_image.unsqueeze(1),
                 size=max_shape,
@@ -254,10 +255,9 @@ class SparseInst(nn.Module):
             )[:, :h, :w]
 
             mask_pred = mask_pred_per_image > self.mask_threshold
-
             all_scores.append(scores)
             all_labels.append(labels)
-            all_masks.append(mask_pred.squeeze(1))
+            all_masks.append(mask_pred)
 
         all_scores = torch.stack(all_scores)
         all_labels = torch.stack(all_labels)
