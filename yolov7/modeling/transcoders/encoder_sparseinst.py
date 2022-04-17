@@ -31,6 +31,9 @@ class MyAdaptiveAvgPool2d(nn.Module):
             assert len(self.sz) == 2
             kernel_width = math.ceil(inp_size[2] / self.sz[0])
             kernel_height = math.ceil(inp_size[3] / self.sz[1])
+        if torch.is_tensor(kernel_width):
+            kernel_width = kernel_width.item()
+            kernel_height = kernel_height.item()
         return F.avg_pool2d(
             input=x, ceil_mode=False, kernel_size=(kernel_width, kernel_height)
         )

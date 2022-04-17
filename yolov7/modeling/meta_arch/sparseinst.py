@@ -54,7 +54,7 @@ class SparseInst(nn.Module):
         )
         self.pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD).to(self.device).view(3, 1, 1)
         # only for onnx export
-        self.normalizer_trans = lambda x: (x - self.pixel_mean) / self.pixel_std
+        self.normalizer_trans = lambda x: (x - self.pixel_mean.unsqueeze(0)) / self.pixel_std.unsqueeze(0)
 
         # inference
         self.cls_threshold = cfg.MODEL.SPARSE_INST.CLS_THRESHOLD
@@ -94,11 +94,8 @@ class SparseInst(nn.Module):
         return new_targets
 
     def preprocess_inputs_onnx(self, x):
-        x = [xx.permute(2, 0, 1) for xx in x]
-        # print(x.shape)
-        # x = F.interpolate(x, size=(640, 640))
-        # x = F.interpolate(x, size=(512, 960))
-        x = [self.normalizer_trans(xx) for xx in x]
+        x = x.permute(0, 3, 1, 2)
+        x = self.normalizer_trans(x)
         return x
 
     def forward(self, batched_inputs):
@@ -108,18 +105,20 @@ class SparseInst(nn.Module):
                 batched_inputs, list
             ), "onnx export, batched_inputs only needs image tensor or list of tensors"
             images = self.preprocess_inputs_onnx(batched_inputs)
+            logger.info(f'images onnx input: {images.shape}')
         else:
             images = self.preprocess_inputs(batched_inputs)
 
-        if isinstance(images, (list, torch.Tensor)):
-            images = nested_tensor_from_tensor_list(images)
+        # if isinstance(images, (list, torch.Tensor)):
+        #     images = nested_tensor_from_tensor_list(images)
 
         if isinstance(images, ImageList):
             max_shape = images.tensor.shape[2:]
             features = self.backbone(images.tensor)
         else:
-            max_shape = images.tensors.shape[2:]
-            features = self.backbone(images.tensors)
+            # onnx trace
+            max_shape = images.shape[2:]
+            features = self.backbone(images)
 
         features = self.encoder(features)
         output = self.decoder(features)
@@ -132,7 +131,7 @@ class SparseInst(nn.Module):
         else:
             if torch.onnx.is_in_onnx_export():
                 results = self.inference_onnx(
-                    output, batched_inputs, max_shape, images.image_sizes
+                    output, batched_inputs, max_shape
                 )
                 return results
             else:
@@ -208,7 +207,7 @@ class SparseInst(nn.Module):
             results.append(result)
         return results
 
-    def inference_onnx(self, output, batched_inputs, max_shape, image_sizes):
+    def inference_onnx(self, output, batched_inputs, max_shape):
         # max_detections = self.max_detections
         pred_scores = output["pred_logits"].sigmoid()
         pred_masks = output["pred_masks"].sigmoid()
@@ -219,12 +218,13 @@ class SparseInst(nn.Module):
         all_scores = []
         all_labels = []
         all_masks = []
+        print('max_shape: ', max_shape)
+
         for _, (
             scores_per_image,
             mask_pred_per_image,
             batched_input,
-            img_shape,
-        ) in enumerate(zip(pred_scores, pred_masks, batched_inputs, image_sizes)):
+        ) in enumerate(zip(pred_scores, pred_masks, batched_inputs)):
 
             # max/argmax
             scores, labels = torch.max(scores_per_image, dim=scores_per_image.dim()-1)
@@ -237,7 +237,7 @@ class SparseInst(nn.Module):
             # print(scores, labels)
             mask_pred_per_image = mask_pred_per_image[keep]
             
-            h, w = img_shape
+            h, w = max_shape
             # rescoring mask using maskness
             scores = rescoring_mask(
                 scores, mask_pred_per_image > self.mask_threshold, mask_pred_per_image
@@ -255,15 +255,16 @@ class SparseInst(nn.Module):
             )[:, :h, :w]
 
             mask_pred = mask_pred_per_image > self.mask_threshold
+
+            all_masks.append(mask_pred)
             all_scores.append(scores)
             all_labels.append(labels)
-            all_masks.append(mask_pred)
-
+            
+        all_masks = torch.stack(all_masks).to(torch.long)
         all_scores = torch.stack(all_scores)
         all_labels = torch.stack(all_labels)
-        all_masks = torch.stack(all_masks).to(torch.long)
         # logger.info(f'all_scores: {all_scores.shape}')
-        logger.info(f'all_labels: {all_labels.shape}')
+        # logger.info(f'all_labels: {all_labels.shape}')
         logger.info(f'all_masks: {all_masks.shape}')
-        return all_masks, all_scores, all_labels
+        return all_masks, all_scores
         # return all_masks, all_labels

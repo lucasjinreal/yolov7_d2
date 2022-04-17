@@ -212,6 +212,7 @@ if __name__ == "__main__":
 
     if "sparse" in args.model:
         masks = output[0][0]
+        masks = np.squeeze(masks, axis=1)
         scores = output[1][0]
         labels = output[2][0]
         keep = scores > 0.3

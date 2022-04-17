@@ -239,8 +239,8 @@ def vis_res_fast(res, img, colors):
 
 def get_model_infos(config_file):
     if "sparse_inst" in config_file:
-        output_names = ["masks", "scores", "labels"]
-        output_names = ["masks", "labels"]
+        # output_names = ["masks", "scores", "labels"]
+        output_names = ["masks", "scores"]
         input_names = ["images"]
         dynamic_axes = {"images": {0: "batch"}}
         return input_names, output_names, dynamic_axes
@@ -300,7 +300,9 @@ if __name__ == "__main__":
 
     # use onnxsimplify to reduce reduent model.
     sim_onnx = onnx_f.replace(".onnx", "_sim.onnx")
-    os.system(f"python3 -m onnxsim {onnx_f} {sim_onnx} --dynamic-input-shape --input-shape 1,{h},{w},3")
+    os.system(
+        f"python3 -m onnxsim {onnx_f} {sim_onnx} --dynamic-input-shape --input-shape 1,{h},{w},3"
+    )
     logger.info("generate simplify onnx to: {}".format(sim_onnx))
     if "detr" in sim_onnx:
         # this is need for detr onnx model

@@ -32,7 +32,7 @@ def pqt(onnx_f):
     input_shape = session.get_inputs()[0].shape
 
     calib_dataloader = get_calib_dataloader_coco(
-        coco_root, anno_f, preprocess_func=preprocess_func, input_names=input_name, bs=1
+        coco_root, anno_f, preprocess_func=preprocess_func, input_names=input_name, bs=1, max_step=50
     )
     quantize_static_onnx(onnx_f, calib_dataloader=calib_dataloader)
 
