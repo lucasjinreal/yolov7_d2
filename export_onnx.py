@@ -291,7 +291,7 @@ if __name__ == "__main__":
         onnx_f,
         input_names=input_names,
         output_names=output_names,
-        opset_version=13,
+        opset_version=12,
         do_constant_folding=True,
         verbose=args.verbose,
         dynamic_axes=dynamic_axes,
