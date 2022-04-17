@@ -240,6 +240,7 @@ def vis_res_fast(res, img, colors):
 def get_model_infos(config_file):
     if "sparse_inst" in config_file:
         output_names = ["masks", "scores", "labels"]
+        output_names = ["masks", "labels"]
         input_names = ["images"]
         dynamic_axes = {"images": {0: "batch"}}
         return input_names, output_names, dynamic_axes
