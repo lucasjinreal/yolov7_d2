@@ -12,8 +12,8 @@ import onnxruntime as ort
 
 
 def preprocess_func(img, target):
-    w = 640
-    h = 640
+    w = 192
+    h = 256
     a = cv2.resize(img, (w, h))
     a_t = np.array(a).astype(np.float32)
     boxes = []
