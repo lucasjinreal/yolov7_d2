@@ -146,7 +146,8 @@ if __name__ == "__main__":
     )
     print("Calibrated and quantied.")
 
-    run_time(model_p)
-    evaluate_onnx_model(model_p, test_loader)
     run_time(model_qp)
     evaluate_onnx_model(model_qp, test_loader)
+    run_time(model_p)
+    evaluate_onnx_model(model_p, test_loader)
+ 

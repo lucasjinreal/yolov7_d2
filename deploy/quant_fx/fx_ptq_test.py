@@ -11,6 +11,7 @@ from torch.quantization import (
     get_default_qconfig,
 )
 from torch import optim
+from torch.onnx import OperatorExportTypes
 import os
 import time
 
@@ -227,6 +228,7 @@ def export_quant_onnx(model):
         "": qconfig,
         # 'object_type': []
     }
+
     model2 = copy.deepcopy(model)
     model_prepared = prepare_fx(model2, qconfig_dict)
     model_int8 = convert_fx(model_prepared)
@@ -237,6 +239,7 @@ def export_quant_onnx(model):
     torch.onnx.export(model_int8, a, "r18_int8.onnx")
     print("int8 onnx saved.")
 
+
 def export_quant_torchscript(model):
     model.to(torch.device("cpu"))
     model.eval()
@@ -246,22 +249,32 @@ def export_quant_torchscript(model):
         "": qconfig,
         # 'object_type': []
     }
-    model2 = copy.deepcopy(model)
-    model_prepared = prepare_fx(model2, qconfig_dict)
-    model_int8 = convert_fx(model_prepared)
-    model_int8.load_state_dict(torch.load("r18_quant_calib.pth"))
-    model_int8.eval()
+    print(qconfig_dict)
+    with torch.no_grad():
+        model2 = copy.deepcopy(model)
+        model_prepared = prepare_fx(model2, qconfig_dict)
+        model_int8 = convert_fx(model_prepared)
+        model_int8.load_state_dict(torch.load("r18_quant_calib.pth"))
+        model_int8.eval()
 
-    a = torch.randn([1, 3, 224, 224])
-    # torch.jit.save.export(model_int8, a, "r18_int8.onnx")
-    sm = torch.jit.trace(model_int8, a)
-    sm.save('r18_int8.torchscript')
+        a = torch.randn([1, 3, 224, 224])
+        # torch.jit.save.export(model_int8, a, "r18_int8.onnx")
+        sm = torch.jit.trace(model_int8, a)
+        sm.save("r18_int8.torchscript")
 
-    dm = torch.jit.load('r18_int8.torchscript')
-    torch.onnx.export(dm, a, "r18_int8.onnx", opset_version=13)
-    print("int8 onnx saved.")
+        dm = torch.jit.load("r18_int8.torchscript")
 
-    evaluate_model(dm, test_loader)
+        print(model_int8)
+        torch.onnx.export(
+            model_int8,
+            a,
+            "r18_int8.onnx",
+            opset_version=13,
+            operator_export_type=OperatorExportTypes.ONNX_ATEN_FALLBACK,
+        )
+        print("int8 onnx saved.")
+
+        evaluate_model(dm, test_loader)
 
 
 if __name__ == "__main__":
@@ -274,6 +287,7 @@ if __name__ == "__main__":
         model.load_state_dict(torch.load("r18_raw.pth", map_location="cpu"))
     else:
         from alfred.dl.torch.common import device
+
         train_model(model, train_loader, test_loader, device)
         print("train finished.")
         torch.save(model.state_dict(), "r18_raw.pth")
@@ -281,4 +295,4 @@ if __name__ == "__main__":
     with torch.no_grad():
         quant_fx(model)
         quant_calib_and_eval(model)
-        # export_quant_torchscript(model)
+        export_quant_torchscript(model)
