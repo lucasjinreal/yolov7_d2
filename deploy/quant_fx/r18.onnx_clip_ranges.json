@@ -1,0 +1,38 @@
+{
+    "tensorrt": {
+        "blob_range": {
+            "input": 2.7645304203033447,
+            "::FixedPerTensorAffine_419": 5.25675630569458,
+            "::FixedPerTensorAffine_425": 5.23717737197876,
+            "::FixedPerTensorAffine_438": 2.820558786392212,
+            "::FixedPerTensorAffine_450": 3.860928535461426,
+            "::FixedPerTensorAffine_457": 5.737135887145996,
+            "::FixedPerTensorAffine_470": 2.6348819732666016,
+            "::FixedPerTensorAffine_482": 6.245926380157471,
+            "::FixedPerTensorAffine_489": 6.591638088226318,
+            "::FixedPerTensorAffine_502": 2.662112236022949,
+            "::FixedPerTensorAffine_514": 3.563220500946045,
+            "::FixedPerTensorAffine_526": 3.338449239730835,
+            "::FixedPerTensorAffine_533": 3.929392099380493,
+            "::FixedPerTensorAffine_546": 2.284010887145996,
+            "::FixedPerTensorAffine_558": 3.760089635848999,
+            "::FixedPerTensorAffine_565": 5.2349677085876465,
+            "::FixedPerTensorAffine_578": 2.779576539993286,
+            "::FixedPerTensorAffine_590": 3.2088496685028076,
+            "::FixedPerTensorAffine_602": 1.4625221490859985,
+            "::FixedPerTensorAffine_609": 3.332473039627075,
+            "::FixedPerTensorAffine_622": 2.045714855194092,
+            "::FixedPerTensorAffine_634": 4.317813396453857,
+            "::FixedPerTensorAffine_641": 5.273874759674072,
+            "::FixedPerTensorAffine_654": 3.230210542678833,
+            "::FixedPerTensorAffine_666": 13.654618263244629,
+            "::FixedPerTensorAffine_678": 2.2387030124664307,
+            "::FixedPerTensorAffine_685": 12.90011215209961,
+            "::FixedPerTensorAffine_698": 9.551894187927246,
+            "::FixedPerTensorAffine_710": 47.117374420166016,
+            "::FixedPerTensorAffine_717": 41.599098205566406,
+            "::FixedPerTensorAffine_724": 40.52422332763672,
+            "onnx::Flatten_723": 40.52422332763672
+        }
+    }
+}
