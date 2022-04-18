@@ -2,9 +2,8 @@
 from statistics import mode
 import numpy as np
 import argparse
-from mqbench.prepare_by_platform import prepare_by_platform, BackendType
-from mqbench.advanced_ptq import ptq_reconstruction
-from mqbench.convert_deploy import convert_deploy
+from atomquant.atom.prepare_by_platform import prepare_by_platform, BackendType
+from atomquant.atom.convert_deploy import convert_deploy
 from torchvision import transforms
 import torchvision
 import torch
@@ -16,7 +15,7 @@ from easydict import EasyDict
 import yaml
 import sys
 from alfred.dl.torch.common import device
-
+from alfred.utils.log import logger
 
 backend_dict = {
     'Academic': BackendType.Academic,
@@ -200,14 +199,14 @@ if __name__ == '__main__':
     elif config.quantize.quantize_type == 'naive_ptq':
         print('begin calibration now!')
         cali_data = load_calibrate_data(test_loader, cali_batchsize=config.quantize.cali_batchsize)
-        from mqbench.utils.state import enable_quantization, enable_calibration_woquantization
+        from atomquant.atom.utils.state import enable_quantization, enable_calibration_woquantization
         # do activation and weight calibration seperately for quick MSE per-channel for weight one
         model.eval()
         enable_calibration_woquantization(model, quantizer_type='act_fake_quant')
         for batch in cali_data:
-            model(batch.cuda())
+            model(batch.to(device))
         enable_calibration_woquantization(model, quantizer_type='weight_fake_quant')
-        model(cali_data[0].cuda())
+        model(cali_data[0].to(device))
         print('begin quantization now!')
         enable_quantization(model)
         # print(model)
