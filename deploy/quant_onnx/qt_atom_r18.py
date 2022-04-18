@@ -81,7 +81,7 @@ if __name__ == "__main__":
     input_name = session.get_inputs()[0].name
 
     calib_dataloader = get_calib_dataloader_from_dataset(
-        test_set, input_names=input_name, bs=1, max_step=50
+        test_set, input_names=input_name, bs=1, max_step=100
     )
     quantize_static_onnx(model_p, calib_dataloader=calib_dataloader)
 
