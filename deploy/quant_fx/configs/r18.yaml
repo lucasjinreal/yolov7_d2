@@ -19,8 +19,8 @@ extra_prepare_dict:
 quantize:
     quantize_type: naive_ptq # support naive_ptq or advanced_ptq
     cali_batchsize: 16
-    backend: 'Tensorrt'
-    # backend: 'ONNX_QNN'
+    # backend: 'Tensorrt'
+    backend: 'ONNX_QNN'
     # backend: 'PPLW8A16'
     deploy:
         model_name: 'r18.onnx'
