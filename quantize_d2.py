@@ -1,21 +1,48 @@
+'''
+Using Atom to quantize d2 models
 
-from statistics import mode
-import numpy as np
+such as YOLOX
+
+this is WIP, not full work now.
+'''
+# Copyright (c) Facebook, Inc. and its affiliates.
 import argparse
-from torchvision.models.resnet import resnet50, resnet18
-import torch.nn as nn
+import glob
+import multiprocessing as mp
 import os
 import time
-from easydict import EasyDict
-import yaml
-import sys
+import cv2
+from numpy.core.fromnumeric import sort
+import tqdm
+import torch
+import time
+import random
+from detectron2.data.detection_utils import read_image
+from detectron2.utils.logger import setup_logger
+
+import numpy as np
+from detectron2.data.catalog import MetadataCatalog
+from detectron2.config import get_cfg
+from detectron2.modeling import build_model
+import detectron2.data.transforms as T
+from detectron2.checkpoint import DetectionCheckpointer
+from yolov7.config import add_yolo_config
+from detectron2.data import MetadataCatalog, build_detection_train_loader, DatasetCatalog
+from detectron2.data import build_detection_test_loader
+
+from alfred.vis.image.mask import label2color_mask, vis_bitmasks
+from alfred.vis.image.det import visualize_det_cv2_part, visualize_det_cv2_fancy
 from alfred.dl.torch.common import device
-from alfred.utils.log import logger
+from detectron2.data.dataset_mapper import DatasetMapper
+from yolov7.data.dataset_mapper import MyDatasetMapper
+
 from atomquant.atom.prepare_by_platform import prepare_by_platform, BackendType
 from atomquant.atom.convert_deploy import convert_deploy
 from torchvision import transforms
 import torchvision
 import torch
+import yaml
+from easydict import EasyDict
 
 backend_dict = {
     'Academic': BackendType.Academic,
@@ -46,6 +73,125 @@ def parse_config(config_file):
         # config = yaml.safe_load(f)
     config = EasyDict(config)
     return config
+
+
+torch.set_grad_enabled(False)
+
+
+class DefaultPredictor:
+    def __init__(self, cfg):
+        self.cfg = cfg.clone()  # cfg can be modified by model
+        self.model = build_model(self.cfg)
+        self.model.eval()
+        if len(cfg.DATASETS.TEST):
+            self.metadata = MetadataCatalog.get(cfg.DATASETS.TEST[0])
+
+        checkpointer = DetectionCheckpointer(self.model)
+        checkpointer.load(cfg.MODEL.WEIGHTS)
+
+        self.aug = T.ResizeShortestEdge(
+            [cfg.INPUT.MIN_SIZE_TEST, cfg.INPUT.MIN_SIZE_TEST], cfg.INPUT.MAX_SIZE_TEST
+        )
+
+        self.input_format = cfg.INPUT.FORMAT
+        assert self.input_format in ["RGB", "BGR"], self.input_format
+
+    def __call__(self, original_image):
+        with torch.no_grad():
+            if self.input_format == "RGB":
+                original_image = original_image[:, :, ::-1]
+            height, width = original_image.shape[:2]
+            image = self.aug.get_transform(original_image).apply_image(original_image)
+            print("image after transform: ", image.shape)
+            # image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
+            # do not do transpose here
+            image = torch.as_tensor(image.astype("float32"))
+            inputs = {"image": image, "height": height, "width": width}
+            predictions = self.model([inputs])[0]
+            return predictions
+
+
+def setup_cfg(args):
+    # load config from file and command-line arguments
+    cfg = get_cfg()
+    add_yolo_config(cfg)
+    cfg.merge_from_file(args.config_file)
+    cfg.merge_from_list(args.opts)
+
+    cfg.MODEL.YOLO.CONF_THRESHOLD = 0.3
+    cfg.MODEL.YOLO.NMS_THRESHOLD = 0.6
+    cfg.MODEL.YOLO.IGNORE_THRESHOLD = 0.1
+
+    cfg.INPUT.MIN_SIZE_TEST = 672  # 90ms
+    # cfg.INPUT.MIN_SIZE_TEST = 512 # 70ms
+    # cfg.INPUT.MIN_SIZE_TEST = 1080  # 40ms
+    # cfg.INPUT.MAX_SIZE_TEST = 640 # 40ms
+    # cfg.INPUT.MAX_SIZE_TEST = 768 # 70ms
+    cfg.INPUT.MAX_SIZE_TEST = 1080  # 70ms
+    cfg.freeze()
+    return cfg
+
+
+def get_parser():
+    parser = argparse.ArgumentParser(description="Detectron2 demo for builtin configs")
+    parser.add_argument(
+        "--config-file",
+        default="configs/quick_schedules/mask_rcnn_R_50_FPN_inference_acc_test.yaml",
+        metavar="FILE",
+        help="path to config file",
+    )
+    parser.add_argument(
+        "-qc",
+        default="configs/quick_schedules/mask_rcnn_R_50_FPN_inference_acc_test.yaml",
+        metavar="FILE",
+        help="quantize config file",
+    )
+    parser.add_argument(
+        "--opts",
+        help="Modify config options using the command-line 'KEY VALUE' pairs",
+        default=[],
+        nargs=argparse.REMAINDER,
+    )
+    return parser
+
+
+
+def load_test_image(f, h, w, bs=1):
+    a = cv2.imread(f)
+    a = cv2.resize(a, (w, h))
+    a_t = torch.tensor(a.astype(np.float32)).to(device).unsqueeze(0).repeat(bs, 1, 1, 1)
+    return a_t, a
+
+
+def load_test_image_detr(f, h, w):
+    """
+    detr do not using
+    """
+    a = cv2.imread(f)
+    a = cv2.resize(a, (w, h))
+    a_t = torch.tensor(a.astype(np.float32)).permute(2, 0, 1).to(device)
+    return (
+        torch.stack(
+            [
+                a_t,
+            ]
+        ),
+        a,
+    )
+
+
+def get_model_infos(config_file):
+    if "sparse_inst" in config_file:
+        # output_names = ["masks", "scores", "labels"]
+        output_names = ["masks", "scores"]
+        input_names = ["images"]
+        dynamic_axes = {"images": {0: "batch"}}
+        return input_names, output_names, dynamic_axes
+    elif "detr" in config_file:
+        return ["boxes", "scores", "labels"]
+    else:
+        return ["outs"]
+
 
 
 def load_calibrate_data(train_loader, cali_batchsize):
@@ -79,47 +225,6 @@ def deploy(model, config):
                    'input': [1, 3, 224, 224]}, output_path=output_path, model_name=model_name, deploy_to_qlinear=deploy_to_qlinear)
 
 
-def prepare_dataloader(num_workers=8, train_batch_size=128, eval_batch_size=256):
-    train_transform = transforms.Compose(
-        [
-            transforms.RandomCrop(32, padding=4),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-        ]
-    )
-    test_transform = transforms.Compose(
-        [
-            transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-        ]
-    )
-    train_set = torchvision.datasets.CIFAR10(
-        root="data", train=True, download=True, transform=train_transform
-    )
-    # We will use test set for validation and test in this project.
-    # Do not use test set for validation in practice!
-    test_set = torchvision.datasets.CIFAR10(
-        root="data", train=False, download=True, transform=test_transform
-    )
-    train_sampler = torch.utils.data.RandomSampler(train_set)
-    test_sampler = torch.utils.data.SequentialSampler(test_set)
-
-    train_loader = torch.utils.data.DataLoader(
-        dataset=train_set,
-        batch_size=train_batch_size,
-        sampler=train_sampler,
-        num_workers=num_workers,
-    )
-    test_loader = torch.utils.data.DataLoader(
-        dataset=test_set,
-        batch_size=eval_batch_size,
-        sampler=test_sampler,
-        num_workers=num_workers,
-    )
-    return train_loader, test_loader
-
-
 def evaluate_model(model, test_loader, criterion=None):
     t0 = time.time()
     model.eval()
@@ -149,21 +254,32 @@ def evaluate_model(model, test_loader, criterion=None):
     return eval_loss, eval_accuracy
 
 
-if __name__ == '__main__':
-    train_loader, test_loader = prepare_dataloader()
+def prepare_dataloader(cfg):
+    test_loader = build_detection_test_loader(cfg, "coco_2017_val", mapper=MyDatasetMapper(cfg, True))
+    return test_loader
 
-    config_f = sys.argv[1]
+
+if __name__ == "__main__":
+    mp.set_start_method("spawn", force=True)
+    args = get_parser().parse_args()
+    setup_logger(name="fvcore")
+    logger = setup_logger()
+    logger.info("Arguments: " + str(args))
+    cfg = setup_cfg(args)
+    metadata = MetadataCatalog.get(cfg.DATASETS.TEST[0])
+    predictor = DefaultPredictor(cfg)
+
+    model = predictor.model
+    # model.onnx_export = True
+
+    onnx_f = os.path.join(
+        "weights", os.path.basename(cfg.MODEL.WEIGHTS).split(".")[0] + ".onnx"
+    )
+    test_loader = prepare_dataloader(cfg)
+
+    config_f = args.qc
     config = parse_config(config_f)
     print(config)
-    # first finetune model on cifar, we don't have imagnet so using cifar as test
-    model = resnet18(pretrained=True)
-    model.fc = nn.Linear(512, 10)
-    if os.path.exists("r18_raw.pth"):
-        model.load_state_dict(torch.load("r18_raw.pth", map_location="cpu"))
-    else:
-        # train_model(model, train_loader, test_loader, device)
-        print("train finished.")
-        # torch.save(model.state_dict(), "r18_raw.pth")
     model.to(device)
     model.eval()
 
@@ -216,3 +332,5 @@ if __name__ == '__main__':
     else:
         print("The quantize_type must in 'naive_ptq' or 'advanced_ptq',")
         print("and 'advanced_ptq' need reconstruction configration.")
+
+    
