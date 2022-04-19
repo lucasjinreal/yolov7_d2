@@ -197,6 +197,8 @@ def get_model_infos(config_file):
 def load_calibrate_data(train_loader, cali_batchsize):
     cali_data = []
     for i, batch in enumerate(train_loader):
+        imgs = batch['images']
+        print(imgs)
         cali_data.append(batch[0])
         if i + 1 == cali_batchsize:
             break
@@ -270,7 +272,8 @@ if __name__ == "__main__":
     predictor = DefaultPredictor(cfg)
 
     model = predictor.model
-    # model.onnx_export = True
+    # must in onnx export for PTQ, since we need export onnx later.
+    model.onnx_export = True
 
     onnx_f = os.path.join(
         "weights", os.path.basename(cfg.MODEL.WEIGHTS).split(".")[0] + ".onnx"
