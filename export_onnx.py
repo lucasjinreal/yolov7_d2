@@ -239,8 +239,8 @@ def vis_res_fast(res, img, colors):
 
 def get_model_infos(config_file):
     if "sparse_inst" in config_file:
-        # output_names = ["masks", "scores", "labels"]
-        output_names = ["masks", "scores"]
+        output_names = ["masks", "scores", "labels"]
+        # output_names = ["masks", "scores"]
         input_names = ["images"]
         dynamic_axes = {"images": {0: "batch"}}
         return input_names, output_names, dynamic_axes
@@ -291,7 +291,7 @@ if __name__ == "__main__":
         onnx_f,
         input_names=input_names,
         output_names=output_names,
-        opset_version=12,
+        opset_version=11,
         do_constant_folding=True,
         verbose=args.verbose,
         dynamic_axes=dynamic_axes,

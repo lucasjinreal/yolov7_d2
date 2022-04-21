@@ -266,5 +266,5 @@ class SparseInst(nn.Module):
         # logger.info(f'all_scores: {all_scores.shape}')
         # logger.info(f'all_labels: {all_labels.shape}')
         logger.info(f'all_masks: {all_masks.shape}')
-        return all_masks, all_scores
+        return all_masks, all_scores, all_labels
         # return all_masks, all_labels

@@ -212,6 +212,11 @@ Make sure you have read **rules** before ask me any questions.
 3. `SparseInst`:
    Sparsinst already supported exporting to onnx!!
 
+  ```
+  python export_onnx.py --config-file configs/coco/sparseinst/sparse_inst_r50_giam_aug.yaml --video-input ~/Videos/a.flv  --opts MODEL.WEIGHTS weights/sparse_inst_r50_giam_aug_2b7d68.pth INPUT.MIN_SIZE_TEST 512
+  ```
+  Then you can have `weights/sparse_inst_r50_giam_aug_2b7d68_sim.onnx` generated, this onnx can be inference using ORT without any unsupported ops.
+
 
 
 ## 🤒️ Performance
