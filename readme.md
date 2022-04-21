@@ -242,10 +242,11 @@ tbd.
 
 ## 👋 Detection Results
 
-![](https://z3.ax1x.com/2021/07/22/WDs9PO.png)
-![](https://z3.ax1x.com/2021/07/22/WDr5V0.png)
-![](https://z3.ax1x.com/2021/07/19/WGVhlj.png)
-![](https://z3.ax1x.com/2021/07/26/WWBxi9.png)
+| Image             |  Detections |
+:-------------------------:|:-------------------------:
+![](https://z3.ax1x.com/2021/07/22/WDs9PO.png) | ![](https://z3.ax1x.com/2021/07/22/WDr5V0.png)
+![](https://z3.ax1x.com/2021/07/19/WGVhlj.png) | ![](https://z3.ax1x.com/2021/07/26/WWBxi9.png)
+
 
 
 
