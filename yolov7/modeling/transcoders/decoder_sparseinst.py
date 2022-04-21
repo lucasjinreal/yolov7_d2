@@ -221,7 +221,8 @@ class GroupInstanceBranch(nn.Module):
         normalizer = iam_prob.sum(-1).clamp(min=1e-6)
         inst_features = inst_features / normalizer[:, :, None]
 
-        d4 = torch.div(N, 4, rounding_mode='floor')
+        # d4 = torch.div(N, 4, rounding_mode='floor') # can't use this for onnx tracable
+        d4 = N // 4
         inst_features = (
             inst_features.reshape(B, 4, d4, -1)
             .transpose(1, 2)

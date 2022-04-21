@@ -5,7 +5,6 @@ import multiprocessing as mp
 import os
 import time
 import cv2
-from numpy.core.fromnumeric import sort
 import tqdm
 import torch
 import time
@@ -23,7 +22,6 @@ from detectron2.checkpoint import DetectionCheckpointer
 from yolov7.config import add_yolo_config
 import onnx_graphsurgeon as gs
 import onnx
-
 from alfred.vis.image.mask import label2color_mask, vis_bitmasks
 from alfred.vis.image.det import visualize_det_cv2_part, visualize_det_cv2_fancy
 from alfred.dl.torch.common import device

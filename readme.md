@@ -215,6 +215,10 @@ Make sure you have read **rules** before ask me any questions.
   ```
   python export_onnx.py --config-file configs/coco/sparseinst/sparse_inst_r50_giam_aug.yaml --video-input ~/Videos/a.flv  --opts MODEL.WEIGHTS weights/sparse_inst_r50_giam_aug_2b7d68.pth INPUT.MIN_SIZE_TEST 512
   ```
+  If you are on a CPU device, please using:
+  ```
+  python export_onnx.py --config-file configs/coco/sparseinst/sparse_inst_r50_giam_aug.yaml --input images/COCO_val2014_000000002153.jpg --verbose  --opts MODEL.WEIGHTS weights/sparse_inst_r50_giam_aug_2b7d68.pth MODEL.DEVICE 'cpu'
+  ```
   Then you can have `weights/sparse_inst_r50_giam_aug_2b7d68_sim.onnx` generated, this onnx can be inference using ORT without any unsupported ops.
 
 
@@ -255,28 +259,12 @@ tbd.
 
 ## 🀄️ Some Exp Visualizations
 
-1. GridMask
 
-   ![](https://z3.ax1x.com/2021/06/27/RYeJkd.png)
-   ![](https://z3.ax1x.com/2021/07/06/Roj5dg.png)
-
-   Our GridMask augmentation also supports 2 modes.
-
-
-
-2. Mosaic
-
-   ![](https://z3.ax1x.com/2021/07/06/RIX1iR.png)
-   ![](https://z3.ax1x.com/2021/07/06/Roq97d.png)
-
-   Our Mosaic support any size and any any image numbers!
-
-   **new**:
-   we merged another mosiac implementation from YOLOX, this version will do random pespective:
-
-   ![](https://z3.ax1x.com/2021/08/06/futTte.png)
-   ![](https://z3.ax1x.com/2021/08/06/futv0f.png)
-   ![](https://z3.ax1x.com/2021/08/07/fKEPvd.png)
+| GridMask             |  Mosaic |
+:-------------------------:|:-------------------------:
+![](https://z3.ax1x.com/2021/06/27/RYeJkd.png)  |  ![](https://z3.ax1x.com/2021/07/06/RIX1iR.png)
+![](https://z3.ax1x.com/2021/07/06/Roj5dg.png) | ![](https://z3.ax1x.com/2021/07/06/Roq97d.png)
+![](https://z3.ax1x.com/2021/08/06/futTte.png) | ![](https://z3.ax1x.com/2021/08/06/futv0f.png)
 
 
 

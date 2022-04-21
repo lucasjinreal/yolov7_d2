@@ -273,7 +273,6 @@ def export_quant_torchscript(model):
             operator_export_type=OperatorExportTypes.ONNX_ATEN_FALLBACK,
         )
         print("int8 onnx saved.")
-
         evaluate_model(dm, test_loader)
 
 
@@ -287,7 +286,6 @@ if __name__ == "__main__":
         model.load_state_dict(torch.load("r18_raw.pth", map_location="cpu"))
     else:
         from alfred.dl.torch.common import device
-
         train_model(model, train_loader, test_loader, device)
         print("train finished.")
         torch.save(model.state_dict(), "r18_raw.pth")
