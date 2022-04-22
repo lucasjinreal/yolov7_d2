@@ -218,7 +218,8 @@ class GroupInstanceBranch(nn.Module):
         iam_prob = iam_prob.view(B, N, -1)
         # aggregate features: BxCxHxW -> Bx(HW)xC
         inst_features = torch.bmm(iam_prob, features.view(B, C, -1).permute(0, 2, 1))
-        normalizer = iam_prob.sum(-1).clamp(min=1e-6)
+        normalizer = iam_prob.sum(-1).clamp(min=1e-6, max=1e5)
+        # print(normalizer)
         inst_features = inst_features / normalizer[:, :, None]
 
         # d4 = torch.div(N, 4, rounding_mode='floor') # can't use this for onnx tracable
