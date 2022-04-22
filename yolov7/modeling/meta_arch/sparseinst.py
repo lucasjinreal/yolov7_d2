@@ -16,6 +16,7 @@ from ..loss.sparseinst_loss import build_sparse_inst_criterion
 # from .utils import nested_tensor_from_tensor_list
 from yolov7.utils.misc import nested_tensor_from_tensor_list
 from alfred.utils.log import logger
+from alfred import print_shape
 
 __all__ = ["SparseInst"]
 
@@ -31,7 +32,9 @@ def rescoring_mask_batch(scores, mask_pred, masks):
     # scores and masks contains batch
     print(f'mask_pred: {mask_pred.shape}, masks: {masks.shape}, scores: {scores.shape}')
     mask_pred_ = mask_pred.float()
-    return scores * ((masks * mask_pred_).sum([2, 3]) / (mask_pred_.sum([2, 3]) + 1e-6))
+    masks_to_m = ((masks * mask_pred_).sum([2, 3]) / (mask_pred_.sum([2, 3]) + 1e-6))
+    print(masks_to_m.shape)
+    return scores * masks_to_m
 
 
 def batched_index_select(input, dim, index):
@@ -297,9 +300,9 @@ class SparseInst(nn.Module):
         
         h, w = max_shape
         # rescoring mask using maskness
-        scores = rescoring_mask_batch(
-            scores, mask_pred_batch > self.mask_threshold, mask_pred_batch
-        )
+        # scores = rescoring_mask_batch(
+        #     scores, mask_pred_batch > self.mask_threshold, mask_pred_batch
+        # )
 
         # upsample the masks to the original resolution:
         # (1) upsampling the masks to the padded inputs, remove the padding area

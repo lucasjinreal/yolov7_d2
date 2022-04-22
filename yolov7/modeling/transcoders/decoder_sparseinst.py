@@ -135,10 +135,14 @@ class BaseIAMDecoder(nn.Module):
 
         N = pred_kernel.shape[1]
         # mask_features: BxCxHxW
-        B, C, H, W = mask_features.shape
-        pred_masks = torch.bmm(pred_kernel, mask_features.view(B, C, H * W)).view(
-            B, N, H, W
-        )
+        if torch.onnx.is_in_onnx_export():
+            sh = mask_features.shape
+            pred_masks = torch.bmm(pred_kernel, mask_features.view(sh[0], sh[1], sh[2] * sh[3])).view(sh[0], N, sh[2], sh[3])
+        else:
+            B, C, H, W = mask_features.shape
+            pred_masks = torch.bmm(pred_kernel, mask_features.view(B, C, H * W)).view(
+                B, N, H, W
+            )
 
         pred_masks = F.interpolate(
             pred_masks,
