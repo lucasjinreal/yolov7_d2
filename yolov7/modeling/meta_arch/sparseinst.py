@@ -281,8 +281,6 @@ class SparseInst(nn.Module):
         # do it in batch
         # max/argmax
         scores, labels = torch.max(pred_scores, dim=pred_scores.dim()-1)
-        # cls threshold
-        # keep = scores > self.cls_threshold
         _, keep = torch.topk(scores, k=50)
         print(keep.shape, scores.shape)
         keep_flt = keep.view(-1, 50)
@@ -293,17 +291,15 @@ class SparseInst(nn.Module):
         print(scores, labels)
 
         # advanced select
-        
-        print_shape(keep_flt)
         pred_masks = pred_masks.view(-1, pred_masks.shape[-2], pred_masks.shape[-1])
         print_shape(keep_flt, pred_masks)
         mask_pred_batch = pred_masks[keep_flt] # 1, 100, 160, 160
         
         h, w = max_shape
         # rescoring mask using maskness
-        # scores = rescoring_mask_batch(
-        #     scores, mask_pred_batch > self.mask_threshold, mask_pred_batch
-        # )
+        scores = rescoring_mask_batch(
+            scores, mask_pred_batch > self.mask_threshold, mask_pred_batch
+        )
 
         # upsample the masks to the original resolution:
         # (1) upsampling the masks to the padded inputs, remove the padding area
@@ -326,5 +322,4 @@ class SparseInst(nn.Module):
         # # logger.info(f'all_labels: {all_labels.shape}')
         # logger.info(f'all_masks: {all_masks.shape}')
         # return all_masks, all_scores, all_labels
-
         return mask_pred, scores, labels
