@@ -104,6 +104,7 @@ Here are some tasks need to be claimed:
 
 ## 🆕 News!
 
+- **2022.04.23**: We finished the int8 quantization on SparseInst! It works perfect! Download the onnx try it our by your self.
 - **2022.04.15**: Now, we support the `SparseInst` onnx expport!
 - **2022.03.25**: New instance seg supported! 40 FPS @ 37 mAP!! Which is fast;
 - **2021.09.16**: First transformer based DETR model added, will explore more DETR series models;
@@ -154,7 +155,7 @@ We are strongly recommend you send PR if you have any further development on thi
 | [SparseInst (G-IAM)](configs/sparse_inst_r50vd_giam_aug.yaml) | [R-50-vd](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 608 | &#10003;| 35.6 | 36.1 | 42.8| [model](https://drive.google.com/file/d/1dlamg7ych_BdWpPUCuiBXbwE0SXpsfGx/view?usp=sharing) |
 | [SparseInst (G-IAM)](configs/sparse_inst_r50vd_dcn_giam_aug.yaml) | [R-50-vd-DCN](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 608 | &#10003; | 37.4 | 37.9 | 40.0  | [model](https://drive.google.com/file/d/1clYPdCNrDNZLbmlAEJ7wjsrOLn1igOpT/view?usp=sharing)|
 | [SparseInst (G-IAM)](sparse_inst_r50vd_dcn_giam_aug.yaml) | [R-50-vd-DCN](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 640 | &#10003; | 37.7 | 38.1 | 39.3 |  [model](https://drive.google.com/file/d/1clYPdCNrDNZLbmlAEJ7wjsrOLn1igOpT/view?usp=sharing)| 
-
+| SparseInst Int8 onnx | [google drive](https://drive.google.com/file/d/1FYn_0p3RXzKaTGzTfdiJI1YhAexA_V3s/view?usp=sharing) |
 
 ## 🥰 Demo
 
