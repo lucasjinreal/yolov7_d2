@@ -118,6 +118,16 @@ Here are some tasks need to be claimed:
 
 - See [docs/install.md](docs/install.md)
 
+Special requirements (other version may also work, but these are tested, with best performance, including ONNX export best support):
+
+- torch 1.11 (stable version)
+- onnx 1.12
+- onnx-simplifier 0.3.7
+- alfred-py latest
+- detectron2 0.5
+
+If you using lower version torch, onnx exportation might not work as our expected.
+
 
 
 ## 🤔 Features

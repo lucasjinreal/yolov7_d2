@@ -6,6 +6,7 @@ import numpy as np
 import onnxruntime
 from alfred.vis.image.det import visualize_det_cv2_part
 from alfred.vis.image.mask import vis_bitmasks_with_classes
+from alfred.utils.file_io import ImageSourceIter
 
 """
 
@@ -166,11 +167,18 @@ def make_parser():
         action="store_true",
         help="Whether your model uses p6 in FPN/PAN.",
     )
+    parser.add_argument(
+        "-int8",
+        '--int8',
+        action="store_true",
+        help="Whether your model uses int8.",
+    )
     return parser
 
 
 def vis_res_fast(img, boxes, masks, scores, labels):
     if masks is not None:
+        # masks shape, might not same as img, resize contours if so
         img = vis_bitmasks_with_classes(
             img,
             labels,
@@ -200,44 +208,78 @@ def load_test_image(f, h, w):
     return a_t, a
 
 
+def preprocess_image(img, h, w):
+    a = cv2.resize(img, (w, h))
+    a_t = np.expand_dims(np.array(a).astype(np.float32), axis=0)
+    return a_t, img
+
+
 if __name__ == "__main__":
     args = make_parser().parse_args()
     input_shape = tuple(map(int, args.input_shape.split(",")))
-    inp, ori_img = load_test_image(args.image_path, h=input_shape[0], w=input_shape[1])
-    print("input shape: ", inp.shape)
     session = onnxruntime.InferenceSession(args.model)
-    ort_inputs = {session.get_inputs()[0].name: inp}
-    output = session.run(None, ort_inputs)
-    print(output[0].shape)
 
-    if "sparse" in args.model:
-        masks = output[0][0]
-        if len(masks.shape) > 3:
-            masks = np.squeeze(masks, axis=1)
-        scores = output[1][0]
-        labels = output[2][0]
-        keep = scores > 0.3
-        scores = scores[keep]
-        labels = labels[keep]
-        masks = masks[keep]
-        print(scores)
-        print(labels)
-        img = vis_res_fast(ori_img, None, masks, scores, labels)
-        cv2.imshow("aa", img)
-        cv2.waitKey(0)
-    else:
-        predictions = demo_postprocess(output[0], input_shape, p6=args.with_p6)[0]
-        boxes = predictions[:, :4]
-        scores = predictions[:, 4:5] * predictions[:, 5:]
+    iter = ImageSourceIter(args.image_path)
+    while True:
+        im = next(iter)
+        if isinstance(im, str):
+            im = cv2.imread(im)
 
-        boxes_xyxy = np.ones_like(boxes)
-        boxes_xyxy[:, 0] = boxes[:, 0] - boxes[:, 2] / 2.0
-        boxes_xyxy[:, 1] = boxes[:, 1] - boxes[:, 3] / 2.0
-        boxes_xyxy[:, 2] = boxes[:, 0] + boxes[:, 2] / 2.0
-        boxes_xyxy[:, 3] = boxes[:, 1] + boxes[:, 3] / 2.0
-        # boxes_xyxy /= ratio
-        dets = multiclass_nms(boxes_xyxy, scores, nms_thr=0.65, score_thr=0.1)
-        final_boxes, final_scores, final_cls_inds = dets[:, :4], dets[:, 4], dets[:, 5]
-        img = visualize_det_cv2_part(ori_img, final_scores, final_cls_inds, final_boxes)
-        cv2.imshow("aa", img)
-        cv2.waitKey(0)
+        inp, ori_img = preprocess_image(im, h=input_shape[0], w=input_shape[1])
+
+        ort_inputs = {session.get_inputs()[0].name: inp}
+        output = session.run(None, ort_inputs)
+
+        if "sparse" in args.model:
+            masks, scores, labels = None, None, None
+            for o in output:
+                if o.dtype == np.float32:
+                    scores = o
+                if o.dtype == np.int32 or o.dtype == np.int64:
+                    labels = o
+                if o.dtype == bool:
+                    masks = o
+            masks = masks[0]
+            print(masks.shape)
+            if len(masks.shape) > 3:
+                masks = np.squeeze(masks, axis=1)
+            scores = scores[0]
+            labels = labels[0]
+            # keep = scores > 0.15
+            keep = scores > (0.13 if args.int8 else 0.32)
+            scores = scores[keep]
+            labels = labels[keep]
+            masks = masks[keep]
+            print(scores)
+            print(labels)
+            print(masks.shape)
+            img = vis_res_fast(im, None, masks, scores, labels)
+        else:
+            predictions = demo_postprocess(output[0], input_shape, p6=args.with_p6)[0]
+            boxes = predictions[:, :4]
+            scores = predictions[:, 4:5] * predictions[:, 5:]
+
+            boxes_xyxy = np.ones_like(boxes)
+            boxes_xyxy[:, 0] = boxes[:, 0] - boxes[:, 2] / 2.0
+            boxes_xyxy[:, 1] = boxes[:, 1] - boxes[:, 3] / 2.0
+            boxes_xyxy[:, 2] = boxes[:, 0] + boxes[:, 2] / 2.0
+            boxes_xyxy[:, 3] = boxes[:, 1] + boxes[:, 3] / 2.0
+            # boxes_xyxy /= ratio
+            dets = multiclass_nms(boxes_xyxy, scores, nms_thr=0.65, score_thr=0.1)
+            final_boxes, final_scores, final_cls_inds = (
+                dets[:, :4],
+                dets[:, 4],
+                dets[:, 5],
+            )
+            img = visualize_det_cv2_part(
+                ori_img, final_scores, final_cls_inds, final_boxes
+            )
+            cv2.imshow("aa", img)
+            cv2.waitKey(0)
+
+        cv2.imshow("YOLOv7 SparseInst CPU int8", img)
+        if iter.video_mode:
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
+        else:
+            cv2.waitKey(0)

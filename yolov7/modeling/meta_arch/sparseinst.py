@@ -27,15 +27,21 @@ def rescoring_mask(scores, mask_pred, masks):
     return scores * ((masks * mask_pred_).sum([1, 2]) / (mask_pred_.sum([1, 2]) + 1e-6))
 
 
-@torch.jit.script
 def rescoring_mask_batch(scores, mask_pred, masks):
     # scores and masks contains batch
     print(f'mask_pred: {mask_pred.shape}, masks: {masks.shape}, scores: {scores.shape}')
     mask_pred_ = mask_pred.float()
-    masks_to_m = ((masks * mask_pred_).sum([2, 3]) / (mask_pred_.sum([2, 3]) + 1e-6))
-    print(masks_to_m.shape)
-    return scores * masks_to_m
 
+    # # masks = (masks * mask_pred_).sum([2, 3])
+    # mask_pred2 = torch.sum(mask_pred_, [2, 3])
+    # mask_pred2 = mask_pred2 + 1e-6
+    # # masks_to_m = masks / mask_pred
+    # # print(masks_to_m.shape, scores.shape)
+    # # return scores * masks_to_m
+    # scores *= mask_pred2
+    # return scores
+
+    return scores * ((masks * mask_pred_).sum([2, 3]) / (mask_pred_.sum([2, 3]) + 1e-6))
 
 def batched_index_select(input, dim, index):
     views = [1 if i != dim else -1 for i in range(len(input.shape))]
@@ -291,7 +297,6 @@ class SparseInst(nn.Module):
         labels = labels.view(-1)
         scores = scores[keep_flt]
         labels = labels[keep_flt]
-        print(scores, labels)
 
         # advanced select
         pred_masks = pred_masks.view(-1, pred_masks.shape[-2], pred_masks.shape[-1])
@@ -300,23 +305,30 @@ class SparseInst(nn.Module):
         
         h, w = max_shape
         # rescoring mask using maskness
-        # scores = rescoring_mask_batch(
-        #     scores, mask_pred_batch > self.mask_threshold, mask_pred_batch
-        # )
+        scores = rescoring_mask_batch(
+            scores, mask_pred_batch > self.mask_threshold, mask_pred_batch
+        )
+
+
 
         # upsample the masks to the original resolution:
         # (1) upsampling the masks to the padded inputs, remove the padding area
         # (2) upsampling/downsampling the masks to the original sizes
         print('mask_pred_per_image: ', mask_pred_batch.shape)
-        # mask_pred_per_image = F.interpolate(
-        #     mask_pred_per_image.unsqueeze(1),
-        #     size=max_shape,
-        #     mode="bilinear",
-        #     align_corners=False,
-        # )[:, :h, :w]
-
+        mask_pred_batch = F.interpolate(
+            mask_pred_batch,
+            size=max_shape,
+            mode="bilinear",
+            align_corners=False,
+        )[:, :h, :w]
         mask_pred = mask_pred_batch > self.mask_threshold
 
+    
+        # do scores here
+        # masks_values = mask_pred.float() * mask_pred_batch
+        # masks_values = torch.sum(masks_values, [-2, -1])
+        # scores = scores * masks_values
+        # print(scores, labels)
    
         # all_masks = torch.stack(all_masks).to(torch.long)
         # all_scores = torch.stack(all_scores)
