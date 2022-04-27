@@ -90,6 +90,7 @@ Here are some tasks need to be claimed:
 - [ ] DINO: 63.3mAP highest in 2022 on coco. https://github.com/IDEACVR/DINO
   - [ ] waiting for DINO opensource code.
 - [ ] ConvNext: https://github.com/facebookresearch/ConvNeXt, combined convolution and transformer.
+- [ ] NASVit: https://github.com/facebookresearch/NASViT
 
 
 
