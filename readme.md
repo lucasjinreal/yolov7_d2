@@ -91,6 +91,7 @@ Here are some tasks need to be claimed:
   - [ ] waiting for DINO opensource code.
 - [ ] ConvNext: https://github.com/facebookresearch/ConvNeXt, combined convolution and transformer.
 - [ ] NASVit: https://github.com/facebookresearch/NASViT
+- [ ] MobileVIT: https://github.com/apple/ml-cvnets/blob/main/cvnets/models/classification/mobilevit.py
 
 
 
