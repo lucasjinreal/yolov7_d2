@@ -214,9 +214,9 @@ if __name__ == "__main__":
         masks = output[0][0]
         if len(masks.shape) > 3:
             masks = np.squeeze(masks, axis=1)
-        scores = output[1][0]
-        labels = output[2][0]
-        keep = scores > 0.3
+        scores = output[2][0]
+        labels = output[1][0]
+        keep = scores > 0.2
         scores = scores[keep]
         labels = labels[keep]
         masks = masks[keep]
