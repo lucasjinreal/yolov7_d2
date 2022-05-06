@@ -76,7 +76,8 @@ class SparseInst(nn.Module):
         self.normalizer_trans = lambda x: (x - self.pixel_mean.unsqueeze(0)) / self.pixel_std.unsqueeze(0)
 
         # inference
-        self.cls_threshold = cfg.MODEL.SPARSE_INST.CLS_THRESHOLD
+        # self.cls_threshold = cfg.MODEL.SPARSE_INST.CLS_THRESHOLD
+        self.cls_threshold = cfg.MODEL.YOLO.CONF_THRESHOLD
         self.mask_threshold = cfg.MODEL.SPARSE_INST.MASK_THRESHOLD
         self.max_detections = cfg.MODEL.SPARSE_INST.MAX_DETECTIONS
 
@@ -186,7 +187,6 @@ class SparseInst(nn.Module):
             keep = scores > self.cls_threshold
             scores = scores[keep]
             labels = labels[keep]
-            print(scores, labels)
             mask_pred_per_image = mask_pred_per_image[keep]
 
             if scores.size(0) == 0:
@@ -200,6 +200,11 @@ class SparseInst(nn.Module):
             scores = rescoring_mask(
                 scores, mask_pred_per_image > self.mask_threshold, mask_pred_per_image
             )
+
+            keep = scores > self.cls_threshold
+            scores = scores[keep]
+            labels = labels[keep]
+            mask_pred_per_image = mask_pred_per_image[keep]
 
             # upsample the masks to the original resolution:
             # (1) upsampling the masks to the padded inputs, remove the padding area
