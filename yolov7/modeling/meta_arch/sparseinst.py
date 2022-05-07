@@ -82,7 +82,8 @@ class SparseInst(nn.Module):
         self.normalizer_trans = lambda x: (x - self.pixel_mean.unsqueeze(0)) / self.pixel_std.unsqueeze(0)
 
         # inference
-        self.cls_threshold = cfg.MODEL.SPARSE_INST.CLS_THRESHOLD
+        # self.cls_threshold = cfg.MODEL.SPARSE_INST.CLS_THRESHOLD
+        self.cls_threshold = cfg.MODEL.YOLO.CONF_THRESHOLD
         self.mask_threshold = cfg.MODEL.SPARSE_INST.MASK_THRESHOLD
         self.max_detections = cfg.MODEL.SPARSE_INST.MAX_DETECTIONS
 
@@ -223,7 +224,7 @@ class SparseInst(nn.Module):
             ).squeeze(1)
 
             mask_pred = mask_pred_per_image > self.mask_threshold
-            mask_pred = BitMasks(mask_pred)
+            # mask_pred = BitMasks(mask_pred)
 
             # using Detectron2 Instances to store the final results
             result.pred_masks = mask_pred
