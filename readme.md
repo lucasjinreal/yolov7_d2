@@ -115,6 +115,7 @@ Here are some tasks need to be claimed:
 ![](https://z3.ax1x.com/2021/09/08/hHPhUx.png)  |  ![](https://z3.ax1x.com/2021/07/19/WGVhlj.png)
 ![](https://z3.ax1x.com/2021/09/08/hHP7xe.png)  |  ![](https://z3.ax1x.com/2021/07/22/WDr5V0.png)
 ![](https://s1.ax1x.com/2022/03/25/qN5zp6.png)  |  ![](https://s2.loli.net/2022/03/25/MBwq9YT7zC5Sd1A.png)
+![](https://s1.ax1x.com/2022/05/09/OJnXjI.png)  |  ![](https://s1.ax1x.com/2022/05/09/OJuuUU.png)
 
 
 
