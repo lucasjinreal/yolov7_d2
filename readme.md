@@ -94,6 +94,19 @@ Here are some tasks need to be claimed:
 - [ ] MobileVIT: https://github.com/apple/ml-cvnets/blob/main/cvnets/models/classification/mobilevit.py
 
 
+## 🆕 News!
+
+- ***2022.05.09***: Big new function added! **We adopt YOLOX with Keypoints Head!**, model still under train, but you can check at code already;
+- ***2022.04.23***: We finished the int8 quantization on SparseInst! It works perfect! Download the onnx try it our by your self.
+- ***2022.04.15***: Now, we support the `SparseInst` onnx expport!
+- ***2022.03.25***: New instance seg supported! 40 FPS @ 37 mAP!! Which is fast;
+- ***2021.09.16***: First transformer based DETR model added, will explore more DETR series models;
+- ***2021.08.02***: **YOLOX** arch added, you can train YOLOX as well in this repo;
+- ***2021.07.25***: We found **YOLOv7-Res2net50** beat res50 and darknet53 at same speed level! 5% AP boost on custom dataset;
+- ***2021.07.04***: Added YOLOF and we can have a anchor free support as well, YOLOF achieves a better trade off on speed and accuracy;
+- ***2021.06.25***: this project first started.
+- more
+
 
 ## 💁‍♂️ Results
 
@@ -104,17 +117,6 @@ Here are some tasks need to be claimed:
 ![](https://s1.ax1x.com/2022/03/25/qN5zp6.png)  |  ![](https://s2.loli.net/2022/03/25/MBwq9YT7zC5Sd1A.png)
 
 
-## 🆕 News!
-
-- **2022.04.23**: We finished the int8 quantization on SparseInst! It works perfect! Download the onnx try it our by your self.
-- **2022.04.15**: Now, we support the `SparseInst` onnx expport!
-- **2022.03.25**: New instance seg supported! 40 FPS @ 37 mAP!! Which is fast;
-- **2021.09.16**: First transformer based DETR model added, will explore more DETR series models;
-- **2021.08.02**: **YOLOX** arch added, you can train YOLOX as well in this repo;
-- **2021.07.25**: We found **YOLOv7-Res2net50** beat res50 and darknet53 at same speed level! 5% AP boost on custom dataset;
-- **2021.07.04**: Added YOLOF and we can have a anchor free support as well, YOLOF achieves a better trade off on speed and accuracy;
-- **2021.06.25**: this project first started.
-- more
 
 
 ## 🧑‍🦯 Installation && Quick Start

@@ -2,6 +2,8 @@
 
 Examples on how to quantize with PPQ
 
+I dont suggest you using PPQ, it has a lot of bugs.
+
 """
 from typing import Iterable
 
@@ -80,14 +82,16 @@ if __name__ == "__main__":
     INPUT_SHAPE = [640, 640, 3]
     DEVICE = "cuda"  
     PLATFORM = (
-        TargetPlatform.ORT_OOS_INT8
+        # TargetPlatform.ORT_OOS_INT8
+        TargetPlatform.TRT_INT8
     ) 
     EXECUTING_DEVICE = "cpu"  # 'cuda' or 'cpu'.
 
     # create a setting for quantizing your network with PPL CUDA.
     # quant_setting = QuantizationSettingFactory.pplcuda_setting()
     quant_setting = QuantizationSettingFactory.default_setting()
-    quant_setting.equalization = True  # use layerwise equalization algorithm.
+    # quant_setting.equalization = True  # use layerwise equalization algorithm.
+    quant_setting.equalization = False  # tensorrt false
     quant_setting.dispatcher = (
         "conservative"  # dispatch this network in conservertive way.
     )
