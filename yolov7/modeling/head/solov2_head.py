@@ -40,21 +40,28 @@ class SOLOv2InsHead(nn.Module):
             print("Strides should match the features.")
         # fmt: on
 
-        head_configs = {"cate": (cfg.MODEL.SOLOV2.NUM_INSTANCE_CONVS,
-                                 cfg.MODEL.SOLOV2.USE_DCN_IN_INSTANCE,
-                                 False),
-                        "kernel": (cfg.MODEL.SOLOV2.NUM_INSTANCE_CONVS,
-                                   cfg.MODEL.SOLOV2.USE_DCN_IN_INSTANCE,
-                                   cfg.MODEL.SOLOV2.USE_COORD_CONV)
-                        }
+        head_configs = {
+            "cate": (
+                cfg.MODEL.SOLOV2.NUM_INSTANCE_CONVS,
+                cfg.MODEL.SOLOV2.USE_DCN_IN_INSTANCE,
+                False,
+            ),
+            "kernel": (
+                cfg.MODEL.SOLOV2.NUM_INSTANCE_CONVS,
+                cfg.MODEL.SOLOV2.USE_DCN_IN_INSTANCE,
+                cfg.MODEL.SOLOV2.USE_COORD_CONV,
+            ),
+        }
 
         norm = None if cfg.MODEL.SOLOV2.NORM == "none" else cfg.MODEL.SOLOV2.NORM
         in_channels = [s.channels for s in input_shape]
-        assert len(set(in_channels)) == 1, \
-            print("Each level must have the same channel!")
+        assert len(set(in_channels)) == 1, print(
+            "Each level must have the same channel!"
+        )
         in_channels = in_channels[0]
-        assert in_channels == cfg.MODEL.SOLOV2.INSTANCE_IN_CHANNELS, \
-            print("In channels should equal to tower in channels!")
+        assert in_channels == cfg.MODEL.SOLOV2.INSTANCE_IN_CHANNELS, print(
+            "In channels should equal to tower in channels!"
+        )
 
         for head in head_configs:
             tower = []
@@ -69,29 +76,33 @@ class SOLOv2InsHead(nn.Module):
                 else:
                     chn = self.instance_channels
 
-                tower.append(conv_func(
-                    chn, self.instance_channels,
-                    kernel_size=3, stride=1,
-                    padding=1, bias=norm is None
-                ))
+                tower.append(
+                    conv_func(
+                        chn,
+                        self.instance_channels,
+                        kernel_size=3,
+                        stride=1,
+                        padding=1,
+                        bias=norm is None,
+                    )
+                )
                 if norm == "GN":
                     tower.append(nn.GroupNorm(32, self.instance_channels))
                 tower.append(nn.ReLU(inplace=True))
-            self.add_module('{}_tower'.format(head),
-                            nn.Sequential(*tower))
+            self.add_module("{}_tower".format(head), nn.Sequential(*tower))
 
         self.cate_pred = nn.Conv2d(
-            self.instance_channels, self.num_classes,
-            kernel_size=3, stride=1, padding=1
+            self.instance_channels, self.num_classes, kernel_size=3, stride=1, padding=1
         )
         self.kernel_pred = nn.Conv2d(
-            self.instance_channels, self.num_kernels,
-            kernel_size=3, stride=1, padding=1
+            self.instance_channels, self.num_kernels, kernel_size=3, stride=1, padding=1
         )
 
         for modules in [
-            self.cate_tower, self.kernel_tower,
-            self.cate_pred, self.kernel_pred,
+            self.cate_tower,
+            self.kernel_tower,
+            self.cate_pred,
+            self.kernel_pred,
         ]:
             for l in modules.modules():
                 if isinstance(l, nn.Conv2d):
@@ -119,10 +130,12 @@ class SOLOv2InsHead(nn.Module):
         for idx, feature in enumerate(features):
             ins_kernel_feat = feature
             # concat coord
-            x_range = torch.linspace(-1, 1,
-                                     ins_kernel_feat.shape[-1], device=ins_kernel_feat.device)
-            y_range = torch.linspace(-1, 1,
-                                     ins_kernel_feat.shape[-2], device=ins_kernel_feat.device)
+            x_range = torch.linspace(
+                -1, 1, ins_kernel_feat.shape[-1], device=ins_kernel_feat.device
+            )
+            y_range = torch.linspace(
+                -1, 1, ins_kernel_feat.shape[-2], device=ins_kernel_feat.device
+            )
             y, x = torch.meshgrid(y_range, x_range)
             y = y.expand([ins_kernel_feat.shape[0], 1, -1, -1])
             x = x.expand([ins_kernel_feat.shape[0], 1, -1, -1])
@@ -132,8 +145,7 @@ class SOLOv2InsHead(nn.Module):
             # individual feature.
             kernel_feat = ins_kernel_feat
             seg_num_grid = self.num_grids[idx]
-            kernel_feat = F.interpolate(
-                kernel_feat, size=seg_num_grid, mode='bilinear')
+            kernel_feat = F.interpolate(kernel_feat, size=seg_num_grid, mode="bilinear")
             cate_feat = kernel_feat[:, :-2, :, :]
 
             # kernel
@@ -169,16 +181,20 @@ class SOLOv2MaskHead(nn.Module):
             convs_per_level = nn.Sequential()
             if i == 0:
                 conv_tower = list()
-                conv_tower.append(nn.Conv2d(
-                    self.mask_in_channels, self.mask_channels,
-                    kernel_size=3, stride=1,
-                    padding=1, bias=norm is None
-                ))
+                conv_tower.append(
+                    nn.Conv2d(
+                        self.mask_in_channels,
+                        self.mask_channels,
+                        kernel_size=3,
+                        stride=1,
+                        padding=1,
+                        bias=norm is None,
+                    )
+                )
                 if norm == "GN":
                     conv_tower.append(nn.GroupNorm(32, self.mask_channels))
                 conv_tower.append(nn.ReLU(inplace=False))
-                convs_per_level.add_module(
-                    'conv' + str(i), nn.Sequential(*conv_tower))
+                convs_per_level.add_module("conv" + str(i), nn.Sequential(*conv_tower))
                 self.convs_all_levels.append(convs_per_level)
                 continue
 
@@ -186,45 +202,60 @@ class SOLOv2MaskHead(nn.Module):
                 if j == 0:
                     chn = self.mask_in_channels + 2 if i == 3 else self.mask_in_channels
                     conv_tower = list()
-                    conv_tower.append(nn.Conv2d(
-                        chn, self.mask_channels,
-                        kernel_size=3, stride=1,
-                        padding=1, bias=norm is None
-                    ))
+                    conv_tower.append(
+                        nn.Conv2d(
+                            chn,
+                            self.mask_channels,
+                            kernel_size=3,
+                            stride=1,
+                            padding=1,
+                            bias=norm is None,
+                        )
+                    )
                     if norm == "GN":
                         conv_tower.append(nn.GroupNorm(32, self.mask_channels))
                     conv_tower.append(nn.ReLU(inplace=False))
                     convs_per_level.add_module(
-                        'conv' + str(j), nn.Sequential(*conv_tower))
+                        "conv" + str(j), nn.Sequential(*conv_tower)
+                    )
                     upsample_tower = nn.Upsample(
-                        scale_factor=2, mode='bilinear', align_corners=False)
-                    convs_per_level.add_module(
-                        'upsample' + str(j), upsample_tower)
+                        scale_factor=2, mode="bilinear", align_corners=False
+                    )
+                    convs_per_level.add_module("upsample" + str(j), upsample_tower)
                     continue
                 conv_tower = list()
-                conv_tower.append(nn.Conv2d(
-                    self.mask_channels, self.mask_channels,
-                    kernel_size=3, stride=1,
-                    padding=1, bias=norm is None
-                ))
+                conv_tower.append(
+                    nn.Conv2d(
+                        self.mask_channels,
+                        self.mask_channels,
+                        kernel_size=3,
+                        stride=1,
+                        padding=1,
+                        bias=norm is None,
+                    )
+                )
                 if norm == "GN":
                     conv_tower.append(nn.GroupNorm(32, self.mask_channels))
                 conv_tower.append(nn.ReLU(inplace=False))
-                convs_per_level.add_module(
-                    'conv' + str(j), nn.Sequential(*conv_tower))
+                convs_per_level.add_module("conv" + str(j), nn.Sequential(*conv_tower))
                 upsample_tower = nn.Upsample(
-                    scale_factor=2, mode='bilinear', align_corners=False)
-                convs_per_level.add_module('upsample' + str(j), upsample_tower)
+                    scale_factor=2, mode="bilinear", align_corners=False
+                )
+                convs_per_level.add_module("upsample" + str(j), upsample_tower)
 
             self.convs_all_levels.append(convs_per_level)
 
         self.conv_pred = nn.Sequential(
             nn.Conv2d(
-                self.mask_channels, self.num_masks,
-                kernel_size=1, stride=1,
-                padding=0, bias=norm is None),
+                self.mask_channels,
+                self.num_masks,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                bias=norm is None,
+            ),
             nn.GroupNorm(32, self.num_masks),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
         )
 
         for modules in [self.convs_all_levels, self.conv_pred]:
@@ -243,25 +274,31 @@ class SOLOv2MaskHead(nn.Module):
         Returns:
             pass
         """
-        assert len(features) == self.num_levels, \
-            print("The number of input features should be equal to the supposed level.")
+        assert len(features) == self.num_levels, print(
+            "The number of input features should be equal to the supposed level."
+        )
 
         # bottom features first.
         feature_add_all_level = self.convs_all_levels[0](features[0])
         for i in range(1, self.num_levels):
             mask_feat = features[i]
             if i == 3:  # add for coord.
-                x_range = torch.linspace(-1, 1,
-                                         mask_feat.shape[-1], device=mask_feat.device)
-                y_range = torch.linspace(-1, 1,
-                                         mask_feat.shape[-2], device=mask_feat.device)
+                x_range = torch.linspace(
+                    -1, 1, mask_feat.shape[-1], device=mask_feat.device
+                )
+                y_range = torch.linspace(
+                    -1, 1, mask_feat.shape[-2], device=mask_feat.device
+                )
                 y, x = torch.meshgrid(y_range, x_range)
                 y = y.expand([mask_feat.shape[0], 1, -1, -1])
                 x = x.expand([mask_feat.shape[0], 1, -1, -1])
                 coord_feat = torch.cat([x, y], 1)
                 mask_feat = torch.cat([mask_feat, coord_feat], 1)
             # add for top features.
-            feature_add_all_level += self.convs_all_levels[i](mask_feat)
-
+            # feature_add_all_level += self.convs_all_levels[i](mask_feat)
+            # maybe issue of: https://github.com/jinfagang/yolov7/issues/30
+            feature_add_all_level = feature_add_all_level + self.convs_all_levels[i](
+                mask_feat
+            )
         mask_pred = self.conv_pred(feature_add_all_level)
         return mask_pred
