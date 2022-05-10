@@ -291,9 +291,10 @@ class SparseInst(nn.Module):
         # do it in batch
         # max/argmax
         scores, labels = torch.max(pred_scores, dim=pred_scores.dim()-1)
-        _, keep = torch.topk(scores, k=50)
+        K_ = min(50, self.max_detections)
+        _, keep = torch.topk(scores, k=K_)
         print(keep.shape, scores.shape)
-        keep_flt = keep.view(-1, 50)
+        keep_flt = keep.view(-1, K_)
         scores = scores.view(-1)
         labels = labels.view(-1)
         scores = scores[keep_flt]
