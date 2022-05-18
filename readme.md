@@ -92,10 +92,11 @@ Here are some tasks need to be claimed:
 - [ ] ConvNext: https://github.com/facebookresearch/ConvNeXt, combined convolution and transformer.
 - [ ] NASVit: https://github.com/facebookresearch/NASViT
 - [ ] MobileVIT: https://github.com/apple/ml-cvnets/blob/main/cvnets/models/classification/mobilevit.py
-
+- [ ] DAB-DETR: https://github.com/IDEA-opensource/DAB-DETR, WIP
 
 ## 🆕 News!
 
+- ***2022.05.18***: DINO and DABDetr are about added, new records on coco up to 63.3 AP!
 - ***2022.05.09***: Big new function added! **We adopt YOLOX with Keypoints Head!**, model still under train, but you can check at code already;
 - ***2022.04.23***: We finished the int8 quantization on SparseInst! It works perfect! Download the onnx try it our by your self.
 - ***2022.04.15***: Now, we support the `SparseInst` onnx expport!
