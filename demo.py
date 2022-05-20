@@ -142,7 +142,7 @@ def vis_res_fast(res, img, class_names, colors, thresh):
         # img = vis_bitmasks_with_classes(img, clss, bit_masks)
         # img = vis_bitmasks_with_classes(img, clss, bit_masks, force_colors=colors, mask_border_color=(255, 255, 255), thickness=2)
         img = vis_bitmasks_with_classes(
-            img, clss, bit_masks, force_colors=None, draw_contours=True
+            img, clss, bit_masks, force_colors=None, draw_contours=True, alpha=0.8
         )
 
     if ins.has("pred_masks"):
@@ -150,7 +150,7 @@ def vis_res_fast(res, img, class_names, colors, thresh):
         if isinstance(bit_masks, BitMasks):
             bit_masks = bit_masks.tensor.cpu().numpy()
         img = vis_bitmasks_with_classes(
-            img, clss, bit_masks, force_colors=None, draw_contours=True
+            img, clss, bit_masks, force_colors=None, draw_contours=True, alpha=0.6, thickness=2
         )
     thickness = 1 if ins.has("pred_bit_masks") else 2
     font_scale = 0.3 if ins.has("pred_bit_masks") else 0.4
