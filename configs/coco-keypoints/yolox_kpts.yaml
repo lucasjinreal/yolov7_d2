@@ -4,7 +4,7 @@ MODEL:
   PIXEL_STD: [0.229, 0.224, 0.225]
 
   WEIGHTS: ""
-  MASK_ON: False
+  KEYPOINT_ON: True
   META_ARCHITECTURE: "YOLOX"
   BACKBONE:
     NAME: "build_cspdarknetx_backbone"

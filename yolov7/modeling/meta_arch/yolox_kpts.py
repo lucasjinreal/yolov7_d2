@@ -58,7 +58,7 @@ class YOLOX(nn.Module):
         self.in_features = cfg.MODEL.YOLO.IN_FEATURES
 
         # self.num_classes = cfg.MODEL.YOLO.CLASSES
-        self.num_classes = 1 # only for person
+        self.num_classes = 2 # only for person
         self.keypoints_num = cfg.MODEL.YOLO.KEYPOINTS_NUM
 
         self.backbone = build_backbone(cfg)
