@@ -22,6 +22,7 @@ from alfred.vis.image.mask import (
     vis_bitmasks_with_classes,
 )
 from alfred.vis.image.det import visualize_det_cv2_part, visualize_det_cv2_fancy
+from alfred.utils.file_io import ImageSourceIter
 from yolov7.config import add_yolo_config
 
 
@@ -92,8 +93,8 @@ def get_parser():
     parser.add_argument(
         "--webcam", action="store_true", help="Take inputs from webcam."
     )
-    parser.add_argument("--video-input", help="Path to video file.")
     parser.add_argument(
+        '-i',
         "--input",
         # nargs="+",
         help="A list of space separated input images; "
@@ -190,43 +191,21 @@ if __name__ == "__main__":
     conf_thresh = cfg.MODEL.YOLO.CONF_THRESHOLD
     print("confidence thresh: ", conf_thresh)
 
-    if args.input:
-        if os.path.isdir(args.input):
-            imgs = glob.glob(os.path.join(args.input, "*.jpg"))
-            imgs = sorted(imgs)
-            for path in imgs:
-                # use PIL, to be consistent with evaluation
-                img = cv2.imread(path)
-                print("ori img shape: ", img.shape)
-                res = predictor(img)
-                res = vis_res_fast(res, img, class_names, colors, conf_thresh)
-                # cv2.imshow('frame', res)
-                cv2.imshow("frame", res)
-                if cv2.waitKey(0) & 0xFF == ord("q"):
-                    break
-        else:
-            img = cv2.imread(args.input)
-            res = predictor(img)
-            res = vis_res_fast(res, img, class_names, colors, conf_thresh)
-            # cv2.imshow('frame', res)
-            cv2.imshow("frame", res)
-            cv2.waitKey(0)
-    elif args.webcam:
-        print("Not supported.")
-    elif args.video_input:
-        video = cv2.VideoCapture(args.video_input)
-        width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        frames_per_second = video.get(cv2.CAP_PROP_FPS)
-        num_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-        basename = os.path.basename(args.video_input)
+    iter = ImageSourceIter(args.input)
+    while True:
+        im = next(iter)
+        if isinstance(im, str):
+            im = cv2.imread(im)
+        
+        res = predictor(im)
+        res = vis_res_fast(res, im, class_names, colors, conf_thresh)
+        # cv2.imshow('frame', res)
+        cv2.imshow("frame", res)
 
-        while video.isOpened():
-            ret, frame = video.read()
-            # frame = cv2.resize(frame, (640, 640))
-            res = predictor(frame)
-            res = vis_res_fast(res, frame, class_names, colors, conf_thresh)
-            # cv2.imshow('frame', res)
-            cv2.imshow("frame", res)
-            if cv2.waitKey(1) & 0xFF == ord("q"):
+        if iter.video_mode:
+            cv2.waitKey(1)
+        else:
+            if cv2.waitKey(0) & 0xFF == ord("q"):
                 break
+
+   
