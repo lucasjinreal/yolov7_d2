@@ -34,3 +34,13 @@ def add_fbnet_v2_default_configs(_C):
     _C.MODEL.VT_FPN.NORM = "BN"
     _C.MODEL.VT_FPN.POS_HWS = []
     _C.MODEL.VT_FPN.POS_N_DOWNSAMPLE = []
+
+
+
+def add_convnext_default_configs(_C):
+    _C.MODEL.CONVNEXT = CN()
+
+    _C.MODEL.CONVNEXT.OUT_FEATURES = ["dark3", "dark4", "dark5"]
+    _C.MODEL.CONVNEXT.WEIGHTS = ""
+    _C.MODEL.CONVNEXT.DEPTH_WISE = False
+

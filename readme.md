@@ -96,6 +96,7 @@ Here are some tasks need to be claimed:
 
 ## 🆕 News!
 
+- ***2022.05.26***: Added **YOLOX-ConvNext** config;
 - ***2022.05.18***: DINO and DABDetr are about added, new records on coco up to 63.3 AP!
 - ***2022.05.09***: Big new function added! **We adopt YOLOX with Keypoints Head!**, model still under train, but you can check at code already;
 - ***2022.04.23***: We finished the int8 quantization on SparseInst! It works perfect! Download the onnx try it our by your self.
