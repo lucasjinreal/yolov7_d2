@@ -16,9 +16,10 @@ from timm.models.layers import trunc_normal_, DropPath
 # from mmcv.runner
 # from mmdet.utils import get_root_logger
 
-from detectron2.modeling.backbone.build import BACKBONE_REGISTRY
+from detectron2.modeling.backbone import Backbone, BACKBONE_REGISTRY
 from torch.utils.model_zoo import load_url as load_state_dict_from_url
 from alfred import logger
+from detectron2.layers import ShapeSpec
 
 
 class Block(nn.Module):
@@ -58,7 +59,7 @@ class Block(nn.Module):
         x = input + self.drop_path(x)
         return x
 
-class ConvNeXt(nn.Module):
+class ConvNeXt(Backbone):
     r""" ConvNeXt
         A PyTorch impl of : `A ConvNet for the 2020s`  -
           https://arxiv.org/pdf/2201.03545.pdf
@@ -76,6 +77,7 @@ class ConvNeXt(nn.Module):
                  drop_path_rate=0., layer_scale_init_value=1e-6, out_indices=[0, 1, 2, 3],
                  ):
         super().__init__()
+        self.output_shape_dict = dict()
 
         self.downsample_layers = nn.ModuleList() # stem and 3 intermediate downsampling conv layers
         stem = nn.Sequential(
@@ -108,6 +110,8 @@ class ConvNeXt(nn.Module):
             layer = norm_layer(dims[i_layer])
             layer_name = f'norm{i_layer}'
             self.add_module(layer_name, layer)
+
+            self.output_shape_dict[i_layer] = ShapeSpec(channels=dims[i_layer])
 
         self.apply(self._init_weights)
 
@@ -154,9 +158,26 @@ class ConvNeXt(nn.Module):
 
         return tuple(outs)
 
+    def output_shape(self):
+        # self.output_shape_dict["res5"] = ShapeSpec(
+        #     channels=1024, stride=16 if self.res5_dilation == 2 else 32
+        # )
+        return self.output_shape_dict
+
     def forward(self, x):
         x = self.forward_features(x)
         return x
+    
+    @property
+    def size_divisibility(self) -> int:
+        """
+        Some backbones require the input height and width to be divisible by a
+        specific integer. This is typically true for encoder / decoder type networks
+        with lateral connection (e.g., FPN) for which feature maps need to match
+        dimension in the "bottom up" and "top down" paths. Set to 0 if no specific
+        input size divisibility is required.
+        """
+        return 32
 
 class LayerNorm(nn.Module):
     r""" LayerNorm that supports two data formats: channels_last (default) or channels_first. 

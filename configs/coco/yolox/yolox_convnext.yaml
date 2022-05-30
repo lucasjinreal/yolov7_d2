@@ -16,7 +16,8 @@ MODEL:
 
   YOLO:
     CLASSES: 80
-    IN_FEATURES: ["dark3", "dark4", "dark5"]
+    # IN_FEATURES: ["dark3", "dark4", "dark5"]
+    IN_FEATURES: [0, 1, 2]
     CONF_THRESHOLD: 0.001
     NMS_THRESHOLD: 0.65
     IGNORE_THRESHOLD: 0.7
