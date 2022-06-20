@@ -3,7 +3,7 @@
 
 <img src="https://s4.ax1x.com/2022/02/01/Hk2dtP.png">
 
-<h1>YOLOv7 - Framework Beyond Detection</h1>
+<h1>YOLOv7 - Make YOLO Great Again</h1>
 
 
 [Documentation](https://github.com/jinfagang/yolov7) •
@@ -13,8 +13,7 @@
 [Reporting Issues](https://github.com/jinfagang/yolov7/issues/new?assignees=&labels=&template=bug-report.yml)
 
 
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/yolort)](https://pypi.org/project/yolort/)
-[![PyPI version](https://badge.fury.io/py/yolort.svg)](https://badge.fury.io/py/yolort)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/yolort)](https://pypi.org/project/alfred-py/)
 [![PyPI downloads](https://static.pepy.tech/personalized-badge/alfred-py?period=total&units=international_system&left_color=grey&right_color=blue&left_text=pypi%20downloads)](https://pepy.tech/project/yolort)
 [![Github downloads](https://img.shields.io/github/downloads/jinfagang/yolov7/total?color=blue&label=downloads&logo=github&logoColor=lightgrey)](https://img.shields.io/github/downloads/jinfagang/yolov7/total?color=blue&label=Downloads&logo=github&logoColor=lightgrey)
 
@@ -23,24 +22,13 @@
 [![Slack](https://img.shields.io/badge/slack-chat-aff.svg?logo=slack)](https://join.slack.com/t/yolort/shared_invite/zt-mqwc7235-940aAh8IaKYeWclrJx10SA)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-pink.svg)](https://github.com/jinfagang/yolov7/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
 
-
 </div>
 
 
->  **`YOLO family variant with transformers!`**, Instance Segmentation in YOLO, DETR, AnchorDETR all supported!
+> In short: **YOLOv7 added instance segmentation to YOLO arch**. Also many transformer backbones, archs included. If you look carefully, you'll find our ultimate vision is to **make YOLO great again** by the power of **transformers**, as well as **multi-tasks training**. YOLOv7 achieves mAP 43, AP-s exceed MaskRCNN by 10 with a convnext-tiny backbone while simillar speed with YOLOX-s, more models listed below, it's more accurate and even more lighter!
 
-update: we also provide a private version of yolov7, please visit: https://manaai.cn for more details. Our latest update will appear on mana first.
 
-🔥🔥🔥 Just another yolo variant implemented based on **`detectron2`**. Be note that **YOLOv7 doesn't meant to be a successor of yolo family, 7 is just my magic and lucky number**. In our humble opinion, a good opensource project must have these features:
-
-- It must be reproduceble;
-- It must be simple and understandable;
-- It must be build with the weapon of the edge;
-- It must have a good maintainance, listen to the voice from community;
-
-However, we found many opensource detection framework such as YOLOv5, Efficientdet have their own weakness, for example, YOLOv5 is very good at reproduceable but really over-engineered, too many messy codes. What's more surprisingly, there were at least 20+ different version of re-implementation of YOLOv3-YOLOv4 in pytorch, 99.99% of them were totally **wrong**, either can u train your dataset nor make it mAP comparable with origin paper.(However, *doesn't mean this work is totally right, use at your own risk*.)
-
-That's why we have this project! It's much more simpler to experiment different ARCH of YOLO build upon detectron2 with YOLOv7! Most importantly, more and more decent YOLO series model merged into this repo such as YOLOX (most decent in 2021). We also **welcome any trick/experiment PR on YOLOv7, help us build it better and stronger!!**. Please **star it and fork it right now!**.
+🔥🔥🔥 Just another yolo variant implemented based on **`detectron2`**. Be note that **YOLOv7 doesn't meant to be a successor of yolo family, 7 is just a magic and lucky number. Instead, YOLOv7 extend yolo into many other vision tasks, such as instance segmentation, one-stage keypoints detection etc.**. 
 
 The supported matrix in YOLOv7 are:
 
@@ -65,15 +53,48 @@ The supported matrix in YOLOv7 are:
 - [x] YOLOX arch added, now you can train YOLOX model (**anchor free yolo**) as well;
 - [x] DETR: transformer based detection model and **onnx export supported, as well as TensorRT acceleration**;
 - [x] AnchorDETR: Faster converge version of detr, now supported!
-
-what's more, there are some features awesome inside repo:
-
 - [x] Almost all models can export to onnx;
 - [x] Supports TensorRT deployment for DETR and other transformer models;
 - [ ] It will integrate with [wanwu](https://github.com/jinfagang/wanwu_release), a torch-free deploy framework run fastest on your target platform.
 
 
-**Help wanted!** If you have spare time or if you have GPU card, then help YOLOv7 become more stronger! Here is the guidance of contribute:
+> ⚠️ Important note: **YOLOv7 on Github not the latest version, many features are closed-source but you can get it from https://manaai.cn**
+
+Features are ready but not opensource yet:
+
+- [x] Convnext training on YOLOX, higher accuracy than original YOLOX;
+- [x] GFL loss support; 
+- [x] **MobileVit-V2** backbone available;
+- [x] CSPRep-Resnet: a repvgg style resnet used in PP-YOLOE but in pytorch rather than paddle;
+- [ ] VitDet support;
+- [ ] Simple-FPN support from VitDet;
+- [ ] PP-YOLOE head supported;
+
+If you want get full version YOLOv7, either **become a contributor** or get from https://manaai.cn .
+
+
+## 🆕 News!
+
+- ***2022.06.13***: New model **YOLOX-Convnext-tiny** got a ~~41.3~~ 43 mAP beats yolox-s, AP-small even higher!;
+- ***2022.06.09***: **GFL**, general focal loss supported;
+- ***2022.05.26***: Added **YOLOX-ConvNext** config;
+- ***2022.05.18***: DINO and DABDetr are about added, new records on coco up to 63.3 AP!
+- ***2022.05.09***: Big new function added! **We adopt YOLOX with Keypoints Head!**, model still under train, but you can check at code already;
+- ***2022.04.23***: We finished the int8 quantization on SparseInst! It works perfect! Download the onnx try it our by your self.
+- ***2022.04.15***: Now, we support the `SparseInst` onnx expport!
+- ***2022.03.25***: New instance seg supported! 40 FPS @ 37 mAP!! Which is fast;
+- ***2021.09.16***: First transformer based DETR model added, will explore more DETR series models;
+- ***2021.08.02***: **YOLOX** arch added, you can train YOLOX as well in this repo;
+- ***2021.07.25***: We found **YOLOv7-Res2net50** beat res50 and darknet53 at same speed level! 5% AP boost on custom dataset;
+- ***2021.07.04***: Added YOLOF and we can have a anchor free support as well, YOLOF achieves a better trade off on speed and accuracy;
+- ***2021.06.25***: this project first started.
+- more
+
+
+
+## 🌹 Contribution Wanted
+
+If you have spare time or if you have GPU card, then help YOLOv7 become more stronger! Here is the guidance of contribute:
 
 1. **`Claim task`**: I have some ideas but do not have enough time to do it, if you want implement it, claim the task, **I will give u fully advise on how to do, and you can learn a lot from it**;
 2. **`Test mAP`**: When you finished new idea implementation, create a thread to report experiment mAP, if it work, then merge into our main master branch;
@@ -89,25 +110,13 @@ Here are some tasks need to be claimed:
   - [ ] Test with YOLOv7 or DETR arch;
 - [ ] DINO: 63.3mAP highest in 2022 on coco. https://github.com/IDEACVR/DINO
   - [ ] waiting for DINO opensource code.
-- [ ] ConvNext: https://github.com/facebookresearch/ConvNeXt, combined convolution and transformer.
+- [x] ConvNext: https://github.com/facebookresearch/ConvNeXt, combined convolution and transformer.
 - [ ] NASVit: https://github.com/facebookresearch/NASViT
 - [ ] MobileVIT: https://github.com/apple/ml-cvnets/blob/main/cvnets/models/classification/mobilevit.py
 - [ ] DAB-DETR: https://github.com/IDEA-opensource/DAB-DETR, WIP
+- [ ] https://github.com/jahongir7174/EfficientNetV2
 
-## 🆕 News!
-
-- ***2022.05.26***: Added **YOLOX-ConvNext** config;
-- ***2022.05.18***: DINO and DABDetr are about added, new records on coco up to 63.3 AP!
-- ***2022.05.09***: Big new function added! **We adopt YOLOX with Keypoints Head!**, model still under train, but you can check at code already;
-- ***2022.04.23***: We finished the int8 quantization on SparseInst! It works perfect! Download the onnx try it our by your self.
-- ***2022.04.15***: Now, we support the `SparseInst` onnx expport!
-- ***2022.03.25***: New instance seg supported! 40 FPS @ 37 mAP!! Which is fast;
-- ***2021.09.16***: First transformer based DETR model added, will explore more DETR series models;
-- ***2021.08.02***: **YOLOX** arch added, you can train YOLOX as well in this repo;
-- ***2021.07.25***: We found **YOLOv7-Res2net50** beat res50 and darknet53 at same speed level! 5% AP boost on custom dataset;
-- ***2021.07.04***: Added YOLOF and we can have a anchor free support as well, YOLOF achieves a better trade off on speed and accuracy;
-- ***2021.06.25***: this project first started.
-- more
+Just join our in-house contributor plan, you can share our newest code with your contribution!
 
 
 ## 💁‍♂️ Results
@@ -118,7 +127,8 @@ Here are some tasks need to be claimed:
 ![](https://z3.ax1x.com/2021/09/08/hHP7xe.png)  |  ![](https://z3.ax1x.com/2021/07/22/WDr5V0.png)
 ![](https://s1.ax1x.com/2022/03/25/qN5zp6.png)  |  ![](https://s2.loli.net/2022/03/25/MBwq9YT7zC5Sd1A.png)
 ![](https://s1.ax1x.com/2022/05/09/OJnXjI.png)  |  ![](https://s1.ax1x.com/2022/05/09/OJuuUU.png)
-
+![](https://raw.githubusercontent.com/jinfagang/public_images/master/20220613110908.png) | ![](https://raw.githubusercontent.com/jinfagang/public_images/master/20220613111122.png)
+![](https://raw.githubusercontent.com/jinfagang/public_images/master/20220613111139.png) | ![](https://raw.githubusercontent.com/jinfagang/public_images/master/20220613111239.png)
 
 
 
@@ -129,10 +139,10 @@ Here are some tasks need to be claimed:
 Special requirements (other version may also work, but these are tested, with best performance, including ONNX export best support):
 
 - torch 1.11 (stable version)
-- onnx 1.12
+- onnx
 - onnx-simplifier 0.3.7
 - alfred-py latest
-- detectron2 0.5
+- detectron2 latest
 
 If you using lower version torch, onnx exportation might not work as our expected.
 
@@ -163,6 +173,19 @@ We are strongly recommend you send PR if you have any further development on thi
 | [SparseInst (G-IAM)](configs/sparse_inst_r50vd_dcn_giam_aug.yaml) | [R-50-vd-DCN](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 608 | &#10003; | 37.4 | 37.9 | 40.0  | [model](https://drive.google.com/file/d/1clYPdCNrDNZLbmlAEJ7wjsrOLn1igOpT/view?usp=sharing)|
 | [SparseInst (G-IAM)](sparse_inst_r50vd_dcn_giam_aug.yaml) | [R-50-vd-DCN](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 640 | &#10003; | 37.7 | 38.1 | 39.3 |  [model](https://drive.google.com/file/d/1clYPdCNrDNZLbmlAEJ7wjsrOLn1igOpT/view?usp=sharing)| 
 | SparseInst Int8 onnx | [google drive](https://drive.google.com/file/d/1FYn_0p3RXzKaTGzTfdiJI1YhAexA_V3s/view?usp=sharing) |
+
+
+
+## 🧙‍♂️ Models trained in YOLOv7
+
+| model | backbone | input | aug | AP |  AP50 |  APs  | FPS | weights |
+| :---- | :------  | :---: | :-: |:---: | :--: | :-: | :-: | :-----: |
+| [YoloFormer-Convnext-tiny](configs/coco/yolotr/yolotr_convnext.yaml) | [Convnext-tiny](https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_224.pth) | 800 | &#10003; | 43 | 63.7 | 26.5 | 39.3 |  [model](https://drive.google.com/file/d/1bTedWQaENvlFknqyQreBKA1HoAMOtHkn/view?usp=sharing)| 
+| [YOLOX-s](configs/coco/yolox_s.yaml) | - | 800 | &#10003; | 40.5 | - | - | 39.3 |  [model](https://drive.google.com/file/d/1clYPdCNrDNZLbmlAEJ7wjsrOLn1igOpT/view?usp=sharing)| 
+
+> note: We post AP-s here because we want to know how does small object performance in related model, it was notablely higher small-APs for transformer backbone based model! **Some of above model might not opensourced but we provide weights**.
+
+
 
 ## 🥰 Demo
 
