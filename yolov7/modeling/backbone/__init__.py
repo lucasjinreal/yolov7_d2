@@ -13,3 +13,4 @@ from .fbnet_v2 import FBNetV2C4Backbone, build_fbnet
 from .resnetvd import build_resnet_vd_backbone
 
 from .convnext import build_convnext_backbone
+from .efficientrep import build_efficientrep_backbone
