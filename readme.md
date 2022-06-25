@@ -75,6 +75,7 @@ If you want get full version YOLOv7, either **become a contributor** or get from
 
 ## 🆕 News!
 
+- ***2022.06.25***: Meituan's YOLOv6 training has been supported in YOLOv7!
 - ***2022.06.13***: New model **YOLOX-Convnext-tiny** got a ~~41.3~~ 43 mAP beats yolox-s, AP-small even higher!;
 - ***2022.06.09***: **GFL**, general focal loss supported;
 - ***2022.05.26***: Added **YOLOX-ConvNext** config;
