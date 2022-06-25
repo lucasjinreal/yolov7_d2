@@ -12,6 +12,13 @@ from torch import Tensor
 
 # needed due to empty tensor bug in pytorch and torchvision 0.5
 import torchvision
+import math
+
+
+def make_divisible(x, divisor):
+    # Upward revision the value x to make it evenly divisible by the divisor.
+    return math.ceil(x / divisor) * divisor
+
 
 if float(torchvision.__version__.split(".")[1]) < 7.0:
     from torchvision.ops import _new_empty_tensor
