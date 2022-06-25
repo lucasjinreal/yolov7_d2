@@ -2,6 +2,18 @@
 
 You can refer to `install.md` for preparing your own dataset. Basically, just convert your dataset into coco format, and it's ready to go.
 
+We have 3 **key** train scripts, they are:
+
+- `train_coco.py`: this is basically most common used train script for coco;
+- `train_detr.py`: use this for **any** DETR or transformer based model;
+- `train_net.py`: Experimented changing training strategy script, **used for experiement**;
+- `train_custom_datasets.py`: train all customized datasets;
+
+For demo usage, you can using:
+
+- `demo.py`: for demo visualize result;
+- `demo_lazyconfig.py`: for demo using `*.py` as config file;
+
 
 ## Inference
 

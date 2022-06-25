@@ -1,10 +1,10 @@
-'''
+"""
 Using Atom to quantize d2 models
 
 such as YOLOX
 
 this is WIP, not full work now.
-'''
+"""
 # Copyright (c) Facebook, Inc. and its affiliates.
 import argparse
 import glob
@@ -27,7 +27,11 @@ from detectron2.modeling import build_model
 import detectron2.data.transforms as T
 from detectron2.checkpoint import DetectionCheckpointer
 from yolov7.config import add_yolo_config
-from detectron2.data import MetadataCatalog, build_detection_train_loader, DatasetCatalog
+from detectron2.data import (
+    MetadataCatalog,
+    build_detection_train_loader,
+    DatasetCatalog,
+)
 from detectron2.data import build_detection_test_loader
 
 from alfred.vis.image.mask import label2color_mask, vis_bitmasks
@@ -45,15 +49,21 @@ import yaml
 from easydict import EasyDict
 
 backend_dict = {
-    'Academic': BackendType.Academic,
-    'Tensorrt': BackendType.Tensorrt,
-    'SNPE': BackendType.SNPE,
-    'PPLW8A16': BackendType.PPLW8A16,
-    'NNIE': BackendType.NNIE,
-    'Vitis': BackendType.Vitis,
-    'ONNX_QNN': BackendType.ONNX_QNN,
-    'PPLCUDA': BackendType.PPLCUDA,
+    "Academic": BackendType.Academic,
+    "Tensorrt": BackendType.Tensorrt,
+    "SNPE": BackendType.SNPE,
+    "PPLW8A16": BackendType.PPLW8A16,
+    "NNIE": BackendType.NNIE,
+    "Vitis": BackendType.Vitis,
+    "ONNX_QNN": BackendType.ONNX_QNN,
+    "PPLCUDA": BackendType.PPLCUDA,
 }
+
+
+"""
+WIP.
+
+"""
 
 
 def parse_config(config_file):
@@ -61,9 +71,9 @@ def parse_config(config_file):
         config = yaml.load(f, Loader=yaml.FullLoader)
         cur_config = config
         cur_path = config_file
-        while 'root' in cur_config:
+        while "root" in cur_config:
             root_path = os.path.dirname(cur_path)
-            cur_path = os.path.join(root_path, cur_config['root'])
+            cur_path = os.path.join(root_path, cur_config["root"])
             with open(cur_path) as r:
                 root_config = yaml.load(r, Loader=yaml.FullLoader)
                 for k, v in root_config.items():
@@ -155,7 +165,6 @@ def get_parser():
     return parser
 
 
-
 def load_test_image(f, h, w, bs=1):
     a = cv2.imread(f)
     a = cv2.resize(a, (w, h))
@@ -193,11 +202,10 @@ def get_model_infos(config_file):
         return ["outs"]
 
 
-
 def load_calibrate_data(train_loader, cali_batchsize):
     cali_data = []
     for i, batch in enumerate(train_loader):
-        imgs = batch['images']
+        imgs = batch["images"]
         print(imgs)
         cali_data.append(batch[0])
         if i + 1 == cali_batchsize:
@@ -206,25 +214,43 @@ def load_calibrate_data(train_loader, cali_batchsize):
 
 
 def get_quantize_model(model, config):
-    backend_type = BackendType.Academic if not hasattr(
-        config.quantize, 'backend') else backend_dict[config.quantize.backend]
-    extra_prepare_dict = {} if not hasattr(
-        config, 'extra_prepare_dict') else config.extra_prepare_dict
-    return prepare_by_platform(
-        model, backend_type, extra_prepare_dict)
+    backend_type = (
+        BackendType.Academic
+        if not hasattr(config.quantize, "backend")
+        else backend_dict[config.quantize.backend]
+    )
+    extra_prepare_dict = (
+        {} if not hasattr(config, "extra_prepare_dict") else config.extra_prepare_dict
+    )
+    return prepare_by_platform(model, backend_type, extra_prepare_dict)
 
 
 def deploy(model, config):
-    backend_type = BackendType.Academic if not hasattr(
-        config.quantize, 'backend') else backend_dict[config.quantize.backend]
-    output_path = './' if not hasattr(
-        config.quantize, 'deploy') else config.quantize.deploy.output_path
+    backend_type = (
+        BackendType.Academic
+        if not hasattr(config.quantize, "backend")
+        else backend_dict[config.quantize.backend]
+    )
+    output_path = (
+        "./"
+        if not hasattr(config.quantize, "deploy")
+        else config.quantize.deploy.output_path
+    )
     model_name = config.quantize.deploy.model_name
-    deploy_to_qlinear = False if not hasattr(
-        config.quantize.deploy, 'deploy_to_qlinear') else config.quantize.deploy.deploy_to_qlinear
+    deploy_to_qlinear = (
+        False
+        if not hasattr(config.quantize.deploy, "deploy_to_qlinear")
+        else config.quantize.deploy.deploy_to_qlinear
+    )
 
-    convert_deploy(model, backend_type, {
-                   'input': [1, 3, 224, 224]}, output_path=output_path, model_name=model_name, deploy_to_qlinear=deploy_to_qlinear)
+    convert_deploy(
+        model,
+        backend_type,
+        {"input": [1, 3, 224, 224]},
+        output_path=output_path,
+        model_name=model_name,
+        deploy_to_qlinear=deploy_to_qlinear,
+    )
 
 
 def evaluate_model(model, test_loader, criterion=None):
@@ -257,7 +283,9 @@ def evaluate_model(model, test_loader, criterion=None):
 
 
 def prepare_dataloader(cfg):
-    test_loader = build_detection_test_loader(cfg, "coco_2017_val", mapper=MyDatasetMapper(cfg, True))
+    test_loader = build_detection_test_loader(
+        cfg, "coco_2017_val", mapper=MyDatasetMapper(cfg, True)
+    )
     return test_loader
 
 
@@ -286,54 +314,63 @@ if __name__ == "__main__":
     model.to(device)
     model.eval()
 
-    if hasattr(config, 'quantize'):
+    if hasattr(config, "quantize"):
         model = get_quantize_model(model, config)
-        print('now model in quantized mode.')
-    
+        print("now model in quantized mode.")
+
     model.to(device)
     evaluate_model(model, test_loader)
 
     # evaluate
-    if not hasattr(config, 'quantize'):
+    if not hasattr(config, "quantize"):
         evaluate_model(model, test_loader)
-    elif config.quantize.quantize_type == 'advanced_ptq':
-        print('begin calibration now!')
-        cali_data = load_calibrate_data(test_loader, cali_batchsize=config.quantize.cali_batchsize)
-        from mqbench.utils.state import enable_quantization, enable_calibration_woquantization
+    elif config.quantize.quantize_type == "advanced_ptq":
+        print("begin calibration now!")
+        cali_data = load_calibrate_data(
+            test_loader, cali_batchsize=config.quantize.cali_batchsize
+        )
+        from mqbench.utils.state import (
+            enable_quantization,
+            enable_calibration_woquantization,
+        )
+
         # do activation and weight calibration seperately for quick MSE per-channel for weight one
         model.eval()
-        enable_calibration_woquantization(model, quantizer_type='act_fake_quant')
+        enable_calibration_woquantization(model, quantizer_type="act_fake_quant")
         for batch in cali_data:
             model(batch.cuda())
-        enable_calibration_woquantization(model, quantizer_type='weight_fake_quant')
+        enable_calibration_woquantization(model, quantizer_type="weight_fake_quant")
         model(cali_data[0].cuda())
-        print('begin advanced PTQ now!')
-        if hasattr(config.quantize, 'reconstruction'):
-            model = ptq_reconstruction(
-                model, cali_data, config.quantize.reconstruction)
+        print("begin advanced PTQ now!")
+        if hasattr(config.quantize, "reconstruction"):
+            model = ptq_reconstruction(model, cali_data, config.quantize.reconstruction)
         enable_quantization(model)
         evaluate_model(model, test_loader)
-        if hasattr(config.quantize, 'deploy'):
+        if hasattr(config.quantize, "deploy"):
             deploy(model, config)
-    elif config.quantize.quantize_type == 'naive_ptq':
-        print('begin calibration now!')
-        cali_data = load_calibrate_data(test_loader, cali_batchsize=config.quantize.cali_batchsize)
-        from atomquant.atom.utils.state import enable_quantization, enable_calibration_woquantization
+    elif config.quantize.quantize_type == "naive_ptq":
+        print("begin calibration now!")
+        cali_data = load_calibrate_data(
+            test_loader, cali_batchsize=config.quantize.cali_batchsize
+        )
+        from atomquant.atom.utils.state import (
+            enable_quantization,
+            enable_calibration_woquantization,
+        )
+
         # do activation and weight calibration seperately for quick MSE per-channel for weight one
         model.eval()
-        enable_calibration_woquantization(model, quantizer_type='act_fake_quant')
+        enable_calibration_woquantization(model, quantizer_type="act_fake_quant")
         for batch in cali_data:
             model(batch.to(device))
-        enable_calibration_woquantization(model, quantizer_type='weight_fake_quant')
+        enable_calibration_woquantization(model, quantizer_type="weight_fake_quant")
         model(cali_data[0].to(device))
-        print('begin quantization now!')
+        print("begin quantization now!")
         enable_quantization(model)
         # print(model)
         evaluate_model(model, test_loader)
-        if hasattr(config.quantize, 'deploy'):
+        if hasattr(config.quantize, "deploy"):
             deploy(model, config)
     else:
         print("The quantize_type must in 'naive_ptq' or 'advanced_ptq',")
         print("and 'advanced_ptq' need reconstruction configration.")
-
-    
