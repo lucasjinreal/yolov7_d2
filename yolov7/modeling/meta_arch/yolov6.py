@@ -40,6 +40,7 @@ class YOLOV6(nn.Module):
         self.nms_threshold = cfg.MODEL.YOLO.NMS_THRESHOLD
         self.nms_type = cfg.MODEL.NMS_TYPE
         self.loss_type = cfg.MODEL.YOLO.LOSS_TYPE
+        self.head_type = cfg.MODEL.YOLO.HEAD.TYPE
 
         # l1 loss will open at last 15 epochs
         self.use_l1 = False

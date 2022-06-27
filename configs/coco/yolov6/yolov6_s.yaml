@@ -26,6 +26,8 @@ MODEL:
     LOSS_TYPE: "v7"
     LOSS:
       LAMBDA_IOU: 1.5
+    HEAD:
+      TYPE: "yolov6"
 
 DATASETS:
   TRAIN: ("coco_2017_train",)
