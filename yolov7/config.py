@@ -7,6 +7,7 @@ from .modeling.backbone.cfg import add_fbnet_v2_default_configs
 from .configs.config_sparseinst import add_sparse_inst_config
 from .configs.config_convnext import add_convnext_default_configs
 
+
 def add_yolo_config(cfg):
     """
     Add config for tridentnet.
@@ -33,7 +34,7 @@ def add_yolo_config(cfg):
     _C.MODEL.BIFPN = CN()
     _C.MODEL.BIFPN.NUM_LEVELS = 5
     _C.MODEL.BIFPN.NUM_BIFPN = 6
-    _C.MODEL.BIFPN.NORM = 'GN'
+    _C.MODEL.BIFPN.NORM = "GN"
     _C.MODEL.BIFPN.OUT_CHANNELS = 160
     _C.MODEL.BIFPN.SEPARABLE_CONV = False
 
@@ -47,20 +48,20 @@ def add_yolo_config(cfg):
     _C.SOLVER.LR_SCHEDULER.MAX_ITER = 40000
     _C.SOLVER.LR_SCHEDULER.MAX_EPOCH = 500
     _C.SOLVER.LR_SCHEDULER.STEPS = (30000,)
-    _C.SOLVER.LR_SCHEDULER.WARMUP_FACTOR = 1.0/1000
+    _C.SOLVER.LR_SCHEDULER.WARMUP_FACTOR = 1.0 / 1000
     _C.SOLVER.LR_SCHEDULER.WARMUP_ITERS = 1000
     _C.SOLVER.LR_SCHEDULER.WARMUP_METHOD = "linear"
     _C.SOLVER.LR_SCHEDULER.GAMMA = 0.1
 
     # Add Input
-    _C.INPUT.INPUT_SIZE = [640, 640] # h,w order
+    _C.INPUT.INPUT_SIZE = [640, 640]  # h,w order
 
     # Add yolo config
     _C.MODEL.YOLO = CN()
     _C.MODEL.YOLO.NUM_BRANCH = 3
     _C.MODEL.YOLO.BRANCH_DILATIONS = [1, 2, 3]
     _C.MODEL.YOLO.TEST_BRANCH_IDX = 1
-    _C.MODEL.YOLO.VARIANT = 'yolov3'  # can be yolov5 yolov7 as well
+    _C.MODEL.YOLO.VARIANT = "yolov3"  # can be yolov5 yolov7 as well
     _C.MODEL.YOLO.ANCHORS = [
         [[116, 90], [156, 198], [373, 326]],
         [[30, 61], [62, 45], [42, 119]],
@@ -73,6 +74,7 @@ def add_yolo_config(cfg):
     _C.MODEL.YOLO.CONF_THRESHOLD = 0.01
     _C.MODEL.YOLO.NMS_THRESHOLD = 0.5
     _C.MODEL.YOLO.IGNORE_THRESHOLD = 0.07
+    _C.MODEL.YOLO.NORMALIZE_INPUT = False
 
     _C.MODEL.YOLO.WIDTH_MUL = 1.0
     _C.MODEL.YOLO.DEPTH_MUL = 1.0
@@ -91,8 +93,11 @@ def add_yolo_config(cfg):
     _C.MODEL.YOLO.LOSS.BUILD_TARGET_TYPE = "default"
 
     _C.MODEL.YOLO.NECK = CN()
-    _C.MODEL.YOLO.NECK.TYPE = "yolov3" # default is FPN, can be pafpn as well
-    _C.MODEL.YOLO.NECK.WITH_SPP = False #
+    _C.MODEL.YOLO.NECK.TYPE = "yolov3"  # default is FPN, can be pafpn as well
+    _C.MODEL.YOLO.NECK.WITH_SPP = False  #
+
+    _C.MODEL.YOLO.HEAD = CN()
+    _C.MODEL.YOLO.HEAD.TYPE = "yolox"
 
     _C.MODEL.YOLO.ORIEN_HEAD = CN()
     _C.MODEL.YOLO.ORIEN_HEAD.UP_CHANNELS = 64
@@ -126,17 +131,28 @@ def add_yolo_config(cfg):
     _C.MODEL.EFFICIENTNET.NAME = "efficientnet_b0"
     _C.MODEL.EFFICIENTNET.PRETRAINED = True
     _C.MODEL.EFFICIENTNET.FEATURE_INDICES = [1, 4, 10, 15]
-    _C.MODEL.EFFICIENTNET.OUT_FEATURES = [
-        "stride4", "stride8", "stride16", "stride32"]
+    _C.MODEL.EFFICIENTNET.OUT_FEATURES = ["stride4", "stride8", "stride16", "stride32"]
 
-    
+    # _C.MODEL.BACKBONE = CN()
+    _C.MODEL.BACKBONE.SUBTYPE = "s"
+    _C.MODEL.BACKBONE.PRETRAINED = True
+    _C.MODEL.BACKBONE.WEIGHTS = ""
+    _C.MODEL.BACKBONE.FEATURE_INDICES = [1, 4, 10, 15]
+    _C.MODEL.BACKBONE.OUT_FEATURES = ["stride8", "stride16", "stride32"]
+
     # add SOLOv2 options
     _C.MODEL.SOLOV2 = CN()
 
     # Instance hyper-parameters
     _C.MODEL.SOLOV2.INSTANCE_IN_FEATURES = ["p2", "p3", "p4", "p5", "p6"]
     _C.MODEL.SOLOV2.FPN_INSTANCE_STRIDES = [8, 8, 16, 32, 32]
-    _C.MODEL.SOLOV2.FPN_SCALE_RANGES = ((1, 96), (48, 192), (96, 384), (192, 768), (384, 2048))
+    _C.MODEL.SOLOV2.FPN_SCALE_RANGES = (
+        (1, 96),
+        (48, 192),
+        (96, 384),
+        (192, 768),
+        (384, 2048),
+    )
     _C.MODEL.SOLOV2.SIGMA = 0.2
     # Channel size for the instance head.
     _C.MODEL.SOLOV2.INSTANCE_IN_CHANNELS = 256
@@ -144,7 +160,7 @@ def add_yolo_config(cfg):
     # Convolutions to use in the instance head.
     _C.MODEL.SOLOV2.NUM_INSTANCE_CONVS = 4
     _C.MODEL.SOLOV2.USE_DCN_IN_INSTANCE = False
-    _C.MODEL.SOLOV2.TYPE_DCN = 'DCN'
+    _C.MODEL.SOLOV2.TYPE_DCN = "DCN"
     _C.MODEL.SOLOV2.NUM_GRIDS = [40, 36, 24, 16, 12]
     # Number of foreground classes.
     _C.MODEL.SOLOV2.NUM_CLASSES = 80
@@ -191,7 +207,7 @@ def add_yolo_config(cfg):
     cfg.MODEL.FBNET_V2.OUT_FEATURES = ["trunk3"]
 
     # For Segmentation
-    cfg.MODEL.DETR.FROZEN_WEIGHTS = ''
+    cfg.MODEL.DETR.FROZEN_WEIGHTS = ""
     # LOSS
     cfg.MODEL.DETR.DEFORMABLE = False
     cfg.MODEL.DETR.USE_FOCAL_LOSS = False
@@ -207,7 +223,7 @@ def add_yolo_config(cfg):
     cfg.MODEL.DETR.DECODER_BLOCK_GRAD = True
 
     # TRANSFORMER
-    cfg.MODEL.DETR.ATTENTION_TYPE = "DETR" # can be SMCA, RCDA
+    cfg.MODEL.DETR.ATTENTION_TYPE = "DETR"  # can be SMCA, RCDA
     cfg.MODEL.DETR.NHEADS = 8
     cfg.MODEL.DETR.DROPOUT = 0.1
     cfg.MODEL.DETR.DIM_FEEDFORWARD = 2048
@@ -217,16 +233,15 @@ def add_yolo_config(cfg):
     cfg.MODEL.DETR.BBOX_EMBED_NUM_LAYERS = 3
     cfg.MODEL.DETR.HIDDEN_DIM = 256
     cfg.MODEL.DETR.NUM_OBJECT_QUERIES = 100
-    cfg.MODEL.DETR.FROZEN_WEIGHTS = ''
-    cfg.MODEL.DETR.NUM_FEATURE_LEVELS = 1 # can be 3 tambien
+    cfg.MODEL.DETR.FROZEN_WEIGHTS = ""
+    cfg.MODEL.DETR.NUM_FEATURE_LEVELS = 1  # can be 3 tambien
     # for AnchorDETR
     cfg.MODEL.DETR.NUM_QUERY_POSITION = 300
     cfg.MODEL.DETR.NUM_QUERY_PATTERN = 3
-    cfg.MODEL.DETR.SPATIAL_PRIOR = 'learned'
+    cfg.MODEL.DETR.SPATIAL_PRIOR = "learned"
 
     cfg.SOLVER.OPTIMIZER = "ADAMW"
     cfg.SOLVER.BACKBONE_MULTIPLIER = 0.1
-
 
     # Input Configs
     # Mosaic part

@@ -6,6 +6,7 @@ from .yolomask import YOLOMask
 from .yolof import YOLOF
 from .yolox import YOLOX
 from .yolov5 import YOLOV5
+from .yolov6 import YOLOV6
 
 from .solov2 import SOLOv2
 

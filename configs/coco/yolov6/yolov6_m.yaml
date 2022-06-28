@@ -16,12 +16,10 @@ MODEL:
     CONF_THRESHOLD: 0.001
     NMS_THRESHOLD: 0.65
     IGNORE_THRESHOLD: 0.7
-    WIDTH_MUL: 0.50
-    DEPTH_MUL: 0.33
+    WIDTH_MUL: 1.
+    DEPTH_MUL: 1.
     LOSS:
       LAMBDA_IOU: 1.5
-    HEAD:
-      TYPE: "yolov6"
     NECK:
       TYPE: "reppan"
 
@@ -65,8 +63,8 @@ SOLVER:
   # enable fp16 training
   AMP:
     ENABLED: true
-  IMS_PER_BATCH: 80
-  BASE_LR: 0.02
+  IMS_PER_BATCH: 112
+  BASE_LR: 0.027
   STEPS: (60000, 80000)
   WARMUP_FACTOR: 0.00033333
   WARMUP_ITERS: 1200

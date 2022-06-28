@@ -23,18 +23,19 @@ _RawBoxType = Union[List[float], Tuple[float, ...], torch.Tensor, np.ndarray]
 """
 used in DETR
 """
+
+
 def box_cxcywh_to_xyxy(x):
     x_c, y_c, w, h = x.unbind(-1)
-    b = [(x_c - 0.5 * w), (y_c - 0.5 * h),
-         (x_c + 0.5 * w), (y_c + 0.5 * h)]
+    b = [(x_c - 0.5 * w), (y_c - 0.5 * h), (x_c + 0.5 * w), (y_c + 0.5 * h)]
     return torch.stack(b, dim=-1)
 
 
 def box_xyxy_to_cxcywh(x):
     x0, y0, x1, y1 = x.unbind(-1)
-    b = [(x0 + x1) / 2, (y0 + y1) / 2,
-         (x1 - x0), (y1 - y0)]
+    b = [(x0 + x1) / 2, (y0 + y1) / 2, (x1 - x0), (y1 - y0)]
     return torch.stack(b, dim=-1)
+
 
 def convert_coco_poly_to_mask(segmentations, height, width):
     masks = []
@@ -53,7 +54,6 @@ def convert_coco_poly_to_mask(segmentations, height, width):
     return masks
 
 
-
 def bboxes_iou(bboxes_a, bboxes_b, xyxy=True):
     if bboxes_a.shape[1] != 4 or bboxes_b.shape[1] != 4:
         raise IndexError
@@ -64,10 +64,14 @@ def bboxes_iou(bboxes_a, bboxes_b, xyxy=True):
         area_a = torch.prod(bboxes_a[:, 2:] - bboxes_a[:, :2], 1)
         area_b = torch.prod(bboxes_b[:, 2:] - bboxes_b[:, :2], 1)
     else:
-        tl = torch.max((bboxes_a[:, None, :2] - bboxes_a[:, None, 2:] / 2),
-                       (bboxes_b[:, :2] - bboxes_b[:, 2:] / 2))
-        br = torch.min((bboxes_a[:, None, :2] + bboxes_a[:, None, 2:] / 2),
-                       (bboxes_b[:, :2] + bboxes_b[:, 2:] / 2))
+        tl = torch.max(
+            (bboxes_a[:, None, :2] - bboxes_a[:, None, 2:] / 2),
+            (bboxes_b[:, :2] - bboxes_b[:, 2:] / 2),
+        )
+        br = torch.min(
+            (bboxes_a[:, None, :2] + bboxes_a[:, None, 2:] / 2),
+            (bboxes_b[:, :2] + bboxes_b[:, 2:] / 2),
+        )
 
         area_a = torch.prod(bboxes_a[:, 2:], 1)
         area_b = torch.prod(bboxes_b[:, 2:], 1)
@@ -117,7 +121,7 @@ def generalized_box_iou(boxes1, boxes2):
 
     return iou - (area - union) / area
 
-    
+
 class IOUloss(nn.Module):
     def __init__(self, reduction="none", loss_type="iou"):
         super(IOUloss, self).__init__()
@@ -144,15 +148,13 @@ class IOUloss(nn.Module):
         iou = (area_i) / (area_p + area_g - area_i + 1e-16)
 
         if self.loss_type == "iou":
-            loss = 1 - iou ** 2
+            loss = 1 - iou**2
         elif self.loss_type == "giou":
             c_tl = torch.min(
-                (pred[:, :2] - pred[:, 2:] /
-                 2), (target[:, :2] - target[:, 2:] / 2)
+                (pred[:, :2] - pred[:, 2:] / 2), (target[:, :2] - target[:, 2:] / 2)
             )
             c_br = torch.max(
-                (pred[:, :2] + pred[:, 2:] /
-                 2), (target[:, :2] + target[:, 2:] / 2)
+                (pred[:, :2] + pred[:, 2:] / 2), (target[:, :2] + target[:, 2:] / 2)
             )
             area_c = torch.prod(c_br - c_tl, 1)
             giou = iou - (area_c - area_i) / area_c.clamp(1e-16)
@@ -182,15 +184,14 @@ def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
             continue
         # Get score and class with highest confidence
         class_conf, class_pred = torch.max(
-            image_pred[:, 5: 5 + num_classes], 1, keepdim=True)
+            image_pred[:, 5 : 5 + num_classes], 1, keepdim=True
+        )
 
-        conf_mask = (image_pred[:, 4] *
-                     class_conf.squeeze() >= conf_thre).squeeze()
+        conf_mask = (image_pred[:, 4] * class_conf.squeeze() >= conf_thre).squeeze()
 
         # _, conf_mask = torch.topk((image_pred[:, 4] * class_conf.squeeze()), 1000)
         # Detections ordered as (x1, y1, x2, y2, obj_conf, class_conf, class_pred)
-        detections = torch.cat(
-            (image_pred[:, :5], class_conf, class_pred.float()), 1)
+        detections = torch.cat((image_pred[:, :5], class_conf, class_pred.float()), 1)
         detections = detections[conf_mask]
         if not detections.size(0):
             continue
@@ -225,16 +226,17 @@ def postprocess_yolox_kpts(prediction, num_classes, conf_thre=0.7, nms_thre=0.45
             continue
         # Get score and class with highest confidence
         class_conf, class_pred = torch.max(
-            image_pred[:, 5: 5 + num_classes], 1, keepdim=True)
+            image_pred[:, 5 : 5 + num_classes], 1, keepdim=True
+        )
 
-        conf_mask = (image_pred[:, 4] *
-                     class_conf.squeeze() >= conf_thre).squeeze()
+        conf_mask = (image_pred[:, 4] * class_conf.squeeze() >= conf_thre).squeeze()
 
         # _, conf_mask = torch.topk((image_pred[:, 4] * class_conf.squeeze()), 1000)
         # Detections ordered as (x1, y1, x2, y2, obj_conf, class_conf, class_pred)
         # YOLOX-Keypoints: 4 + 1 + 1 + 3*17
         detections = torch.cat(
-            (image_pred[:, :5], class_conf, class_pred.float(), image_pred[6:]), 1)
+            (image_pred[:, :5], class_conf, class_pred.float(), image_pred[6:]), 1
+        )
         detections = detections[conf_mask]
         if not detections.size(0):
             continue
@@ -251,6 +253,7 @@ def postprocess_yolox_kpts(prediction, num_classes, conf_thre=0.7, nms_thre=0.45
         else:
             output[i] = torch.cat((output[i], detections))
     return output
+
 
 def postprocessv5(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
     box_corner = prediction.new(prediction.shape)
@@ -275,14 +278,14 @@ def postprocessv5(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
             continue
         # Get score and class with highest confidence
         class_conf, class_pred = torch.max(
-            image_pred[:, 5: 5 + num_classes], 1, keepdim=True)
+            image_pred[:, 5 : 5 + num_classes], 1, keepdim=True
+        )
 
         conf_mask = (image_pred[:, 4] >= conf_thre).squeeze()
 
         # _, conf_mask = torch.topk((image_pred[:, 4] * class_conf.squeeze()), 1000)
         # Detections ordered as (x1, y1, x2, y2, obj_conf, class_conf, class_pred)
-        detections = torch.cat(
-            (image_pred[:, :5], class_conf, class_pred.float()), 1)
+        detections = torch.cat((image_pred[:, :5], class_conf, class_pred.float()), 1)
         detections = detections[conf_mask]
         if not detections.size(0):
             continue
@@ -301,7 +304,17 @@ def postprocessv5(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
     return output
 
 
-def postprocess_yolomask(prediction, preds_oriens, xys, whs, dets_anchor_idxes, num_classes, conf_thre=0.7, nms_thre=0.45, orien_thre = 0.3):
+def postprocess_yolomask(
+    prediction,
+    preds_oriens,
+    xys,
+    whs,
+    dets_anchor_idxes,
+    num_classes,
+    conf_thre=0.7,
+    nms_thre=0.45,
+    orien_thre=0.3,
+):
     box_corner = prediction.new(prediction.shape)
     box_corner[:, :, 0] = prediction[:, :, 0] - prediction[:, :, 2] / 2
     box_corner[:, :, 1] = prediction[:, :, 1] - prediction[:, :, 3] / 2
@@ -322,12 +335,11 @@ def postprocess_yolomask(prediction, preds_oriens, xys, whs, dets_anchor_idxes, 
             continue
         # Get score and class with highest confidence
         class_conf, class_pred = torch.max(
-            image_pred[:, 5: 5 + num_classes], 1, keepdim=True)
+            image_pred[:, 5 : 5 + num_classes], 1, keepdim=True
+        )
 
-        conf_mask = (image_pred[:, 4] *
-                     class_conf.squeeze() >= conf_thre).squeeze()
-        detections = torch.cat(
-            (image_pred[:, :4], class_conf, class_pred.float()), 1)
+        conf_mask = (image_pred[:, 4] * class_conf.squeeze() >= conf_thre).squeeze()
+        detections = torch.cat((image_pred[:, :4], class_conf, class_pred.float()), 1)
 
         detections = detections[conf_mask]
         xy = xy[conf_mask]
@@ -349,10 +361,13 @@ def postprocess_yolomask(prediction, preds_oriens, xys, whs, dets_anchor_idxes, 
         wh = wh[nms_out_index]
         anchor_idx = dets_anchor_idx[nms_out_index]
 
-        masks = ((torch.abs(pred_orien[anchor_idx, 0] - xy[:, 0].view(-1, 1, 1)) <
-                  orien_thre * wh[:, 0].view(-1, 1, 1)) &
-                 (torch.abs(pred_orien[anchor_idx, 1] -  xy[:, 1].view(-1, 1, 1)) <
-                  orien_thre * wh[:, 1].view(-1, 1, 1)))
+        masks = (
+            torch.abs(pred_orien[anchor_idx, 0] - xy[:, 0].view(-1, 1, 1))
+            < orien_thre * wh[:, 0].view(-1, 1, 1)
+        ) & (
+            torch.abs(pred_orien[anchor_idx, 1] - xy[:, 1].view(-1, 1, 1))
+            < orien_thre * wh[:, 1].view(-1, 1, 1)
+        )
 
         if output[i] is None:
             output[i] = detections
@@ -367,6 +382,7 @@ def adjust_box_anns(bbox, scale_ratio, padw, padh, w_max, h_max):
     bbox[:, 0::2] = np.clip(bbox[:, 0::2] * scale_ratio + padw, 0, w_max)
     bbox[:, 1::2] = np.clip(bbox[:, 1::2] * scale_ratio + padh, 0, h_max)
     return bbox
+
 
 # for OrienMask
 def bbox_ious2(bbox1, bbox2):
@@ -384,10 +400,14 @@ def bbox_ious2(bbox1, bbox2):
     b2x1, b2y1 = (bbox2[..., 0:2] - bbox2[..., 2:4] / 2).split(1, -1)
     b2x2, b2y2 = (bbox2[..., 0:2] + bbox2[..., 2:4] / 2).split(1, -1)
 
-    dx = (b1x2.min(b2x2.squeeze(-1).unsqueeze(-2)) -
-          b1x1.max(b2x1.squeeze(-1).unsqueeze(-2))).clamp(min=0)
-    dy = (b1y2.min(b2y2.squeeze(-1).unsqueeze(-2)) -
-          b1y1.max(b2y1.squeeze(-1).unsqueeze(-2))).clamp(min=0)
+    dx = (
+        b1x2.min(b2x2.squeeze(-1).unsqueeze(-2))
+        - b1x1.max(b2x1.squeeze(-1).unsqueeze(-2))
+    ).clamp(min=0)
+    dy = (
+        b1y2.min(b2y2.squeeze(-1).unsqueeze(-2))
+        - b1y1.max(b2y1.squeeze(-1).unsqueeze(-2))
+    ).clamp(min=0)
     inter = dx * dy
 
     area1 = (b1x2 - b1x1) * (b1y2 - b1y1)
@@ -451,7 +471,9 @@ class BoxModeMy(IntEnum):
     """
 
     @staticmethod
-    def convert(box: _RawBoxType, from_mode: "BoxModeMy", to_mode: "BoxModeMy") -> _RawBoxType:
+    def convert(
+        box: _RawBoxType, from_mode: "BoxModeMy", to_mode: "BoxModeMy"
+    ) -> _RawBoxType:
         """
         Args:
             box: can be a k-tuple, k-list or an Nxk array/tensor, where k = 4 or 5
@@ -479,7 +501,10 @@ class BoxModeMy(IntEnum):
             else:
                 arr = box.clone()
 
-        assert to_mode not in [BoxModeMy.XYXY_REL, BoxModeMy.XYWH_REL] and from_mode not in [
+        assert to_mode not in [
+            BoxModeMy.XYXY_REL,
+            BoxModeMy.XYWH_REL,
+        ] and from_mode not in [
             BoxModeMy.XYXY_REL,
             BoxModeMy.XYWH_REL,
         ], "Relative mode not yet supported!"
@@ -539,7 +564,13 @@ class BoxModeMy(IntEnum):
             return arr
 
     @staticmethod
-    def convert_and_normalize(box: _RawBoxType, from_mode: "BoxModeMy", to_mode: "BoxModeMy", ori_w: int, ori_h: int) -> _RawBoxType:
+    def convert_and_normalize(
+        box: _RawBoxType,
+        from_mode: "BoxModeMy",
+        to_mode: "BoxModeMy",
+        ori_w: int,
+        ori_h: int,
+    ) -> _RawBoxType:
         """
         Args:
             box: can be a k-tuple, k-list or an Nxk array/tensor, where k = 4 or 5
@@ -567,7 +598,10 @@ class BoxModeMy(IntEnum):
             else:
                 arr = box.clone()
 
-        assert to_mode not in [BoxModeMy.XYXY_REL, BoxModeMy.XYWH_REL] and from_mode not in [
+        assert to_mode not in [
+            BoxModeMy.XYXY_REL,
+            BoxModeMy.XYWH_REL,
+        ] and from_mode not in [
             BoxModeMy.XYXY_REL,
             BoxModeMy.XYWH_REL,
         ], "Relative mode not yet supported!"
@@ -627,3 +661,119 @@ class BoxModeMy(IntEnum):
             return arr.numpy()
         else:
             return arr
+
+
+class IOUlossV6:
+    """Calculate IoU loss."""
+
+    def __init__(self, box_format="xywh", iou_type="ciou", reduction="none", eps=1e-7):
+        """Setting of the class.
+        Args:
+            box_format: (string), must be one of 'xywh' or 'xyxy'.
+            iou_type: (string), can be one of 'ciou', 'diou', 'giou' or 'siou'
+            reduction: (string), specifies the reduction to apply to the output, must be one of 'none', 'mean','sum'.
+            eps: (float), a value to avoid devide by zero error.
+        """
+        self.box_format = box_format
+        self.iou_type = iou_type.lower()
+        self.reduction = reduction
+        self.eps = eps
+
+    def __call__(self, box1, box2):
+        """calculate iou. box1 and box2 are torch tensor with shape [M, 4] and [Nm 4]."""
+        box2 = box2.T
+        if self.box_format == "xyxy":
+            b1_x1, b1_y1, b1_x2, b1_y2 = box1[0], box1[1], box1[2], box1[3]
+            b2_x1, b2_y1, b2_x2, b2_y2 = box2[0], box2[1], box2[2], box2[3]
+        elif self.box_format == "xywh":
+            b1_x1, b1_x2 = box1[0] - box1[2] / 2, box1[0] + box1[2] / 2
+            b1_y1, b1_y2 = box1[1] - box1[3] / 2, box1[1] + box1[3] / 2
+            b2_x1, b2_x2 = box2[0] - box2[2] / 2, box2[0] + box2[2] / 2
+            b2_y1, b2_y2 = box2[1] - box2[3] / 2, box2[1] + box2[3] / 2
+
+        # Intersection area
+        inter = (torch.min(b1_x2, b2_x2) - torch.max(b1_x1, b2_x1)).clamp(0) * (
+            torch.min(b1_y2, b2_y2) - torch.max(b1_y1, b2_y1)
+        ).clamp(0)
+
+        # Union Area
+        w1, h1 = b1_x2 - b1_x1, b1_y2 - b1_y1 + self.eps
+        w2, h2 = b2_x2 - b2_x1, b2_y2 - b2_y1 + self.eps
+        union = w1 * h1 + w2 * h2 - inter + self.eps
+        iou = inter / union
+
+        cw = torch.max(b1_x2, b2_x2) - torch.min(b1_x1, b2_x1)  # convex width
+        ch = torch.max(b1_y2, b2_y2) - torch.min(b1_y1, b2_y1)  # convex height
+        if self.iou_type == "giou":
+            c_area = cw * ch + self.eps  # convex area
+            iou = iou - (c_area - union) / c_area
+        elif self.iou_type in ["diou", "ciou"]:
+            c2 = cw**2 + ch**2 + self.eps  # convex diagonal squared
+            rho2 = (
+                (b2_x1 + b2_x2 - b1_x1 - b1_x2) ** 2
+                + (b2_y1 + b2_y2 - b1_y1 - b1_y2) ** 2
+            ) / 4  # center distance squared
+            if self.iou_type == "diou":
+                iou = iou - rho2 / c2
+            elif self.iou_type == "ciou":
+                v = (4 / math.pi**2) * torch.pow(
+                    torch.atan(w2 / h2) - torch.atan(w1 / h1), 2
+                )
+                with torch.no_grad():
+                    alpha = v / (v - iou + (1 + self.eps))
+                iou = iou - (rho2 / c2 + v * alpha)
+        elif self.iou_type == "siou":
+            # SIoU Loss https://arxiv.org/pdf/2205.12740.pdf
+            s_cw = (b2_x1 + b2_x2 - b1_x1 - b1_x2) * 0.5
+            s_ch = (b2_y1 + b2_y2 - b1_y1 - b1_y2) * 0.5
+            sigma = torch.pow(s_cw**2 + s_ch**2, 0.5)
+            sin_alpha_1 = torch.abs(s_cw) / sigma
+            sin_alpha_2 = torch.abs(s_ch) / sigma
+            threshold = pow(2, 0.5) / 2
+            sin_alpha = torch.where(sin_alpha_1 > threshold, sin_alpha_2, sin_alpha_1)
+            angle_cost = torch.cos(torch.arcsin(sin_alpha) * 2 - math.pi / 2)
+            rho_x = (s_cw / cw) ** 2
+            rho_y = (s_ch / ch) ** 2
+            gamma = angle_cost - 2
+            distance_cost = 2 - torch.exp(gamma * rho_x) - torch.exp(gamma * rho_y)
+            omiga_w = torch.abs(w1 - w2) / torch.max(w1, w2)
+            omiga_h = torch.abs(h1 - h2) / torch.max(h1, h2)
+            shape_cost = torch.pow(1 - torch.exp(-1 * omiga_w), 4) + torch.pow(
+                1 - torch.exp(-1 * omiga_h), 4
+            )
+            iou = iou - 0.5 * (distance_cost + shape_cost)
+        loss = 1.0 - iou
+
+        if self.reduction == "sum":
+            loss = loss.sum()
+        elif self.reduction == "mean":
+            loss = loss.mean()
+
+        return loss
+
+
+def pairwise_bbox_iou(box1, box2, box_format="xywh"):
+    """Calculate iou.
+    This code is based on https://github.com/Megvii-BaseDetection/YOLOX/blob/main/yolox/utils/boxes.py
+    """
+    if box_format == "xyxy":
+        lt = torch.max(box1[:, None, :2], box2[:, :2])
+        rb = torch.min(box1[:, None, 2:], box2[:, 2:])
+        area_1 = torch.prod(box1[:, 2:] - box1[:, :2], 1)
+        area_2 = torch.prod(box2[:, 2:] - box2[:, :2], 1)
+
+    elif box_format == "xywh":
+        lt = torch.max(
+            (box1[:, None, :2] - box1[:, None, 2:] / 2),
+            (box2[:, :2] - box2[:, 2:] / 2),
+        )
+        rb = torch.min(
+            (box1[:, None, :2] + box1[:, None, 2:] / 2),
+            (box2[:, :2] + box2[:, 2:] / 2),
+        )
+
+        area_1 = torch.prod(box1[:, 2:], 1)
+        area_2 = torch.prod(box2[:, 2:], 1)
+    valid = (lt < rb).type(lt.type()).prod(dim=2)
+    inter = torch.prod(rb - lt, 2) * valid
+    return inter / (area_1[:, None] + area_2 - inter)

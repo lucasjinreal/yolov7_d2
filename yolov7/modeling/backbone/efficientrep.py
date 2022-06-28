@@ -13,6 +13,7 @@ from detectron2.modeling import (
     RPN_HEAD_REGISTRY,
     Backbone,
 )
+from yolov7.utils.misc import make_divisible
 
 
 class SiLU(nn.Module):
@@ -369,11 +370,15 @@ class EfficientRep(Backbone):
         in_channels=3,
         channels_list=None,
         num_repeats=None,
+        out_features=None,
     ):
         super().__init__()
 
         assert channels_list is not None
         assert num_repeats is not None
+
+        self.channels_list = channels_list
+        self.num_repeats = num_repeats
 
         self.stem = RepVGGBlock(
             in_channels=in_channels,
@@ -445,40 +450,89 @@ class EfficientRep(Backbone):
 
         # 64, 128, 256, 512, 1024
         self._out_feature_strides = {
-            "stride4": 4, "stride8": 8, "stride16": 16, "stride32": 32}
-        self._out_feature_channels = {k: c for k, c in zip(
-            self._out_feature_strides.keys(), [channels_list[2], channels_list[3], channels_list[4]])}
-    
+            "stride4": 4,
+            "stride8": 8,
+            "stride16": 16,
+            "stride32": 32,
+        }
+        self._out_feature_channels = {
+            k: c
+            for k, c in zip(
+                self._out_feature_strides.keys(),
+                [
+                    channels_list[1],
+                    channels_list[2],
+                    channels_list[3],
+                    channels_list[4],
+                ],
+            )
+        }
+        self.out_features = out_features
+
     def output_shape(self):
-        return {f"stride{s}":
-                ShapeSpec(channels=self._out_feature_channels[k], stride=s)
-                for k, s in self._out_feature_strides.items()}
+        return {
+            f"stride{s}": ShapeSpec(channels=self._out_feature_channels[k], stride=s)
+            for k, s in self._out_feature_strides.items()
+        }
 
     def forward(self, x):
-
-        outputs = []
+        outputs = {}
         x = self.stem(x)
         x = self.ERBlock_2(x)
         x = self.ERBlock_3(x)
-        outputs.append(x)
+        outputs["stride8"] = x
         x = self.ERBlock_4(x)
-        outputs.append(x)
+        outputs["stride16"] = x
         x = self.ERBlock_5(x)
-        outputs.append(x)
-
-        return tuple(outputs)
-
+        outputs["stride32"] = x
+        return outputs
 
 
 @BACKBONE_REGISTRY.register()
 def build_efficientrep_backbone(cfg, input_shape):
+    _out_features = cfg.MODEL.BACKBONE.OUT_FEATURES
+    depth_mul = cfg.MODEL.YOLO.DEPTH_MUL
+    width_mul = cfg.MODEL.YOLO.WIDTH_MUL
 
-    arch = cfg.MODEL.EFFICIENTNET.NAME
-    features_indices = cfg.MODEL.EFFICIENTNET.FEATURE_INDICES
-    _out_features = cfg.MODEL.EFFICIENTNET.OUT_FEATURES
+    channels_list_backbone = [64, 128, 256, 512, 1024]
+    channels_list_neck = [256, 128, 128, 256, 256, 512]
+    num_repeat_backbone = [1, 6, 12, 18, 6]
+    num_repeat_neck = [12, 12, 12, 12]
 
-    channel_list = []
-    num_repeats = []
+    num_repeat = [
+        (max(round(i * depth_mul), 1) if i > 1 else i)
+        for i in (num_repeat_backbone + num_repeat_neck)
+    ]
+    channels_list = [
+        make_divisible(i * width_mul, 8)
+        for i in (channels_list_backbone + channels_list_neck)
+    ]
 
-    backbone = EfficientRep(channels_list=channel_list, num_repeats=num_repeats)
+    # currently only support 3 outputs fixed
+    backbone = EfficientRep(channels_list=channels_list, num_repeats=num_repeat)
+    return backbone
+
+
+@BACKBONE_REGISTRY.register()
+def build_efficientrep_tiny_backbone(cfg, input_shape):
+    _out_features = cfg.MODEL.BACKBONE.OUT_FEATURES
+    depth_mul = cfg.MODEL.YOLO.DEPTH_MUL
+    width_mul = cfg.MODEL.YOLO.WIDTH_MUL
+
+    channels_list_backbone = [64, 128, 256, 512, 1024]
+    channels_list_neck = [256, 128, 128, 256, 256, 512]
+    num_repeat_backbone = [1, 6, 12, 18, 6]
+    num_repeat_neck = [12, 12, 12, 12]
+
+    num_repeat = [
+        (max(round(i * depth_mul), 1) if i > 1 else i)
+        for i in (num_repeat_backbone + num_repeat_neck)
+    ]
+    channels_list = [
+        make_divisible(i * width_mul, 8)
+        for i in (channels_list_backbone + channels_list_neck)
+    ]
+
+    # currently only support 3 outputs fixed
+    backbone = EfficientRep(channels_list=channels_list, num_repeats=num_repeat)
     return backbone

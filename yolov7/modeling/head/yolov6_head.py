@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from yolov7.utils.boxes import bboxes_iou, IOUloss
+from yolov7.utils.boxes import bboxes_iou, IOUlossV6, pairwise_bbox_iou
 
 from ..backbone.efficientrep import Conv
 import math
@@ -21,6 +21,128 @@ from alfred import print_shape
 yolov6 head with decoupled design
 
 """
+
+def build_effidehead_layer(channels_list, num_anchors, num_classes):
+    head_layers = nn.Sequential(
+        # stem0
+        Conv(
+            in_channels=channels_list[6],
+            out_channels=channels_list[6],
+            kernel_size=1,
+            stride=1,
+        ),
+        # cls_conv0
+        Conv(
+            in_channels=channels_list[6],
+            out_channels=channels_list[6],
+            kernel_size=3,
+            stride=1,
+        ),
+        # reg_conv0
+        Conv(
+            in_channels=channels_list[6],
+            out_channels=channels_list[6],
+            kernel_size=3,
+            stride=1,
+        ),
+        # cls_pred0
+        nn.Conv2d(
+            in_channels=channels_list[6],
+            out_channels=num_classes * num_anchors,
+            kernel_size=1,
+        ),
+        # reg_pred0
+        nn.Conv2d(
+            in_channels=channels_list[6],
+            out_channels=4 * num_anchors,
+            kernel_size=1,
+        ),
+        # obj_pred0
+        nn.Conv2d(
+            in_channels=channels_list[6],
+            out_channels=1 * num_anchors,
+            kernel_size=1,
+        ),
+        # stem1
+        Conv(
+            in_channels=channels_list[8],
+            out_channels=channels_list[8],
+            kernel_size=1,
+            stride=1,
+        ),
+        # cls_conv1
+        Conv(
+            in_channels=channels_list[8],
+            out_channels=channels_list[8],
+            kernel_size=3,
+            stride=1,
+        ),
+        # reg_conv1
+        Conv(
+            in_channels=channels_list[8],
+            out_channels=channels_list[8],
+            kernel_size=3,
+            stride=1,
+        ),
+        # cls_pred1
+        nn.Conv2d(
+            in_channels=channels_list[8],
+            out_channels=num_classes * num_anchors,
+            kernel_size=1,
+        ),
+        # reg_pred1
+        nn.Conv2d(
+            in_channels=channels_list[8],
+            out_channels=4 * num_anchors,
+            kernel_size=1,
+        ),
+        # obj_pred1
+        nn.Conv2d(
+            in_channels=channels_list[8],
+            out_channels=1 * num_anchors,
+            kernel_size=1,
+        ),
+        # stem2
+        Conv(
+            in_channels=channels_list[10],
+            out_channels=channels_list[10],
+            kernel_size=1,
+            stride=1,
+        ),
+        # cls_conv2
+        Conv(
+            in_channels=channels_list[10],
+            out_channels=channels_list[10],
+            kernel_size=3,
+            stride=1,
+        ),
+        # reg_conv2
+        Conv(
+            in_channels=channels_list[10],
+            out_channels=channels_list[10],
+            kernel_size=3,
+            stride=1,
+        ),
+        # cls_pred2
+        nn.Conv2d(
+            in_channels=channels_list[10],
+            out_channels=num_classes * num_anchors,
+            kernel_size=1,
+        ),
+        # reg_pred2
+        nn.Conv2d(
+            in_channels=channels_list[10],
+            out_channels=4 * num_anchors,
+            kernel_size=1,
+        ),
+        # obj_pred2
+        nn.Conv2d(
+            in_channels=channels_list[10],
+            out_channels=1 * num_anchors,
+            kernel_size=1,
+        ),
+    )
+    return head_layers
 
 
 class Detect(nn.Module):
@@ -129,7 +251,8 @@ class YOLOv6Head(nn.Module):
     def __init__(
         self,
         num_classes,
-        num_anchors=3,
+        anchors=1,
+        num_layers=3,
         channels_list=[256, 512, 1024],
     ):
         """
@@ -139,7 +262,7 @@ class YOLOv6Head(nn.Module):
         """
         super().__init__()
 
-        self.n_anchors = 1
+        self.num_anchors = anchors
         self.num_classes = num_classes
         self.decode_in_inference = True  # for deploy, set to False
 
@@ -150,140 +273,15 @@ class YOLOv6Head(nn.Module):
         self.obj_preds = nn.ModuleList()
         self.stems = nn.ModuleList()
 
-        self.num_anchors = num_anchors
         self.channels_list = channels_list
-        self.head_layers = self.build_effidehead_layer(
-            self.channels_list, self.num_anchors, self.num_classes
-        )
+        head_layers = build_effidehead_layer(channels_list, self.num_anchors, num_classes)
+        self.det_head = Detect(num_classes, anchors, num_layers, head_layers=head_layers)
 
         self.use_l1 = False
-
         self.compute_loss = ComputeLoss(iou_type='ciou')
         self.onnx_export = False
 
-    @staticmethod
-    def build_effidehead_layer(channels_list, num_anchors, num_classes):
-        head_layers = nn.Sequential(
-            # stem0
-            Conv(
-                in_channels=channels_list[6],
-                out_channels=channels_list[6],
-                kernel_size=1,
-                stride=1,
-            ),
-            # cls_conv0
-            Conv(
-                in_channels=channels_list[6],
-                out_channels=channels_list[6],
-                kernel_size=3,
-                stride=1,
-            ),
-            # reg_conv0
-            Conv(
-                in_channels=channels_list[6],
-                out_channels=channels_list[6],
-                kernel_size=3,
-                stride=1,
-            ),
-            # cls_pred0
-            nn.Conv2d(
-                in_channels=channels_list[6],
-                out_channels=num_classes * num_anchors,
-                kernel_size=1,
-            ),
-            # reg_pred0
-            nn.Conv2d(
-                in_channels=channels_list[6],
-                out_channels=4 * num_anchors,
-                kernel_size=1,
-            ),
-            # obj_pred0
-            nn.Conv2d(
-                in_channels=channels_list[6],
-                out_channels=1 * num_anchors,
-                kernel_size=1,
-            ),
-            # stem1
-            Conv(
-                in_channels=channels_list[8],
-                out_channels=channels_list[8],
-                kernel_size=1,
-                stride=1,
-            ),
-            # cls_conv1
-            Conv(
-                in_channels=channels_list[8],
-                out_channels=channels_list[8],
-                kernel_size=3,
-                stride=1,
-            ),
-            # reg_conv1
-            Conv(
-                in_channels=channels_list[8],
-                out_channels=channels_list[8],
-                kernel_size=3,
-                stride=1,
-            ),
-            # cls_pred1
-            nn.Conv2d(
-                in_channels=channels_list[8],
-                out_channels=num_classes * num_anchors,
-                kernel_size=1,
-            ),
-            # reg_pred1
-            nn.Conv2d(
-                in_channels=channels_list[8],
-                out_channels=4 * num_anchors,
-                kernel_size=1,
-            ),
-            # obj_pred1
-            nn.Conv2d(
-                in_channels=channels_list[8],
-                out_channels=1 * num_anchors,
-                kernel_size=1,
-            ),
-            # stem2
-            Conv(
-                in_channels=channels_list[10],
-                out_channels=channels_list[10],
-                kernel_size=1,
-                stride=1,
-            ),
-            # cls_conv2
-            Conv(
-                in_channels=channels_list[10],
-                out_channels=channels_list[10],
-                kernel_size=3,
-                stride=1,
-            ),
-            # reg_conv2
-            Conv(
-                in_channels=channels_list[10],
-                out_channels=channels_list[10],
-                kernel_size=3,
-                stride=1,
-            ),
-            # cls_pred2
-            nn.Conv2d(
-                in_channels=channels_list[10],
-                out_channels=num_classes * num_anchors,
-                kernel_size=1,
-            ),
-            # reg_pred2
-            nn.Conv2d(
-                in_channels=channels_list[10],
-                out_channels=4 * num_anchors,
-                kernel_size=1,
-            ),
-            # obj_pred2
-            nn.Conv2d(
-                in_channels=channels_list[10],
-                out_channels=1 * num_anchors,
-                kernel_size=1,
-            ),
-        )
-        return head_layers
-
+    
     def initialize_biases(self, prior_prob):
         for conv in self.cls_preds:
             b = conv.bias.view(self.n_anchors, -1)
@@ -296,8 +294,9 @@ class YOLOv6Head(nn.Module):
             conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
 
     def forward(self, xin, labels=None, imgs=None):
-        outputs = self.head_layers(xin)
-        print_shape(outputs)
+        outputs = self.det_head(xin)
+        for o in outputs:
+            print_shape(o)
         if self.training:
             losses = self.compute_loss(outputs, labels)
             return losses
@@ -344,7 +343,7 @@ class ComputeLoss:
         # Define criteria
         self.l1_loss = nn.L1Loss(reduction="none")
         self.bcewithlog_loss = nn.BCEWithLogitsLoss(reduction="none")
-        self.iou_loss = IOUloss(iou_type=iou_type, reduction="none")
+        self.iou_loss = IOUlossV6(iou_type=iou_type, reduction="none")
 
     def __call__(self, outputs, targets):
         dtype = outputs[0].type()
@@ -373,21 +372,24 @@ class ComputeLoss:
 
         # targets
         batch_size = bbox_preds.shape[0]
-        targets_list = np.zeros((batch_size, 1, 5)).tolist()
-        for i, item in enumerate(targets.cpu().numpy().tolist()):
-            targets_list[int(item[0])].append(item[1:])
-        max_len = max((len(l) for l in targets_list))
+        # targets_list = np.zeros((batch_size, 1, 5)).tolist()
+        print(targets.shape)
+        print(targets)
+        # 14,100,5
+        # for i, item in enumerate(targets.cpu().numpy().tolist()):
+        #     targets_list[int(item[0])].append(item[1:])
+        # max_len = max((len(l) for l in targets_list))
 
-        targets = torch.from_numpy(
-            np.array(
-                list(
-                    map(
-                        lambda l: l + [[-1, 0, 0, 0, 0]] * (max_len - len(l)),
-                        targets_list,
-                    )
-                )
-            )[:, 1:, :]
-        ).to(targets.device)
+        # targets = torch.from_numpy(
+        #     np.array(
+        #         list(
+        #             map(
+        #                 lambda l: l + [[-1, 0, 0, 0, 0]] * (max_len - len(l)),
+        #                 targets_list,
+        #             )
+        #         )
+        #     )[:, 1:, :]
+        # ).to(targets.device)
         num_targets_list = (targets.sum(dim=2) > 0).sum(dim=1)  # number of objects
 
         num_fg, num_gts = 0, 0
@@ -606,7 +608,6 @@ class ComputeLoss:
         xy_shifts,
         num_classes,
     ):
-
         fg_mask, is_in_boxes_and_center = self.get_in_boxes_info(
             gt_bboxes_per_image,
             expanded_strides,
@@ -647,6 +648,7 @@ class ComputeLoss:
             + self.iou_weight * pair_wise_ious_loss
             + 100000.0 * (~is_in_boxes_and_center)
         )
+        print_shape(cost, pair_wise_ious, gt_classes)
 
         (
             num_fg,
