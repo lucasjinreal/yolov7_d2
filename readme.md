@@ -28,7 +28,7 @@
 > In short: **YOLOv7 added instance segmentation to YOLO arch**. Also many transformer backbones, archs included. If you look carefully, you'll find our ultimate vision is to **make YOLO great again** by the power of **transformers**, as well as **multi-tasks training**. YOLOv7 achieves mAP 43, AP-s exceed MaskRCNN by 10 with a convnext-tiny backbone while simillar speed with YOLOX-s, more models listed below, it's more accurate and even more lighter!
 
 
-🔥🔥🔥 Just another yolo variant implemented based on **`detectron2`**. Be note that **YOLOv7 doesn't meant to be a successor of yolo family, 7 is just a magic and lucky number. Instead, YOLOv7 extend yolo into many other vision tasks, such as instance segmentation, one-stage keypoints detection etc.**. 
+🔥🔥🔥 Just another yolo variant implemented based on **`detectron2`**. But note that **YOLOv7 doesn't meant to be a successor of yolo family, 7 is just a magic and lucky number. Instead, YOLOv7 extend yolo into many other vision tasks, such as instance segmentation, one-stage keypoints detection etc.**. 
 
 The supported matrix in YOLOv7 are:
 
