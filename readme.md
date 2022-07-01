@@ -28,7 +28,7 @@
 > In short: **YOLOv7 added instance segmentation to YOLO arch**. Also many transformer backbones, archs included. If you look carefully, you'll find our ultimate vision is to **make YOLO great again** by the power of **transformers**, as well as **multi-tasks training**. YOLOv7 achieves mAP 43, AP-s exceed MaskRCNN by 10 with a convnext-tiny backbone while simillar speed with YOLOX-s, more models listed below, it's more accurate and even more lighter!
 
 
-🔥🔥🔥 Just another yolo variant implemented based on **`detectron2`**. But note that **YOLOv7 doesn't meant to be a successor of yolo family, 7 is just a magic and lucky number. Instead, YOLOv7 extend yolo into many other vision tasks, such as instance segmentation, one-stage keypoints detection etc.**. 
+🔥🔥🔥 Just another yolo variant implemented based on **`detectron2`**. But note that **YOLOv7 isn't meant to be a successor of yolo family, 7 is just a magic and lucky number. Instead, YOLOv7 extends yolo into many other vision tasks, such as instance segmentation, one-stage keypoints detection etc.**. 
 
 The supported matrix in YOLOv7 are:
 
@@ -97,7 +97,7 @@ If you want get full version YOLOv7, either **become a contributor** or get from
 
 If you have spare time or if you have GPU card, then help YOLOv7 become more stronger! Here is the guidance of contribute:
 
-1. **`Claim task`**: I have some ideas but do not have enough time to do it, if you want implement it, claim the task, **I will give u fully advise on how to do, and you can learn a lot from it**;
+1. **`Claim task`**: I have some ideas but do not have enough time to do it, if you want to implement it, claim the task, **I will give u detailed advise on how to do, and you can learn a lot from it**;
 2. **`Test mAP`**: When you finished new idea implementation, create a thread to report experiment mAP, if it work, then merge into our main master branch;
 3. **`Pull request`**: YOLOv7 is open and always tracking on SOTA and **light** models, if a model is useful, we will merge it and deploy it, distribute to all users want to try.
 
