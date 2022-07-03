@@ -29,6 +29,17 @@
 
 > GPU resources wanted! yolov7 next version is up-coming, however, I didn't have enough GPU to train pretrained models for everyone, if you have GPUs, please fire a discussion and ping me, I will guide to train new models.
 
+
+## New version will release!
+
+**YOLOv7** v2.0 will be released soon! We will release our Convext-tiny YOLO arch model achieves mAP 43.9 with very low latency! Feature will be included in next version:
+
+- Support EfficientFormer backbone;
+- Support new YOLO2Go model, more lighter, much more faster and much more accurate;
+- Support MobileOne backbone;
+
+Just **fork and star!**, you will be noticed once we release the new version!
+
 🔥🔥🔥 Just another yolo variant implemented based on **`detectron2`**. But note that **YOLOv7 isn't meant to be a successor of yolo family, 7 is just a magic and lucky number. Instead, YOLOv7 extends yolo into many other vision tasks, such as instance segmentation, one-stage keypoints detection etc.**. 
 
 The supported matrix in YOLOv7 are:
