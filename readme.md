@@ -38,6 +38,8 @@
 - Support new YOLO2Go model, more lighter, much more faster and much more accurate;
 - Support MobileOne backbone;
 
+For more details, refer to [read the doc](https://yolov7.readthedocs.io/en/latest).
+
 Just **fork and star!**, you will be noticed once we release the new version!
 
 🔥🔥🔥 Just another yolo variant implemented based on **`detectron2`**. But note that **YOLOv7 isn't meant to be a successor of yolo family, 7 is just a magic and lucky number. Instead, YOLOv7 extends yolo into many other vision tasks, such as instance segmentation, one-stage keypoints detection etc.**. 
