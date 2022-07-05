@@ -155,7 +155,7 @@ def vis_res_fast(res, img, class_names, colors, thresh):
         )
     thickness = 1 if ins.has("pred_bit_masks") else 2
     font_scale = 0.3 if ins.has("pred_bit_masks") else 0.4
-    if bboxes:
+    if bboxes is not None:
         img = visualize_det_cv2_part(
             img,
             scores,

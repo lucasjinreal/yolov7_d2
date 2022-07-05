@@ -256,7 +256,7 @@ Make sure you have read **rules** before ask me any questions.
 1. `detr`:
 
   ```
-  python export_onnx.py --config-file detr/config/file
+  python export.py --config-file detr/config/file
   ```
 
   this works has been done, inference script included inside `tools`.
@@ -269,11 +269,11 @@ Make sure you have read **rules** before ask me any questions.
    Sparsinst already supported exporting to onnx!!
 
   ```
-  python export_onnx.py --config-file configs/coco/sparseinst/sparse_inst_r50_giam_aug.yaml --video-input ~/Videos/a.flv  --opts MODEL.WEIGHTS weights/sparse_inst_r50_giam_aug_2b7d68.pth INPUT.MIN_SIZE_TEST 512
+  python export.py --config-file configs/coco/sparseinst/sparse_inst_r50_giam_aug.yaml --video-input ~/Videos/a.flv  --opts MODEL.WEIGHTS weights/sparse_inst_r50_giam_aug_2b7d68.pth INPUT.MIN_SIZE_TEST 512
   ```
   If you are on a CPU device, please using:
   ```
-  python export_onnx.py --config-file configs/coco/sparseinst/sparse_inst_r50_giam_aug.yaml --input images/COCO_val2014_000000002153.jpg --verbose  --opts MODEL.WEIGHTS weights/sparse_inst_r50_giam_aug_2b7d68.pth MODEL.DEVICE 'cpu'
+  python export.py --config-file configs/coco/sparseinst/sparse_inst_r50_giam_aug.yaml --input images/COCO_val2014_000000002153.jpg --verbose  --opts MODEL.WEIGHTS weights/sparse_inst_r50_giam_aug_2b7d68.pth MODEL.DEVICE 'cpu'
   ```
   Then you can have `weights/sparse_inst_r50_giam_aug_2b7d68_sim.onnx` generated, this onnx can be inference using ORT without any unsupported ops.
 
