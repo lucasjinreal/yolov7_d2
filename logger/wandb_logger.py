@@ -8,9 +8,7 @@ import wandb
 from alfred.vis.image.get_dataset_label_map import coco_label_map_list
 from detectron2.utils.visualizer import GenericMask
 
-coco_label_map = {
-    k: v for k, v in enumerate(coco_label_map_list[1:]) if isinstance(v, str)
-}
+coco_label_map = {k: v for k, v in enumerate(coco_label_map_list) if isinstance(v, str)}
 
 
 def is_wandb_available():
@@ -74,7 +72,7 @@ class WandbFormatter:
             boxes_data = []
             for i, box in enumerate(boxes):
                 if scores[i] > self.conf_threshold:
-                    pred_class = int(classes[i])
+                    pred_class = int(classes[i]) + 1
                     caption = (
                         f"{pred_class}"
                         if not self.class_names
@@ -109,7 +107,7 @@ class WandbFormatter:
             )
             for i, mask in enumerate(masks):
                 pred_mask = mask.mask
-                pred_class = int(classes[i])
+                pred_class = int(classes[i]) + 1
                 final_mask = np.ma.array(final_mask, mask=pred_mask)
                 final_mask = final_mask.filled(pred_class)
             final_mask = final_mask.astype(np.uint8)
