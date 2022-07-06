@@ -195,6 +195,11 @@ Run a quick demo would be like:
 ```
 python3 demo.py --config-file configs/wearmask/darknet53.yaml --input ./datasets/wearmask/images/val2017 --opts MODEL.WEIGHTS output/model_0009999.pth
 ```
+Run a quick demo with weights and biases logging
+
+```
+python3 demo.py --config-file configs/wearmask/darknet53.yaml --input ./datasets/wearmask/images/val2017 --wandb-entity <your-username/team> --wandb-project <project-name> --opts MODEL.WEIGHTS output/model_0009999.pth
+```
 
 Run SparseInst:
 
