@@ -135,7 +135,6 @@ class WandbInferenceLogger:
         self,
         wandb_entity: str = None,
         wandb_project: str = None,
-        run_name: str = None,
         class_names: Dict[int, str] = None,
         conf_threshold: float = 0.7,
         config=None,
@@ -154,10 +153,7 @@ class WandbInferenceLogger:
             if wandb_project is None:
                 raise ValueError("wandb_project is required for wandb logger ")
             self.run = wandb.init(
-                project=wandb_project,
-                name=run_name,
-                entity=wandb_entity,
-                config=config,
+                project=wandb_project, entity=wandb_entity, config=config,
             )
         self.dataset_name = self.run.id + "_dataset"
         self.conf_threshold = conf_threshold
