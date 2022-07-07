@@ -148,3 +148,5 @@ vendor/vendor/
 vendor/
 log2.md
 vendor/
+wandb/
+artifacts/
