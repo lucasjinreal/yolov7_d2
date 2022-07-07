@@ -12,25 +12,12 @@ Also define your own categories.
 
 import os
 from detectron2.checkpoint import DetectionCheckpointer
-from detectron2.config import get_cfg
 from detectron2.engine import (
-    DefaultTrainer,
     default_argument_parser,
-    default_setup,
     launch,
 )
-from detectron2.evaluation import COCOEvaluator
-from detectron2.data import (
-    MetadataCatalog,
-    build_detection_train_loader,
-    DatasetCatalog,
-)
-from detectron2.data.datasets.coco import load_coco_json
-from detectron2.data.dataset_mapper import DatasetMapper
 from detectron2.data.datasets.coco import load_coco_json, register_coco_instances
-
-from yolov7.config import add_yolo_config
-from yolov7.data.dataset_mapper import MyDatasetMapper
+from train_det import Trainer, setup
 
 
 def register_custom_datasets():
@@ -75,12 +62,12 @@ def register_custom_datasets():
     register_coco_instances("mask_val", {}, VAL_JSON, VAL_PATH)
 
     # VOC dataset in coco format
-    DATASET_ROOT = './datasets/voc'
+    DATASET_ROOT = "./datasets/voc"
     ANN_ROOT = DATASET_ROOT
-    TRAIN_PATH = os.path.join(DATASET_ROOT, 'JPEGImages')
-    VAL_PATH = os.path.join(DATASET_ROOT, 'JPEGImages')
-    TRAIN_JSON = os.path.join(ANN_ROOT, 'annotations_coco_train_2012.json')
-    VAL_JSON = os.path.join(ANN_ROOT, 'annotations_coco_val_2012.json')
+    TRAIN_PATH = os.path.join(DATASET_ROOT, "JPEGImages")
+    VAL_PATH = os.path.join(DATASET_ROOT, "JPEGImages")
+    TRAIN_JSON = os.path.join(ANN_ROOT, "annotations_coco_train_2012.json")
+    VAL_JSON = os.path.join(ANN_ROOT, "annotations_coco_val_2012.json")
 
     register_coco_instances("voc_train", {}, TRAIN_JSON, TRAIN_PATH)
     register_coco_instances("voc_val", {}, VAL_JSON, VAL_PATH)
@@ -92,36 +79,8 @@ def register_custom_datasets():
 register_custom_datasets()
 
 
-class Trainer(DefaultTrainer):
-    @classmethod
-    def build_evaluator(cls, cfg, dataset_name, output_folder=None):
-        if output_folder is None:
-            output_folder = os.path.join(cfg.OUTPUT_DIR, "inference")
-        return COCOEvaluator(dataset_name, output_dir=output_folder)
-
-    @classmethod
-    def build_train_loader(cls, cfg):
-        # return build_detection_train_loader(cfg, mapper=DatasetMapper(cfg, True))
-        # test our own dataset mapper to add more augmentations
-        return build_detection_train_loader(cfg, mapper=MyDatasetMapper(cfg, True))
-
-
-def setup(args):
-    """
-    Create configs and perform basic setups.
-    """
-    cfg = get_cfg()
-    add_yolo_config(cfg)
-    cfg.merge_from_file(args.config_file)
-    cfg.merge_from_list(args.opts)
-    cfg.freeze()
-    default_setup(cfg, args)
-    return cfg
-
-
 def main(args):
     cfg = setup(args)
-
     if args.eval_only:
         model = Trainer.build_model(cfg)
         DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
@@ -137,7 +96,6 @@ def main(args):
 
 if __name__ == "__main__":
     args = default_argument_parser().parse_args()
-    print("Command Line Args:", args)
     launch(
         main,
         args.num_gpus,
