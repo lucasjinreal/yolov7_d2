@@ -68,6 +68,33 @@ class WandbFormatter:
         else:
             masks = None
 
+        num_objects = 0
+        confidences = []
+
+        if masks is not None:
+            boxes = []
+            final_mask = np.zeros(
+                (self.image.shape[0], self.image.shape[1]), dtype=np.uint8
+            )
+            for i, mask in enumerate(masks):
+                if scores[i] > self.conf_threshold:
+                    pred_mask = mask.mask
+                    try:
+                        boxes.append(mask.bbox())
+                    except IndexError:
+                        pass
+                    pred_class = int(classes[i]) + 1
+                    final_mask = np.ma.array(final_mask, mask=pred_mask)
+                    final_mask = final_mask.filled(pred_class)
+                    num_objects += 1
+                    confidences.append(scores[i])
+                final_mask = final_mask.astype(np.uint8)
+                masks = {
+                    "prediction": {
+                        "mask_data": final_mask,
+                        "class_labels": self.class_names,
+                    }
+                }
         if boxes is not None:
             boxes_data = []
             for i, box in enumerate(boxes):
@@ -87,11 +114,14 @@ class WandbFormatter:
                                 "maxY": box[3],
                             },
                             "class_id": pred_class,
-                            "box_caption": "%s %.3f" % (caption, scores[i]),
+                            "box_caption": f"{i}: {caption} @ {scores[i] * 100:.2f}%",
                             "scores": {"class_score": scores[i]},
                             "domain": "pixel",
                         }
                     )
+                    if masks is None:
+                        confidences.append(scores[i])
+                        num_objects += 1
             if boxes_data:
                 boxes = {
                     "prediction": {
@@ -101,28 +131,18 @@ class WandbFormatter:
                 }
             else:
                 boxes = None
-        if masks is not None:
-            final_mask = np.zeros(
-                (self.image.shape[0], self.image.shape[1]), dtype=np.uint8
-            )
-            for i, mask in enumerate(masks):
-                pred_mask = mask.mask
-                pred_class = int(classes[i]) + 1
-                final_mask = np.ma.array(final_mask, mask=pred_mask)
-                final_mask = final_mask.filled(pred_class)
-            final_mask = final_mask.astype(np.uint8)
-            masks = {
-                "prediction": {
-                    "mask_data": final_mask,
-                    "class_labels": self.class_names,
-                }
-            }
-        return {
-            "data_or_path": self.image_path,
-            "boxes": boxes,
-            "masks": masks,
-            "classes": self.class_set,
-        }
+        row = (
+            str(Path(self.image_path).name),
+            wandb.Image(
+                data_or_path=self.image_path,
+                boxes=boxes,
+                masks=masks,
+                classes=self.class_set,
+            ),
+            num_objects,
+            confidences,
+        )
+        return row
 
 
 class WandbInferenceLogger:
@@ -157,18 +177,27 @@ class WandbInferenceLogger:
             )
         self.dataset_name = self.run.id + "_dataset"
         self.conf_threshold = conf_threshold
-        self.table: wandb.Table = self.wandb.Table(columns=["file_id", "image"])
+        self.table: wandb.Table = self.wandb.Table(
+            columns=[
+                "Image-File",
+                "Predictions",
+                "Number-of-Objects",
+                "Prediction-Confidence",
+            ]
+        )
 
     def log_inference(self, image, result):
         """adds the inference result to a table in wandb."""
         if not self.run:
             return None
-        formatter = WandbFormatter(image, class_names=self.class_names)
+        formatter = WandbFormatter(
+            image, class_names=self.class_names, conf_threshold=self.conf_threshold
+        )
         image_name = str(Path(image).stem)
         instance_prediction = formatter.convert_instance_predictions(
             result["instances"]
         )
-        self.table.add_data(image_name, self.wandb.Image(**instance_prediction))
+        self.table.add_data(*instance_prediction)
 
     def finish_run(self):
         """Uploads the table to wandb, finishes the run."""
