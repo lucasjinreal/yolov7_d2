@@ -20,7 +20,7 @@ from detectron2.data import MetadataCatalog, build_detection_train_loader
 from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, launch
 from detectron2.evaluation import COCOEvaluator, verify_results
 from detectron2.engine import hooks
-
+from detectron2.modeling import build_model
 from detectron2.solver.build import maybe_add_gradient_clipping
 
 from yolov7.data.dataset_mapper import DetrDatasetMapper
@@ -154,6 +154,11 @@ class Trainer(DefaultTrainer):
             ret.append(hooks.PeriodicWriter(self.build_writers(), period=200))
         return ret
 
+    @classmethod
+    def build_model(cls, cfg):
+        # remove print model
+        model = build_model(cfg)
+        return model
 
 def setup(args):
     """

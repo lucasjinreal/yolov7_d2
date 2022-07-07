@@ -29,6 +29,20 @@
 > while
 > simillar speed with YOLOX-s, more models listed below, it's more accurate and even more lighter!
 
+> GPU resources wanted! yolov7 next version is up-coming, however, I didn't have enough GPU to train pretrained models for everyone, if you have GPUs, please fire a discussion and ping me, I will guide to train new models.
+
+
+## New version will release!
+
+**YOLOv7** v2.0 will be released soon! We will release our Convext-tiny YOLO arch model achieves mAP 43.9 with very low latency! Feature will be included in next version:
+
+- Support EfficientFormer backbone;
+- Support new YOLO2Go model, more lighter, much more faster and much more accurate;
+- Support MobileOne backbone;
+
+For more details, refer to [read the doc](https://yolov7.readthedocs.io/en/latest).
+
+Just **fork and star!**, you will be noticed once we release the new version!
 
 🔥🔥🔥 Just another yolo variant implemented based on **`detectron2`**. But note that **YOLOv7 doesn't meant to be a
 successor of yolo family, 7 is just a magic and lucky number. Instead, YOLOv7 extend yolo into many other vision tasks,
@@ -279,7 +293,7 @@ Make sure you have read **rules** before ask me any questions.
 1. `detr`:
 
   ```
-  python export_onnx.py --config-file detr/config/file
+  python export.py --config-file detr/config/file
   ```
 
 this works has been done, inference script included inside `tools`.
@@ -292,13 +306,13 @@ anchorDETR also supported training and exporting to ONNX.
    Sparsinst already supported exporting to onnx!!
 
   ```
-  python export_onnx.py --config-file configs/coco/sparseinst/sparse_inst_r50_giam_aug.yaml --video-input ~/Videos/a.flv  --opts MODEL.WEIGHTS weights/sparse_inst_r50_giam_aug_2b7d68.pth INPUT.MIN_SIZE_TEST 512
+  python export.py --config-file configs/coco/sparseinst/sparse_inst_r50_giam_aug.yaml --video-input ~/Videos/a.flv  --opts MODEL.WEIGHTS weights/sparse_inst_r50_giam_aug_2b7d68.pth INPUT.MIN_SIZE_TEST 512
   ```
 
 If you are on a CPU device, please using:
 
   ```
-  python export_onnx.py --config-file configs/coco/sparseinst/sparse_inst_r50_giam_aug.yaml --input images/COCO_val2014_000000002153.jpg --verbose  --opts MODEL.WEIGHTS weights/sparse_inst_r50_giam_aug_2b7d68.pth MODEL.DEVICE 'cpu'
+  python export.py --config-file configs/coco/sparseinst/sparse_inst_r50_giam_aug.yaml --input images/COCO_val2014_000000002153.jpg --verbose  --opts MODEL.WEIGHTS weights/sparse_inst_r50_giam_aug_2b7d68.pth MODEL.DEVICE 'cpu'
   ```
 
 Then you can have `weights/sparse_inst_r50_giam_aug_2b7d68_sim.onnx` generated, this onnx can be inference using ORT
