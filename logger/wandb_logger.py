@@ -141,7 +141,9 @@ class WandbInferenceLogger:
         config=None,
     ):
         if not is_wandb_available():
-            raise ImportError("Please install it using 'pip install wandb'.")
+            raise ImportError(
+                "Please install wandb using 'pip install wandb --upgrade'"
+            )
 
         self.class_names = class_names if class_names else coco_label_map
         self.wandb = wandb
