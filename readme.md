@@ -26,7 +26,8 @@
 
 ## Migration Warning!
 
-Since someone else created another YOLOv7 **after** us, We don't want make people messed up with 2 of them, **Also we don't want chasing the meaningless AP number as sort of stunts**. So We plan to move further development of YOLOv7 into new place -> [link](https://github.com/jinfagang/yolovn). **new famework will keep development forever!!** These unfinished PRs will merge then start migrate. Thanks for everyone's contribution! Again, new framework is not only for re-implement SOTA models but also exploring new model design, **we are not only exploring detection, but also multi-tasking and new transformer arch design**. 
+Since someone else created another YOLOv7 **after** us, We don't want make people messed up with 2 of them, **Also we don't want chasing the meaningless AP number as sort of stunts**. So We plan to move further development of YOLOv7 into new place -> [link](https://github.com/jinfagang/yolov8). **new famework will keep development forever!!** These unfinished PRs will merge then start migrate. Thanks for everyone's contribution! Again, new framework is not only for re-implement SOTA models but also exploring new model design, **we are not only exploring detection, but also multi-tasking and new transformer arch design**. 
+
 
 
 > In short: **YOLOv7 added instance segmentation to YOLO arch**. Also many transformer backbones, archs included. If you look carefully, you'll find our ultimate vision is to **make YOLO great again** by the power of **transformers**, as well as **multi-tasks training**. YOLOv7 achieves mAP 43, AP-s exceed MaskRCNN by 10 with a convnext-tiny backbone while simillar speed with YOLOX-s, more models listed below, it's more accurate and even more lighter!
@@ -215,6 +216,13 @@ Run a quick demo would be like:
 python3 demo.py --config-file configs/wearmask/darknet53.yaml --input ./datasets/wearmask/images/val2017 --opts MODEL.WEIGHTS output/model_0009999.pth
 ```
 
+Run a quick demo to upload and explore your YOLOv7 prediction with [Weights & Biases](https://wandb.ai/site)
+. [See here for an example](https://wandb.ai/parambharat/yolov7)
+
+```
+python3 demo.py --config-file configs/wearmask/darknet53.yaml --input ./datasets/wearmask/images/val2017 --wandb-entity <your-username/team> --wandb-project <project-name> --opts MODEL.WEIGHTS output/model_0009999.pth
+```
+
 Run SparseInst:
 
 ```
@@ -335,4 +343,3 @@ tbd.
 ## ©️ License
 
 Code released under GPL license. Please pull request to this source repo before you make your changes public or commercial usage. All rights reserved by Lucas Jin.
-
