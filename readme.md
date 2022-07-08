@@ -97,7 +97,7 @@ If you want get full version YOLOv7, either **become a contributor** or get from
 - ***2022.06.13***: New model **YOLOX-Convnext-tiny** got a ~~41.3~~ 43 mAP beats yolox-s, AP-small even higher!;
 - ***2022.06.09***: **GFL**, general focal loss supported;
 - ***2022.05.26***: Added **YOLOX-ConvNext** config;
-- ***2022.05.18***: DINO and DABDetr are about added, new records on coco up to 63.3 AP!
+- ***2022.05.18***: DINO, DNDetr and DABDetr are about added, new records on coco up to 63.3 AP!
 - ***2022.05.09***: Big new function added! **We adopt YOLOX with Keypoints Head!**, model still under train, but you can check at code already;
 - ***2022.04.23***: We finished the int8 quantization on SparseInst! It works perfect! Download the onnx try it our by your self.
 - ***2022.04.15***: Now, we support the `SparseInst` onnx expport!
@@ -133,6 +133,7 @@ Here are some tasks need to be claimed:
 - [ ] NASVit: https://github.com/facebookresearch/NASViT
 - [ ] MobileVIT: https://github.com/apple/ml-cvnets/blob/main/cvnets/models/classification/mobilevit.py
 - [ ] DAB-DETR: https://github.com/IDEA-opensource/DAB-DETR, WIP
+- [ ] DN-DETR: https://github.com/IDEA-opensource/DN-DETR
 - [ ] https://github.com/jahongir7174/EfficientNetV2
 
 Just join our in-house contributor plan, you can share our newest code with your contribution!
