@@ -29,6 +29,7 @@
 Since someone else created another YOLOv7 **after** us, We don't want make people messed up with 2 of them, **Also we don't want chasing the meaningless AP number as sort of stunts**. So We plan to move further development of YOLOv7 into new place -> [link](https://github.com/jinfagang/yolov8). **new famework will keep development forever!!** These unfinished PRs will merge then start migrate. Thanks for everyone's contribution! Again, new framework is not only for re-implement SOTA models but also exploring new model design, **we are not only exploring detection, but also multi-tasking and new transformer arch design**. 
 
 
+
 > In short: **YOLOv7 added instance segmentation to YOLO arch**. Also many transformer backbones, archs included. If you look carefully, you'll find our ultimate vision is to **make YOLO great again** by the power of **transformers**, as well as **multi-tasks training**. YOLOv7 achieves mAP 43, AP-s exceed MaskRCNN by 10 with a convnext-tiny backbone while simillar speed with YOLOX-s, more models listed below, it's more accurate and even more lighter!
 
 > GPU resources wanted! yolov7 next version is up-coming, however, I didn't have enough GPU to train pretrained models for everyone, if you have GPUs, please fire a discussion and ping me, I will guide to train new models.
@@ -97,7 +98,7 @@ If you want get full version YOLOv7, either **become a contributor** or get from
 - ***2022.06.13***: New model **YOLOX-Convnext-tiny** got a ~~41.3~~ 43 mAP beats yolox-s, AP-small even higher!;
 - ***2022.06.09***: **GFL**, general focal loss supported;
 - ***2022.05.26***: Added **YOLOX-ConvNext** config;
-- ***2022.05.18***: DINO and DABDetr are about added, new records on coco up to 63.3 AP!
+- ***2022.05.18***: DINO, DNDetr and DABDetr are about added, new records on coco up to 63.3 AP!
 - ***2022.05.09***: Big new function added! **We adopt YOLOX with Keypoints Head!**, model still under train, but you can check at code already;
 - ***2022.04.23***: We finished the int8 quantization on SparseInst! It works perfect! Download the onnx try it our by your self.
 - ***2022.04.15***: Now, we support the `SparseInst` onnx expport!
@@ -133,6 +134,7 @@ Here are some tasks need to be claimed:
 - [ ] NASVit: https://github.com/facebookresearch/NASViT
 - [ ] MobileVIT: https://github.com/apple/ml-cvnets/blob/main/cvnets/models/classification/mobilevit.py
 - [ ] DAB-DETR: https://github.com/IDEA-opensource/DAB-DETR, WIP
+- [ ] DN-DETR: https://github.com/IDEA-opensource/DN-DETR
 - [ ] https://github.com/jahongir7174/EfficientNetV2
 
 Just join our in-house contributor plan, you can share our newest code with your contribution!
