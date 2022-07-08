@@ -26,7 +26,7 @@
 
 ## Migration Warning!
 
-Since someone else created another YOLOv7 **after** us, We don't want make people messed up with 2 of them, **Also we don't want chasing the meaningless AP number as sort of stunts**. So We plan to move further development of YOLOv7 into new place -> [link](https://github.com/jinfagang/yolov8). **new famework will keep development forever!!** These unfinished PRs will merge then start migrate. Thanks for everyone's contribution! Again, new framework is not only for re-implement SOTA models but also exploring new model design, **we are not only exploring detection, but also multi-tasking and new transformer arch design**. 
+Since someone else created another YOLOv7 **after** us, We don't want make people messed up with 2 of them, **Also we don't want chasing the meaningless AP number as sort of stunts**. So We plan to move further development of YOLOv7 into new place -> [YOLOvn link](https://github.com/jinfagang/yolovn). **new famework will keep development forever!!** These unfinished PRs will merge then start migrate. Thanks for everyone's contribution! Again, new framework is not only for re-implement SOTA models but also exploring new model design, **we are not only exploring detection, but also multi-tasking and new transformer arch design**. 
 
 
 
