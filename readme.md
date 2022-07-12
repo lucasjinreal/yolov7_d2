@@ -34,6 +34,8 @@ Since someone else created another YOLOv7 **after** us, We don't want make peopl
 
 > GPU resources wanted! yolov7 next version is up-coming, however, I didn't have enough GPU to train pretrained models for everyone, if you have GPUs, please fire a discussion and ping me, I will guide to train new models.
 
+Thanks for Aarohi's youtube vlog for guaidance of yolov7: https://www.youtube.com/watch?v=ag88beS_fvM , if you want a quick start, take a look at this nice introduction on yolov7 and detectron2.
+
 
 ## New version will release!
 
