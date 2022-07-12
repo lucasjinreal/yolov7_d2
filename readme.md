@@ -26,7 +26,7 @@
 
 ## Migration Warning!
 
-Since someone else created another YOLOv7 **after** us, We don't want make people messed up with 2 of them, **Also we don't want chasing the meaningless AP number as sort of stunts**. So We plan to move further development of YOLOv7 into new place -> [YOLOvn link](https://github.com/jinfagang/yolovn). **new famework will keep development forever!!** These unfinished PRs will merge then start migrate. Thanks for everyone's contribution! Again, new framework is not only for re-implement SOTA models but also exploring new model design, **we are not only exploring detection, but also multi-tasking and new transformer arch design**. 
+Since someone else created another YOLOv7 **after** us, We don't want make people messed up with 2 of them, **Also we don't want chasing the meaningless AP number as sort of stunts**. So We plan to move further development of YOLOv7 into new place -> [YOLOvn link](https://github.com/jinfagang/yolovn). **new famework will keep development forever!!** These unfinished PRs will merge then start migrate. Thanks for everyone's contribution! Again, new framework is not only for re-implement SOTA models but also exploring new model design, **we are not only exploring detection, but also multi-tasking and new transformer arch design**.
 
 
 
@@ -49,7 +49,7 @@ For more details, refer to [read the doc](https://yolov7.readthedocs.io/en/lates
 
 Just **fork and star!**, you will be noticed once we release the new version!
 
-🔥🔥🔥 Just another yolo variant implemented based on **`detectron2`**. But note that **YOLOv7 isn't meant to be a successor of yolo family, 7 is just a magic and lucky number. Instead, YOLOv7 extends yolo into many other vision tasks, such as instance segmentation, one-stage keypoints detection etc.**. 
+🔥🔥🔥 Just another yolo variant implemented based on **`detectron2`**. But note that **YOLOv7 isn't meant to be a successor of yolo family, 7 is just a magic and lucky number. Instead, YOLOv7 extends yolo into many other vision tasks, such as instance segmentation, one-stage keypoints detection etc.**.
 
 The supported matrix in YOLOv7 are:
 
@@ -84,7 +84,7 @@ The supported matrix in YOLOv7 are:
 Features are ready but not opensource yet:
 
 - [x] Convnext training on YOLOX, higher accuracy than original YOLOX;
-- [x] GFL loss support; 
+- [x] GFL loss support;
 - [x] **MobileVit-V2** backbone available;
 - [x] CSPRep-Resnet: a repvgg style resnet used in PP-YOLOE but in pytorch rather than paddle;
 - [ ] VitDet support;
@@ -131,7 +131,6 @@ Here are some tasks need to be claimed:
   - [ ] Integrate into D2 backbone, remove MSAtten deps;
   - [ ] Test with YOLOv7 or DETR arch;
 - [ ] DINO: 63.3mAP highest in 2022 on coco. https://github.com/IDEACVR/DINO
-  - [ ] waiting for DINO opensource code.
 - [x] ConvNext: https://github.com/facebookresearch/ConvNeXt, combined convolution and transformer.
 - [ ] NASVit: https://github.com/facebookresearch/NASViT
 - [ ] MobileVIT: https://github.com/apple/ml-cvnets/blob/main/cvnets/models/classification/mobilevit.py
@@ -194,7 +193,7 @@ We are strongly recommend you send PR if you have any further development on thi
 | [SparseInst (G-IAM)](configs/sparse_inst_r50_dcn_giam_aug.yaml) | [R-50-DCN]() | 608 | &#10003;| 36.4 | 36.8 | 41.6 | [model](https://drive.google.com/file/d/1qxdLRRHbIWEwRYn-NPPeCCk6fhBjc946/view?usp=sharing) |
 | [SparseInst (G-IAM)](configs/sparse_inst_r50vd_giam_aug.yaml) | [R-50-vd](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 608 | &#10003;| 35.6 | 36.1 | 42.8| [model](https://drive.google.com/file/d/1dlamg7ych_BdWpPUCuiBXbwE0SXpsfGx/view?usp=sharing) |
 | [SparseInst (G-IAM)](configs/sparse_inst_r50vd_dcn_giam_aug.yaml) | [R-50-vd-DCN](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 608 | &#10003; | 37.4 | 37.9 | 40.0  | [model](https://drive.google.com/file/d/1clYPdCNrDNZLbmlAEJ7wjsrOLn1igOpT/view?usp=sharing)|
-| [SparseInst (G-IAM)](sparse_inst_r50vd_dcn_giam_aug.yaml) | [R-50-vd-DCN](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 640 | &#10003; | 37.7 | 38.1 | 39.3 |  [model](https://drive.google.com/file/d/1clYPdCNrDNZLbmlAEJ7wjsrOLn1igOpT/view?usp=sharing)| 
+| [SparseInst (G-IAM)](sparse_inst_r50vd_dcn_giam_aug.yaml) | [R-50-vd-DCN](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 640 | &#10003; | 37.7 | 38.1 | 39.3 |  [model](https://drive.google.com/file/d/1clYPdCNrDNZLbmlAEJ7wjsrOLn1igOpT/view?usp=sharing)|
 | SparseInst Int8 onnx | [google drive](https://drive.google.com/file/d/1FYn_0p3RXzKaTGzTfdiJI1YhAexA_V3s/view?usp=sharing) |
 
 
@@ -203,8 +202,8 @@ We are strongly recommend you send PR if you have any further development on thi
 
 | model | backbone | input | aug | AP |  AP50 |  APs  | FPS | weights |
 | :---- | :------  | :---: | :-: |:---: | :--: | :-: | :-: | :-----: |
-| [YoloFormer-Convnext-tiny](configs/coco/yolotr/yolotr_convnext.yaml) | [Convnext-tiny](https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_224.pth) | 800 | &#10003; | 43 | 63.7 | 26.5 | 39.3 |  [model](https://drive.google.com/file/d/1bTedWQaENvlFknqyQreBKA1HoAMOtHkn/view?usp=sharing)| 
-| [YOLOX-s](configs/coco/yolox_s.yaml) | - | 800 | &#10003; | 40.5 | - | - | 39.3 |  [model](https://drive.google.com/file/d/1clYPdCNrDNZLbmlAEJ7wjsrOLn1igOpT/view?usp=sharing)| 
+| [YoloFormer-Convnext-tiny](configs/coco/yolotr/yolotr_convnext.yaml) | [Convnext-tiny](https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_224.pth) | 800 | &#10003; | 43 | 63.7 | 26.5 | 39.3 |  [model](https://drive.google.com/file/d/1bTedWQaENvlFknqyQreBKA1HoAMOtHkn/view?usp=sharing)|
+| [YOLOX-s](configs/coco/yolox_s.yaml) | - | 800 | &#10003; | 40.5 | - | - | 39.3 |  [model](https://drive.google.com/file/d/1clYPdCNrDNZLbmlAEJ7wjsrOLn1igOpT/view?usp=sharing)|
 
 > note: We post AP-s here because we want to know how does small object performance in related model, it was notablely higher small-APs for transformer backbone based model! **Some of above model might not opensourced but we provide weights**.
 
@@ -296,7 +295,7 @@ Make sure you have read **rules** before ask me any questions.
 
 ## 🤒️ Performance
 
-Here is a dedicated performance compare with other packages. 
+Here is a dedicated performance compare with other packages.
 
 tbd.
 
