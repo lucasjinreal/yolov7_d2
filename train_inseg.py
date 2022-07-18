@@ -45,14 +45,6 @@ class Trainer(DefaultTrainer):
         model = build_model(cfg)
         return model
 
-    def run_step(self):
-        self._trainer.iter = self.iter
-        self._trainer.run_step()
-        if comm.get_world_size() == 1:
-            self.model.update_iter(self.iter)
-        else:
-            self.model.module.update_iter(self.iter)
-
 
 def setup(args):
     cfg = get_cfg()
