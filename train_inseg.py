@@ -5,38 +5,31 @@ from detectron2.engine import (
     DefaultTrainer,
     default_argument_parser,
     default_setup,
-    launch,
+    launch
 )
-from detectron2.evaluation import COCOEvaluator
-from detectron2.data import (
-    MetadataCatalog,
-    build_detection_train_loader,
-    DatasetCatalog,
-)
+from detectron2.data import build_detection_train_loader
 from detectron2.modeling import build_model
-from detectron2.utils import comm
 
 from yolov7.config import add_yolo_config
-from yolov7.data.dataset_mapper import MyDatasetMapper2, MyDatasetMapper
-from yolov7.utils.allreduce_norm import all_reduce_norm
-
+from yolov7.data.dataset_mapper import MyDatasetMapper, MyDatasetMapper2
+from yolov7.evaluation.coco_evaluation import COCOMaskEvaluator
 
 """
-This using for train instance segmentation!
+Script used for training instance segmentation, i.e. SparseInst.
 """
-
 
 class Trainer(DefaultTrainer):
+
+    custom_mapper = None
+
     @classmethod
     def build_evaluator(cls, cfg, dataset_name, output_folder=None):
         if output_folder is None:
             output_folder = os.path.join(cfg.OUTPUT_DIR, "inference")
-        return COCOEvaluator(dataset_name, output_dir=output_folder)
+        return COCOMaskEvaluator(dataset_name, output_dir=output_folder)
 
     @classmethod
     def build_train_loader(cls, cfg):
-        # return build_detection_train_loader(cfg,
-        #                                     mapper=MyDatasetMapper(cfg, True))
         cls.custom_mapper = MyDatasetMapper(cfg, True)
         return build_detection_train_loader(cfg, mapper=cls.custom_mapper)
 
