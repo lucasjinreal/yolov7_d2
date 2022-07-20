@@ -36,6 +36,8 @@ Since someone else created another YOLOv7 **after** us, We don't want make peopl
 
 Thanks for Aarohi's youtube vlog for guaidance of yolov7: https://www.youtube.com/watch?v=ag88beS_fvM , if you want a quick start, take a look at this nice introduction on yolov7 and detectron2.
 
+For someone who still said we shouldn't name yolov7, here is the clarify: We create repo much much more earlier than someone else's paper, we also don't want make you confuse, but as we said, we take this name long long time ago. Besides, our yolov7 is a framework, whole **modeling is very intuitive** not like yolov5's yml config model way, it's pure in python all at your control. And inside yolov7, we supported a huge range of combination such as YOLOX, YOLOX-Lite, YOLOX-Mask, YOLOX-Keypoint, YOLOv6 Head, YOLOv4, Mosiac Augmentation etc. **Using which framework is at your choice, please stop bothering us at naming, please take a look at the create repo time screenshot below**. **WE ARE EXISTED ALREADY LAST YEAR**.
+![](https://raw.githubusercontent.com/jinfagang/public_images/master/20220718184052.png)
 
 ## New version will release!
 

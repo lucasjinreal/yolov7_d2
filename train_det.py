@@ -37,24 +37,6 @@ class Trainer(DefaultTrainer):
         model = build_model(cfg)
         return model
 
-    def run_step(self):
-        self._trainer.iter = self.iter
-        self._trainer.run_step()
-        if comm.get_world_size() == 1:
-            self.model.update_iter(self.iter)
-        else:
-            self.model.module.update_iter(self.iter)
-
-        if (
-            self.iter > self.cfg.INPUT.MOSAIC_AND_MIXUP.DISABLE_AT_ITER
-            and self.cfg.INPUT.MOSAIC_AND_MIXUP.ENABLED
-        ):
-            # disable augmentation
-            self.cfg.defrost()
-            self.cfg.INPUT.MOSAIC_AND_MIXUP.ENABLED = False
-            self.cfg.freeze()
-            self.custom_mapper.disable_aug()
-
 
 def setup(args):
     cfg = get_cfg()
