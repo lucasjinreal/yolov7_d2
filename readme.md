@@ -130,13 +130,14 @@ Here are some tasks need to be claimed:
 - [ ] ViDet: [code](https://github.com/naver-ai/vidt), this provides a realtime detector based on transformer, Swin-Nano mAP: 40, while 20 FPS, it can be integrated into YOLOv7;
   - [ ] Integrate into D2 backbone, remove MSAtten deps;
   - [ ] Test with YOLOv7 or DETR arch;
-- [ ] DINO: 63.3mAP highest in 2022 on coco. https://github.com/IDEACVR/DINO
+- [ ] DINO: 63.3mAP highest in 2022 on coco.
+  - [ ] Code for [DINO](https://arxiv.org/abs/2203.03605) is avaliable [here](https://github.com/IDEACVR/DINO).
 - [x] ConvNext: https://github.com/facebookresearch/ConvNeXt, combined convolution and transformer.
 - [ ] NASVit: https://github.com/facebookresearch/NASViT
 - [ ] MobileVIT: https://github.com/apple/ml-cvnets/blob/main/cvnets/models/classification/mobilevit.py
 - [ ] DAB-DETR: https://github.com/IDEA-opensource/DAB-DETR, WIP
 - [ ] DN-DETR: https://github.com/IDEA-opensource/DN-DETR
-- [ ] https://github.com/jahongir7174/EfficientNetV2
+- [ ] EfficientNetV2: https://github.com/jahongir7174/EfficientNetV2
 
 Just join our in-house contributor plan, you can share our newest code with your contribution!
 
