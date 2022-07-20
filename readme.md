@@ -26,7 +26,7 @@
 
 ## Migration Warning!
 
-Since someone else created another YOLOv7 **after** us, We don't want make people messed up with 2 of them, **Also we don't want chasing the meaningless AP number as sort of stunts**. So We plan to move further development of YOLOv7 into new place -> [link](https://github.com/jinfagang/yolov8). **new famework will keep development forever!!** These unfinished PRs will merge then start migrate. Thanks for everyone's contribution! Again, new framework is not only for re-implement SOTA models but also exploring new model design, **we are not only exploring detection, but also multi-tasking and new transformer arch design**. 
+Since someone else created another YOLOv7 **after** us, We don't want make people messed up with 2 of them, **Also we don't want chasing the meaningless AP number as sort of stunts**. So We plan to move further development of YOLOv7 into new place -> [YOLOvn link](https://github.com/jinfagang/yolovn). **new famework will keep development forever!!** These unfinished PRs will merge then start migrate. Thanks for everyone's contribution! Again, new framework is not only for re-implement SOTA models but also exploring new model design, **we are not only exploring detection, but also multi-tasking and new transformer arch design**. 
 
 
 
@@ -34,6 +34,10 @@ Since someone else created another YOLOv7 **after** us, We don't want make peopl
 
 > GPU resources wanted! yolov7 next version is up-coming, however, I didn't have enough GPU to train pretrained models for everyone, if you have GPUs, please fire a discussion and ping me, I will guide to train new models.
 
+Thanks for Aarohi's youtube vlog for guaidance of yolov7: https://www.youtube.com/watch?v=ag88beS_fvM , if you want a quick start, take a look at this nice introduction on yolov7 and detectron2.
+
+For someone who still said we shouldn't name yolov7, here is the clarify: We create repo much much more earlier than someone else's paper, we also don't want make you confuse, but as we said, we take this name long long time ago. Besides, our yolov7 is a framework, whole **modeling is very intuitive** not like yolov5's yml config model way, it's pure in python all at your control. And inside yolov7, we supported a huge range of combination such as YOLOX, YOLOX-Lite, YOLOX-Mask, YOLOX-Keypoint, YOLOv6 Head, YOLOv4, Mosiac Augmentation etc. **Using which framework is at your choice, please stop bothering us at naming, please take a look at the create repo time screenshot below**. **WE ARE EXISTED ALREADY LAST YEAR**.
+![](https://raw.githubusercontent.com/jinfagang/public_images/master/20220718184052.png)
 
 ## New version will release!
 
