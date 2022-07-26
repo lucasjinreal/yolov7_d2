@@ -98,6 +98,7 @@ If you want get full version YOLOv7, either **become a contributor** or get from
 
 ## 🆕 News!
 
+- ***2022.07.26***: Now we are preparing release new pose model;
 - ***2022.06.25***: Meituan's YOLOv6 training has been supported in YOLOv7!
 - ***2022.06.13***: New model **YOLOX-Convnext-tiny** got a ~~41.3~~ 43 mAP beats yolox-s, AP-small even higher!;
 - ***2022.06.09***: **GFL**, general focal loss supported;
@@ -154,6 +155,8 @@ Just join our in-house contributor plan, you can share our newest code with your
 ![](https://s1.ax1x.com/2022/05/09/OJnXjI.png)  |  ![](https://s1.ax1x.com/2022/05/09/OJuuUU.png)
 ![](https://raw.githubusercontent.com/jinfagang/public_images/master/20220613110908.png) | ![](https://raw.githubusercontent.com/jinfagang/public_images/master/20220613111122.png)
 ![](https://raw.githubusercontent.com/jinfagang/public_images/master/20220613111139.png) | ![](https://raw.githubusercontent.com/jinfagang/public_images/master/20220613111239.png)
+![](https://s2.loli.net/2022/07/26/1Msgxupz4VWboqX.png) | ![](https://s2.loli.net/2022/07/26/NzahO46qcsU52Gn.png)
+
 
 
 
