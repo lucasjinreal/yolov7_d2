@@ -8,3 +8,9 @@ from .res2nets.wrapper import build_res2net_backbone
 
 from .darknetx import build_cspdarknetx_backbone
 from .regnet import build_regnet_backbone
+from .fbnet_v3 import *
+from .fbnet_v2 import FBNetV2C4Backbone, build_fbnet
+from .resnetvd import build_resnet_vd_backbone
+
+from .convnext import build_convnext_backbone
+from .efficientrep import build_efficientrep_backbone

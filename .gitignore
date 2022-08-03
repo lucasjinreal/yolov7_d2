@@ -138,13 +138,16 @@ dmypy.json
 .pyre/
 
 .idea/
-weights/
 *.pth
 *.onnx
 
 .vscode/
 output/
 datasets/
-weights/
 vendor/vendor/
 vendor/
+log2.md
+vendor/
+.DS_Store
+wandb/
+artifacts/

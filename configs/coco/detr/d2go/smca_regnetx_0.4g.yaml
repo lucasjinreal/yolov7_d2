@@ -1,0 +1,77 @@
+MODEL:
+  META_ARCHITECTURE: "DetrD2go"
+  PIXEL_MEAN: [123.675, 116.280, 103.530]
+  PIXEL_STD: [58.395, 57.120, 57.375]
+  MASK_ON: False
+  WEIGHTS: "detectron2://ImageNetPretrained/torchvision/R-50.pkl"
+  BACKBONE:
+    NAME: "build_regnet_backbone"
+    SIMPLE: true
+    STRIDE: 32
+    CHANNEL: 384
+  REGNETS:
+    TYPE: "RegNetX_400MF"
+    OUT_FEATURES: ["s2", "s3", "s4"] # fpn produce 4 levels, only using 3 for now
+
+  DETR:
+    NUM_CLASSES: 80
+    CLS_WEIGHT: 2.0
+    DIM_FEEDFORWARD: 2048 # 1024 -> 2048
+    GIOU_WEIGHT: 2.0
+    L1_WEIGHT: 5.0
+    NUM_OBJECT_QUERIES: 300
+    CENTERED_POSITION_ENCODIND: True
+    USE_FOCAL_LOSS: True
+    NUM_FEATURE_LEVELS: 1
+    ATTENTION_TYPE: "SMCA"
+
+DATASETS:
+  TRAIN: ("coco_2017_train",)
+  TEST: ("coco_2017_val",)
+
+SOLVER:
+  AMP:
+    ENABLED: true
+  IMS_PER_BATCH: 64
+  BASE_LR: 0.0001
+  # STEPS: (295720,)
+  # MAX_ITER: 369650
+  STEPS: (73930, )
+  # MAX_ITER: 369650
+  MAX_ITER: 429650
+  WARMUP_FACTOR: 1.0
+  WARMUP_ITERS: 10
+  WEIGHT_DECAY: 0.0001
+  OPTIMIZER: "ADAMW"
+  CLIP_GRADIENTS:
+    ENABLED: True
+    CLIP_TYPE: "full_model"
+    CLIP_VALUE: 0.1
+    NORM_TYPE: 2.0
+  LR_MULTIPLIER_OVERWRITE:
+    [{ "backbone": 0.6}, { "reference_points": 0.1, "sampling_offsets": 0.1 }]
+
+# 0.00013, 0.1, 29.9, 24.86, 23.57
+# 0.00013, 0.9, 27.26,23.95
+# 0.0001, 0.9, 26.38, 23.74, 23.01, 22.52
+# 0.0001, 1.2, 29.43
+
+INPUT:
+  MIN_SIZE_TRAIN: (480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800)
+  CROP:
+    ENABLED: True
+    TYPE: "absolute_range"
+    SIZE: (384, 600)
+  FORMAT: "RGB"
+# D2GO_DATA:
+#   MAPPER:
+#     NAME: "DETRDatasetMapper"
+
+TEST:
+  EVAL_PERIOD: 4000
+DATALOADER:
+  FILTER_EMPTY_ANNOTATIONS: False
+  NUM_WORKERS: 4
+VERSION: 2
+
+OUTPUT_DIR: "output/coco_smcadetr_d2go_regnetx"

@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Copyright (c) BaseDetection, Inc. and its affiliates.
@@ -17,7 +16,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 from detectron2.modeling.meta_arch import build
 from detectron2.layers import ShapeSpec
-from detectron2.modeling import BACKBONE_REGISTRY, ResNet, ResNetBlockBase, META_ARCH_REGISTRY
+from detectron2.modeling import (
+    BACKBONE_REGISTRY,
+    ResNet,
+    ResNetBlockBase,
+    META_ARCH_REGISTRY,
+)
 from detectron2.modeling.postprocessing import detector_postprocess
 from detectron2.structures import Boxes, ImageList, Instances, boxes, image_list
 from detectron2.utils import comm
@@ -31,7 +35,6 @@ from alfred.dl.torch.common import device
 from .utils import generalized_batched_nms
 
 from yolov7.utils.boxes import postprocess, bboxes_iou
-from nb.torch.blocks.head_blocks import SPP, PANet
 from alfred.vis.image.det import visualize_det_cv2_part, visualize_det_cv2_fancy
 
 from yolov7.modeling.neck.yolo_fpn import YOLOFPN
@@ -39,8 +42,15 @@ from yolov7.modeling.neck.yolo_pafpn import YOLOPAFPN
 
 
 __all__ = ["YOLOV7", "YOLOHead"]
-supported_backbones = ['resnet', 'res2net', 'regnet',
-                       'swin', 'efficient', 'darknet', 'pvt']
+supported_backbones = [
+    "resnet",
+    "res2net",
+    "regnet",
+    "swin",
+    "efficient",
+    "darknet",
+    "pvt",
+]
 
 
 @META_ARCH_REGISTRY.register()
@@ -71,17 +81,22 @@ class YOLOV7(nn.Module):
         self.change_iter = 10
         self.iter = 0
 
-        assert len([i for i in supported_backbones if i in cfg.MODEL.BACKBONE.NAME]
-                   ) > 0, 'Only {} supported.'.format(supported_backbones)
+        assert (
+            len([i for i in supported_backbones if i in cfg.MODEL.BACKBONE.NAME]) > 0
+        ), "Only {} supported.".format(supported_backbones)
 
         self.backbone = build_backbone(cfg)
         backbone_shape = self.backbone.output_shape()
-        self.size_divisibility = 32 if self.backbone.size_divisibility == 0 else self.backbone.size_divisibility
+        self.size_divisibility = (
+            32
+            if self.backbone.size_divisibility == 0
+            else self.backbone.size_divisibility
+        )
         backbone_shape = [backbone_shape[i].channels for i in self.in_features]
 
         if comm.is_main_process():
-            logger.info('YOLO.ANCHORS: {}'.format(cfg.MODEL.YOLO.ANCHORS))
-            logger.info('backboneshape: {}'.format(backbone_shape))
+            logger.info("YOLO.ANCHORS: {}".format(cfg.MODEL.YOLO.ANCHORS))
+            logger.info("backboneshape: {}".format(backbone_shape))
 
         # todo: wrap this to neck, support SPP , DarkNeck, PAN
 
@@ -107,56 +122,100 @@ class YOLOV7(nn.Module):
         # self.out2 = self._make_embedding(
         #     [128, 256], backbone_shape[-3] + 128, out_filter_2)
 
-        if self.neck_type == 'fpn':
-            self.neck = YOLOFPN(width=self.width_mul, in_channels=backbone_shape,
-                                in_features=self.in_features, with_spp=self.with_spp)
+        if self.neck_type == "fpn":
+            self.neck = YOLOFPN(
+                width=self.width_mul,
+                in_channels=backbone_shape,
+                in_features=self.in_features,
+                with_spp=self.with_spp,
+            )
             # 256, 512, 1024 -> 1024, 512, 256
-            self.m = nn.ModuleList(nn.Conv2d(x, len(
-                cfg.MODEL.YOLO.ANCHORS[0]) * (5 + cfg.MODEL.YOLO.CLASSES), 1) for x in self.neck.out_channels)
-        elif self.neck_type == 'pafpn':
+            self.m = nn.ModuleList(
+                nn.Conv2d(
+                    x, len(cfg.MODEL.YOLO.ANCHORS[0]) * (5 + cfg.MODEL.YOLO.CLASSES), 1
+                )
+                for x in self.neck.out_channels
+            )
+        elif self.neck_type == "pafpn":
             width_mul = backbone_shape[0] / 256
             self.neck = YOLOPAFPN(
-                depth=self.depth_mul, width=width_mul, in_features=self.in_features)
-            self.m = nn.ModuleList(nn.Conv2d(x, len(
-                cfg.MODEL.YOLO.ANCHORS[0]) * (5 + cfg.MODEL.YOLO.CLASSES), 1) for x in backbone_shape)
+                depth=self.depth_mul, width=width_mul, in_features=self.in_features
+            )
+            self.m = nn.ModuleList(
+                nn.Conv2d(
+                    x, len(cfg.MODEL.YOLO.ANCHORS[0]) * (5 + cfg.MODEL.YOLO.CLASSES), 1
+                )
+                for x in backbone_shape
+            )
         else:
-            logger.error(
-                '{} neck not supported for now.'.format(self.neck_type))
+            logger.info(f"type: {self.neck_type} not valid, using default FPN neck.")
+            self.neck = YOLOFPN(
+                width=self.width_mul,
+                in_channels=backbone_shape,
+                in_features=self.in_features,
+                with_spp=self.with_spp,
+            )
+            # 256, 512, 1024 -> 1024, 512, 256
+            self.m = nn.ModuleList(
+                nn.Conv2d(
+                    x, len(cfg.MODEL.YOLO.ANCHORS[0]) * (5 + cfg.MODEL.YOLO.CLASSES), 1
+                )
+                for x in self.neck.out_channels
+            )
 
-        pixel_mean = torch.Tensor(cfg.MODEL.PIXEL_MEAN).to(self.device).view(
-            3, 1, 1)
-        pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD).to(self.device).view(
-            3, 1, 1)
-        self.normalizer = lambda x: (x / 255. - pixel_mean) / pixel_std
+        pixel_mean = torch.Tensor(cfg.MODEL.PIXEL_MEAN).to(self.device).view(3, 1, 1)
+        pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD).to(self.device).view(3, 1, 1)
+        self.normalizer = lambda x: (x / 255.0 - pixel_mean) / pixel_std
         self.padded_value = cfg.MODEL.PADDED_VALUE
         self.loss_evaluators = [
-            YOLOHead(cfg, anchor, level) for level, anchor in enumerate(cfg.MODEL.YOLO.ANCHORS)]
+            YOLOHead(cfg, anchor, level)
+            for level, anchor in enumerate(cfg.MODEL.YOLO.ANCHORS)
+        ]
         self.to(self.device)
 
     def update_iter(self, i):
         self.iter = i
 
     def _make_cbl(self, _in, _out, ks):
-        ''' cbl = conv + batch_norm + leaky_relu
-        '''
+        """cbl = conv + batch_norm + leaky_relu"""
         pad = (ks - 1) // 2 if ks else 0
-        return nn.Sequential(OrderedDict([
-            ("conv", nn.Conv2d(_in, _out, kernel_size=ks,
-                               stride=1, padding=pad, bias=False)),
-            ("bn", nn.BatchNorm2d(_out)),
-            ("relu", nn.LeakyReLU(0.1)),
-        ]))
+        return nn.Sequential(
+            OrderedDict(
+                [
+                    (
+                        "conv",
+                        nn.Conv2d(
+                            _in, _out, kernel_size=ks, stride=1, padding=pad, bias=False
+                        ),
+                    ),
+                    ("bn", nn.BatchNorm2d(_out)),
+                    ("relu", nn.LeakyReLU(0.1)),
+                ]
+            )
+        )
 
     def _make_embedding(self, filters_list, in_filters, out_filter):
-        m = nn.ModuleList([
-            self._make_cbl(in_filters, filters_list[0], 1),
-            self._make_cbl(filters_list[0], filters_list[1], 3),
-            self._make_cbl(filters_list[1], filters_list[0], 1),
-            self._make_cbl(filters_list[0], filters_list[1], 3),
-            self._make_cbl(filters_list[1], filters_list[0], 1),
-            self._make_cbl(filters_list[0], filters_list[1], 3)])
-        m.add_module("conv_out", nn.Conv2d(filters_list[1], out_filter, kernel_size=1,
-                                           stride=1, padding=0, bias=True))
+        m = nn.ModuleList(
+            [
+                self._make_cbl(in_filters, filters_list[0], 1),
+                self._make_cbl(filters_list[0], filters_list[1], 3),
+                self._make_cbl(filters_list[1], filters_list[0], 1),
+                self._make_cbl(filters_list[0], filters_list[1], 3),
+                self._make_cbl(filters_list[1], filters_list[0], 1),
+                self._make_cbl(filters_list[0], filters_list[1], 3),
+            ]
+        )
+        m.add_module(
+            "conv_out",
+            nn.Conv2d(
+                filters_list[1],
+                out_filter,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                bias=True,
+            ),
+        )
         return m
 
     def preprocess_image(self, batched_inputs, training):
@@ -173,7 +232,10 @@ class YOLOV7(nn.Module):
         images = [self.normalizer(x) for x in images]
 
         images = ImageList.from_tensors(
-            images, size_divisibility=self.size_divisibility, pad_value=self.padded_value/255.)
+            images,
+            size_divisibility=self.size_divisibility,
+            pad_value=self.padded_value / 255.0,
+        )
         # logger.info('images ori shape: {}'.format(images.tensor.shape))
         # logger.info('images ori shape: {}'.format(images.image_sizes))
 
@@ -183,8 +245,7 @@ class YOLOV7(nn.Module):
             meg = torch.BoolTensor(1).to(self.device)
             comm.synchronize()
             if comm.is_main_process():
-                logger.info(
-                    '[master] enable l1 loss now at iter: {}'.format(self.iter))
+                logger.info("[master] enable l1 loss now at iter: {}".format(self.iter))
                 # enable l1 loss at last 50000 iterations
                 meg.fill_(True)
 
@@ -197,23 +258,24 @@ class YOLOV7(nn.Module):
 
         if training:
             if "instances" in batched_inputs[0]:
-                gt_instances = [
-                    x["instances"].to(self.device) for x in batched_inputs
-                ]
+                gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
             elif "targets" in batched_inputs[0]:
                 log_first_n(
                     logging.WARN,
                     "'targets' in the model inputs is now renamed to 'instances'!",
-                    n=10)
-                gt_instances = [
-                    x["targets"].to(self.device) for x in batched_inputs
-                ]
+                    n=10,
+                )
+                gt_instances = [x["targets"].to(self.device) for x in batched_inputs]
             else:
                 gt_instances = None
 
             targets = [
                 torch.cat(
-                    [instance.gt_classes.float().unsqueeze(-1), instance.gt_boxes.tensor], dim=-1
+                    [
+                        instance.gt_classes.float().unsqueeze(-1),
+                        instance.gt_boxes.tensor,
+                    ],
+                    dim=-1,
                 )
                 for instance in gt_instances
             ]
@@ -221,8 +283,8 @@ class YOLOV7(nn.Module):
             # todo: what if targets more than max_boxes_num?
             for i, target in enumerate(targets):
                 if target.shape[0] > self.max_boxes_num:
-                    target = target[:self.max_boxes_num, :]
-                labels[i][:target.shape[0]] = target
+                    target = target[: self.max_boxes_num, :]
+                labels[i][: target.shape[0]] = target
             labels[:, :, 1:] = labels[:, :, 1:]
         else:
             labels = None
@@ -231,7 +293,8 @@ class YOLOV7(nn.Module):
 
     def forward(self, batched_inputs):
         images, labels, image_ori_sizes = self.preprocess_image(
-            batched_inputs, self.training)
+            batched_inputs, self.training
+        )
 
         # batched_inputs[0]['image'] = images.tensor[0].cpu() * 255
         # self.visualize_data(batched_inputs[0])
@@ -277,28 +340,27 @@ class YOLOV7(nn.Module):
 
         if self.training:
             losses = [
-                loss_evaluator(out, labels, img_size) for out, loss_evaluator in zip(
-                    outs, self.loss_evaluators)
+                loss_evaluator(out, labels, img_size)
+                for out, loss_evaluator in zip(outs, self.loss_evaluators)
             ]
             if self.loss_type == "v7":
-                keys = ["loss_iou", "loss_xy",
-                        "loss_wh", "loss_conf", "loss_cls"]
+                keys = ["loss_iou", "loss_xy", "loss_wh", "loss_conf", "loss_cls"]
             else:
-                keys = ["loss_x", "loss_y", "loss_w",
-                        "loss_h", "loss_conf", "loss_cls"]
+                keys = ["loss_x", "loss_y", "loss_w", "loss_h", "loss_conf", "loss_cls"]
             losses_dict = {}
             for key in keys:
                 losses_dict[key] = sum([loss[key] for loss in losses])
             return losses_dict
         else:
-            predictions_list = [loss_evaluator(out, labels, img_size) for
-                                out, loss_evaluator in zip(outs, self.loss_evaluators)]
+            predictions_list = [
+                loss_evaluator(out, labels, img_size)
+                for out, loss_evaluator in zip(outs, self.loss_evaluators)
+            ]
 
             predictions = torch.cat(predictions_list, 1)
-            detections = postprocess(predictions,
-                                     self.num_classes,
-                                     self.conf_threshold,
-                                     self.nms_threshold)
+            detections = postprocess(
+                predictions, self.num_classes, self.conf_threshold, self.nms_threshold
+            )
 
             results = []
             for idx, out in enumerate(detections):
@@ -314,7 +376,8 @@ class YOLOV7(nn.Module):
 
             processed_results = []
             for results_per_image, input_per_image, image_size in zip(
-                    results, batched_inputs, images.image_sizes):
+                results, batched_inputs, images.image_sizes
+            ):
                 height = input_per_image.get("height", image_size[0])
                 width = input_per_image.get("width", image_size[1])
                 r = detector_postprocess(results_per_image, height, width)
@@ -356,10 +419,8 @@ class YOLOHead(nn.Module):
         self.l1_loss = nn.L1Loss(reduction="none")
         self.bce_loss = nn.BCELoss(reduction="none")
 
-        self.BCEcls = nn.BCEWithLogitsLoss(
-            pos_weight=torch.tensor([1.0]).to(device))
-        self.BCEobj = nn.BCEWithLogitsLoss(
-            pos_weight=torch.tensor([1.0]).to(device))
+        self.BCEcls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([1.0]).to(device))
+        self.BCEobj = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([1.0]).to(device))
 
         self.bce_obj = nn.BCEWithLogitsLoss(reduction="none")
         self.bce_cls = nn.BCEWithLogitsLoss(reduction="none")
@@ -373,38 +434,50 @@ class YOLOHead(nn.Module):
         stride_h = image_size[0] / in_h
         stride_w = image_size[1] / in_w
 
-        scaled_anchors = [(a_w, a_h)
-                          for a_w, a_h in self.anchors]
+        scaled_anchors = [(a_w, a_h) for a_w, a_h in self.anchors]
 
-        prediction = input.view(bs, self.num_anchors,
-                                self.bbox_attrs, in_h, in_w).permute(0, 1, 3, 4, 2).contiguous()  # place bbox_attr to last order
+        prediction = (
+            input.view(bs, self.num_anchors, self.bbox_attrs, in_h, in_w)
+            .permute(0, 1, 3, 4, 2)
+            .contiguous()
+        )  # place bbox_attr to last order
 
         # Get outputs
-        x = torch.sigmoid(prediction[..., 0])          # Center x
-        y = torch.sigmoid(prediction[..., 1])          # Center y
-        w = prediction[..., 2]                       # Width
-        h = prediction[..., 3]                       # Height
+        x = torch.sigmoid(prediction[..., 0])  # Center x
+        y = torch.sigmoid(prediction[..., 1])  # Center y
+        w = prediction[..., 2]  # Width
+        h = prediction[..., 3]  # Height
 
         # conf = torch.sigmoid(prediction[..., 4])       # Conf
         # pred_cls = torch.sigmoid(prediction[..., 5:])  # Cls pred.
-        conf = prediction[..., 4]       # Conf
+        conf = prediction[..., 4]  # Conf
         pred_cls = prediction[..., 5:]  # Cls pred.
 
-        def FloatTensor(x): return torch.FloatTensor(x).to(pred_cls.device)  # noqa
-        def LongTensor(x): return torch.LongTensor(x).to(pred_cls.device)  # noqa
+        def FloatTensor(x):
+            return torch.FloatTensor(x).to(pred_cls.device)  # noqa
+
+        def LongTensor(x):
+            return torch.LongTensor(x).to(pred_cls.device)  # noqa
 
         # Calculate offsets for each grid
-        grid_x = FloatTensor(torch.linspace(0, in_w - 1, in_w).repeat(in_h, 1).repeat(
-            bs * self.num_anchors, 1, 1).view(x.shape))
-        grid_y = FloatTensor(torch.linspace(0, in_h - 1, in_h).repeat(in_w, 1).t().repeat(
-            bs * self.num_anchors, 1, 1).view(y.shape))
+        grid_x = FloatTensor(
+            torch.linspace(0, in_w - 1, in_w)
+            .repeat(in_h, 1)
+            .repeat(bs * self.num_anchors, 1, 1)
+            .view(x.shape)
+        )
+        grid_y = FloatTensor(
+            torch.linspace(0, in_h - 1, in_h)
+            .repeat(in_w, 1)
+            .t()
+            .repeat(bs * self.num_anchors, 1, 1)
+            .view(y.shape)
+        )
         # Calculate anchor w, h
         anchor_w = FloatTensor(scaled_anchors).index_select(1, LongTensor([0]))
         anchor_h = FloatTensor(scaled_anchors).index_select(1, LongTensor([1]))
-        anchor_w = anchor_w.repeat(bs, 1).repeat(
-            1, 1, in_h * in_w).view(w.shape)
-        anchor_h = anchor_h.repeat(bs, 1).repeat(
-            1, 1, in_h * in_w).view(h.shape)
+        anchor_w = anchor_w.repeat(bs, 1).repeat(1, 1, in_h * in_w).view(w.shape)
+        anchor_h = anchor_h.repeat(bs, 1).repeat(1, 1, in_h * in_w).view(h.shape)
         # Add offset and scale with anchors
         pred_boxes = prediction[..., :4].clone()
 
@@ -419,20 +492,49 @@ class YOLOHead(nn.Module):
         # check if is training
         if targets is not None:
             #  build target
-            if self.build_target_type == 'v5':
-                mask, obj_mask, \
-                    tx, ty, tw, th, \
-                    tgt_scale, tcls, nlabel = self.get_target_yolov5(targets, pred_boxes, image_size,
-                                                                     in_w, in_h,
-                                                                     stride_w, stride_h,
-                                                                     self.ignore_threshold)
+            if self.build_target_type == "v5":
+                (
+                    mask,
+                    obj_mask,
+                    tx,
+                    ty,
+                    tw,
+                    th,
+                    tgt_scale,
+                    tcls,
+                    nlabel,
+                ) = self.get_target_yolov5(
+                    targets,
+                    pred_boxes,
+                    image_size,
+                    in_w,
+                    in_h,
+                    stride_w,
+                    stride_h,
+                    self.ignore_threshold,
+                )
             else:
-                mask, obj_mask, \
-                    tx, ty, tw, th, \
-                    tgt_scale, tcls, nlabel, num_fg = self.get_target(targets, pred_boxes, image_size,
-                                                                      in_w, in_h,
-                                                                      stride_w, stride_h,
-                                                                      self.ignore_threshold)
+                (
+                    mask,
+                    obj_mask,
+                    tx,
+                    ty,
+                    tw,
+                    th,
+                    tgt_scale,
+                    tcls,
+                    nlabel,
+                    num_fg,
+                ) = self.get_target(
+                    targets,
+                    pred_boxes,
+                    image_size,
+                    in_w,
+                    in_h,
+                    stride_w,
+                    stride_h,
+                    self.ignore_threshold,
+                )
 
             mask, obj_mask = mask.cuda(), obj_mask.cuda()
             tx, ty, tw, th = tx.cuda(), ty.cuda(), tw.cuda(), th.cuda()
@@ -442,13 +544,12 @@ class YOLOHead(nn.Module):
                 # loss_conf = (obj_mask * self.bce_obj(conf, mask)).sum() / bs
                 # mask is positive samples
                 loss_obj = self.bce_obj(conf, mask)
-                loss_obj = (obj_mask * loss_obj)
+                loss_obj = obj_mask * loss_obj
                 # loss_obj_neg = (loss_obj * (1-mask)*obj_mask)
                 # loss_obj = loss_obj_pos + loss_obj_neg
                 loss_obj = loss_obj.sum()
 
-                loss_cls = self.bce_cls(
-                    pred_cls[mask == 1], tcls[mask == 1]).sum()
+                loss_cls = self.bce_cls(pred_cls[mask == 1], tcls[mask == 1]).sum()
 
                 x = x.unsqueeze(-1)
                 y = y.unsqueeze(-1)
@@ -489,7 +590,7 @@ class YOLOHead(nn.Module):
 
                 if pboxes.shape[0] > 0:
                     lbox = ciou(pboxes, tboxes, sum=False).to(pboxes.device)
-                    lbox = tgt_scale*lbox.T
+                    lbox = tgt_scale * lbox.T
                     lbox = lbox.sum()
                 else:
                     lbox = torch.tensor(self.eps).to(pboxes.device)
@@ -503,17 +604,20 @@ class YOLOHead(nn.Module):
                 }
             else:
                 loss_conf = (obj_mask * self.bce_obj(conf, mask)).sum() / bs
-                loss_cls = self.bce_cls(
-                    pred_cls[mask == 1], tcls[mask == 1]).sum() / bs
+                loss_cls = self.bce_cls(pred_cls[mask == 1], tcls[mask == 1]).sum() / bs
 
-                loss_x = (mask * tgt_scale *
-                          self.bce_loss(x * mask, tx * mask)).sum() / bs
-                loss_y = (mask * tgt_scale *
-                          self.bce_loss(y * mask, ty * mask)).sum() / bs
-                loss_w = (mask * tgt_scale *
-                          self.l1_loss(w * mask, tw * mask)).sum() / bs
-                loss_h = (mask * tgt_scale *
-                          self.l1_loss(h * mask, th * mask)).sum() / bs
+                loss_x = (
+                    mask * tgt_scale * self.bce_loss(x * mask, tx * mask)
+                ).sum() / bs
+                loss_y = (
+                    mask * tgt_scale * self.bce_loss(y * mask, ty * mask)
+                ).sum() / bs
+                loss_w = (
+                    mask * tgt_scale * self.l1_loss(w * mask, tw * mask)
+                ).sum() / bs
+                loss_h = (
+                    mask * tgt_scale * self.l1_loss(h * mask, th * mask)
+                ).sum() / bs
 
                 # we are not using loss_x, loss_y here, just using a simple ciou loss
                 loss = {
@@ -529,14 +633,29 @@ class YOLOHead(nn.Module):
             conf = torch.sigmoid(conf)
             pred_cls = torch.sigmoid(pred_cls)
             # Results
-            output = torch.cat((pred_boxes.view(bs, -1, 4),
-                                conf.view(bs, -1, 1), pred_cls.view(bs, -1, self.num_classes)), -1)
+            output = torch.cat(
+                (
+                    pred_boxes.view(bs, -1, 4),
+                    conf.view(bs, -1, 1),
+                    pred_cls.view(bs, -1, self.num_classes),
+                ),
+                -1,
+            )
             return output.data
 
-    def get_target(self, target, pred_boxes, img_size,
-                   in_w, in_h, stride_w, stride_h, ignore_threshold):
-
-        def FloatTensor(x): return torch.FloatTensor(x).to(pred_boxes.device)  # noqa
+    def get_target(
+        self,
+        target,
+        pred_boxes,
+        img_size,
+        in_w,
+        in_h,
+        stride_w,
+        stride_h,
+        ignore_threshold,
+    ):
+        def FloatTensor(x):
+            return torch.FloatTensor(x).to(pred_boxes.device)  # noqa
 
         bs = target.size(0)
 
@@ -544,24 +663,22 @@ class YOLOHead(nn.Module):
         # logger.info('stride_h, {}, stride_w: {}'.format(stride_h, stride_w))
         # logger.info('target shape: {}'.format(target.shape))
 
-        mask = torch.zeros(bs, self.num_anchors, in_h,
-                           in_w, requires_grad=False)
-        obj_mask = torch.ones(bs, self.num_anchors,
-                              in_h, in_w, requires_grad=False)
+        mask = torch.zeros(bs, self.num_anchors, in_h, in_w, requires_grad=False)
+        obj_mask = torch.ones(bs, self.num_anchors, in_h, in_w, requires_grad=False)
         tx = torch.zeros(bs, self.num_anchors, in_h, in_w, requires_grad=False)
         ty = torch.zeros(bs, self.num_anchors, in_h, in_w, requires_grad=False)
         tw = torch.zeros(bs, self.num_anchors, in_h, in_w, requires_grad=False)
         th = torch.zeros(bs, self.num_anchors, in_h, in_w, requires_grad=False)
-        tgt_scale = torch.zeros(bs, self.num_anchors,
-                                in_h, in_w, requires_grad=False)
+        tgt_scale = torch.zeros(bs, self.num_anchors, in_h, in_w, requires_grad=False)
 
-        tcls = torch.zeros(bs, self.num_anchors, in_h, in_w,
-                           self.num_classes, requires_grad=False)
+        tcls = torch.zeros(
+            bs, self.num_anchors, in_h, in_w, self.num_classes, requires_grad=False
+        )
         nlabel = (target.sum(dim=2) > 0).sum(dim=1)
-        gx_all = (target[:, :, 1] + target[:, :, 3]) / 2.0   # center x
+        gx_all = (target[:, :, 1] + target[:, :, 3]) / 2.0  # center x
         gy_all = (target[:, :, 2] + target[:, :, 4]) / 2.0  # center y
-        gw_all = (target[:, :, 3] - target[:, :, 1])        # width
-        gh_all = (target[:, :, 4] - target[:, :, 2])        # height
+        gw_all = target[:, :, 3] - target[:, :, 1]  # width
+        gh_all = target[:, :, 4] - target[:, :, 2]  # height
         gi_all = (gx_all / stride_w).to(torch.int16)
         gj_all = (gy_all / stride_h).to(torch.int16)
 
@@ -578,25 +695,25 @@ class YOLOHead(nn.Module):
             truth_j = gj_all[b, :n]
 
             # change match strategy, by not using IoU maxium
-            anchor_ious_all = bboxes_iou(truth_box.cpu(),
-                                         self.ref_anchors.type_as(truth_box.cpu()), xyxy=False)
+            anchor_ious_all = bboxes_iou(
+                truth_box.cpu(), self.ref_anchors.type_as(truth_box.cpu()), xyxy=False
+            )
             best_n_all = np.argmax(anchor_ious_all, axis=1)
             # so we know which level it belongs to, 3 might be len(anchors)
             best_n = best_n_all % 3
-            best_n_mask = ((best_n_all // 3) == self.level)
+            best_n_mask = (best_n_all // 3) == self.level
 
             truth_box[:n, 0] = gx_all[b, :n]
             truth_box[:n, 1] = gy_all[b, :n]
             pred_box = pred_boxes[b]
 
-            pred_ious = bboxes_iou(pred_box.view(-1, 4),
-                                   truth_box, xyxy=False)
+            pred_ious = bboxes_iou(pred_box.view(-1, 4), truth_box, xyxy=False)
             # print(pred_box.shape)
             # pred_ious = bboxes_iou2(pred_box.view(-1, 4),
             #                         truth_box, x1y1x2y2=False, CIoU=True)
 
             pred_best_iou, _ = pred_ious.max(dim=1)
-            pred_best_iou = (pred_best_iou > ignore_threshold)
+            pred_best_iou = pred_best_iou > ignore_threshold
             pred_best_iou = pred_best_iou.view(pred_box.shape[:3])
             obj_mask[b] = ~pred_best_iou
 
@@ -621,23 +738,31 @@ class YOLOHead(nn.Module):
                     tx[b, a, gj, gi] = gx / stride_w - gi
                     ty[b, a, gj, gi] = gy / stride_h - gj
                     # Width and height
-                    tw[b, a, gj, gi] = torch.log(
-                        gw / self.anchors[a][0] + 1e-16)
-                    th[b, a, gj, gi] = torch.log(
-                        gh / self.anchors[a][1] + 1e-16)
+                    tw[b, a, gj, gi] = torch.log(gw / self.anchors[a][0] + 1e-16)
+                    th[b, a, gj, gi] = torch.log(gh / self.anchors[a][1] + 1e-16)
 
-                    tgt_scale[b, a, gj, gi] = 2.0 - gw * \
-                        gh / (img_size[0] * img_size[1])
+                    tgt_scale[b, a, gj, gi] = 2.0 - gw * gh / (
+                        img_size[0] * img_size[1]
+                    )
                     # One-hot encoding of label
                     tcls[b, a, gj, gi, int(target[b, t, 0])] = 1
 
         num_fg = max(num_fg, 1)
         return mask, obj_mask, tx, ty, tw, th, tgt_scale, tcls, nlabel, num_fg
 
-    def get_target_yolov5(self, target, pred_boxes, img_size,
-                          in_w, in_h, stride_w, stride_h, ignore_threshold):
-
-        def FloatTensor(x): return torch.FloatTensor(x).to(pred_boxes.device)  # noqa
+    def get_target_yolov5(
+        self,
+        target,
+        pred_boxes,
+        img_size,
+        in_w,
+        in_h,
+        stride_w,
+        stride_h,
+        ignore_threshold,
+    ):
+        def FloatTensor(x):
+            return torch.FloatTensor(x).to(pred_boxes.device)  # noqa
 
         bs = target.size(0)
 
@@ -645,24 +770,22 @@ class YOLOHead(nn.Module):
         # logger.info('stride_h, {}, stride_w: {}'.format(stride_h, stride_w))
         # logger.info('target shape: {}'.format(target.shape))
 
-        mask = torch.zeros(bs, self.num_anchors, in_h,
-                           in_w, requires_grad=False)
-        obj_mask = torch.ones(bs, self.num_anchors,
-                              in_h, in_w, requires_grad=False)
+        mask = torch.zeros(bs, self.num_anchors, in_h, in_w, requires_grad=False)
+        obj_mask = torch.ones(bs, self.num_anchors, in_h, in_w, requires_grad=False)
         tx = torch.zeros(bs, self.num_anchors, in_h, in_w, requires_grad=False)
         ty = torch.zeros(bs, self.num_anchors, in_h, in_w, requires_grad=False)
         tw = torch.zeros(bs, self.num_anchors, in_h, in_w, requires_grad=False)
         th = torch.zeros(bs, self.num_anchors, in_h, in_w, requires_grad=False)
-        tgt_scale = torch.zeros(bs, self.num_anchors,
-                                in_h, in_w, requires_grad=False)
+        tgt_scale = torch.zeros(bs, self.num_anchors, in_h, in_w, requires_grad=False)
 
-        tcls = torch.zeros(bs, self.num_anchors, in_h, in_w,
-                           self.num_classes, requires_grad=False)
+        tcls = torch.zeros(
+            bs, self.num_anchors, in_h, in_w, self.num_classes, requires_grad=False
+        )
         nlabel = (target.sum(dim=2) > 0).sum(dim=1)
-        gx_all = (target[:, :, 1] + target[:, :, 3]) / 2.0   # center x
+        gx_all = (target[:, :, 1] + target[:, :, 3]) / 2.0  # center x
         gy_all = (target[:, :, 2] + target[:, :, 4]) / 2.0  # center y
-        gw_all = (target[:, :, 3] - target[:, :, 1])        # width
-        gh_all = (target[:, :, 4] - target[:, :, 2])        # height
+        gw_all = target[:, :, 3] - target[:, :, 1]  # width
+        gh_all = target[:, :, 4] - target[:, :, 2]  # height
         gi_all = (gx_all / stride_w).to(torch.int16)
         gj_all = (gy_all / stride_h).to(torch.int16)
 
@@ -692,26 +815,32 @@ class YOLOHead(nn.Module):
 
             # (todo) this strategy not work, find why
             anchor_indices_mask = get_matching_anchors(
-                truth_box.cpu(), self.ref_anchors.type_as(truth_box.cpu()), xyxy=False, anchor_ratio_thresh=self.anchor_ratio_thresh)
+                truth_box.cpu(),
+                self.ref_anchors.type_as(truth_box.cpu()),
+                xyxy=False,
+                anchor_ratio_thresh=self.anchor_ratio_thresh,
+            )
             # [[False, False, False, False,  True,  True, False, False, False],
             # [False, False, False, False, False, False, False,  True, False],
             # [False, False, False,  True,  True,  True, False, False, False],
             # [False,  True,  True,  True,  True, False, False, False, False]]  N x anchor_num
             # one box, might have more than one anchor in all 9 anchors
             # select mask of current level
-            anchor_indices_mask = anchor_indices_mask[:, self.level *
-                                                      self.num_anchors: self.level*self.num_anchors + self.num_anchors]
+            anchor_indices_mask = anchor_indices_mask[
+                :,
+                self.level * self.num_anchors : self.level * self.num_anchors
+                + self.num_anchors,
+            ]
             # now we get boxes anchor indices, of current level
 
             truth_box[:n, 0] = gx_all[b, :n]
             truth_box[:n, 1] = gy_all[b, :n]
             pred_box = pred_boxes[b]
 
-            pred_ious = bboxes_iou(pred_box.view(-1, 4),
-                                   truth_box, xyxy=False)
+            pred_ious = bboxes_iou(pred_box.view(-1, 4), truth_box, xyxy=False)
 
             pred_best_iou, _ = pred_ious.max(dim=1)
-            pred_best_iou = (pred_best_iou > ignore_threshold)
+            pred_best_iou = pred_best_iou > ignore_threshold
             pred_best_iou = pred_best_iou.view(pred_box.shape[:3])
             obj_mask[b] = ~pred_best_iou
 
@@ -741,13 +870,10 @@ class YOLOHead(nn.Module):
                 tx[b, a, gj, gi] = gx / stride_w - gi
                 ty[b, a, gj, gi] = gy / stride_h - gj
                 # Width and height
-                tw[b, a, gj, gi] = torch.log(
-                    gw / self.anchors[a][0] + 1e-16)
-                th[b, a, gj, gi] = torch.log(
-                    gh / self.anchors[a][1] + 1e-16)
+                tw[b, a, gj, gi] = torch.log(gw / self.anchors[a][0] + 1e-16)
+                th[b, a, gj, gi] = torch.log(gh / self.anchors[a][1] + 1e-16)
 
-                tgt_scale[b, a, gj, gi] = 2.0 - gw * \
-                    gh / (img_size[0] * img_size[1])
+                tgt_scale[b, a, gj, gi] = 2.0 - gw * gh / (img_size[0] * img_size[1])
                 # One-hot encoding of label
                 tcls[b, a, gj, gi, int(target[b, t, 0])] = 1
 
@@ -770,7 +896,7 @@ def get_matching_anchors(gt_boxes, anchors, anchor_ratio_thresh=2.1, xyxy=True):
     # print('r', r)
     # print(r.shape)
     r = r.squeeze(1)
-    j = torch.max(r, 1. / r).max(-1)[0] < anchor_ratio_thresh
+    j = torch.max(r, 1.0 / r).max(-1)[0] < anchor_ratio_thresh
     # print('j shape: ', j.shape)
     # j can be used for best_n_all
     return j

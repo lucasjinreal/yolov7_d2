@@ -1,0 +1,39 @@
+MODEL:
+  META_ARCHITECTURE: "SparseInst"
+  WEIGHTS: "detectron2://ImageNetPretrained/torchvision/R-50.pkl"
+  PIXEL_MEAN: [123.675, 116.280, 103.530]
+  PIXEL_STD: [58.395, 57.120, 57.375]
+  BACKBONE:
+    FREEZE_AT: 0
+    NAME: "build_resnet_backbone"
+  RESNETS:
+    NORM: "FrozenBN"
+    DEPTH: 50
+    STRIDE_IN_1X1: False
+    OUT_FEATURES: ["res3", "res4", "res5"]
+  SPARSE_INST:
+    ENCODER:
+      NAME: "InstanceContextEncoder"
+    DECODER:
+      NAME: "GroupIAMDecoder"
+DATASETS:
+  TRAIN: ("coco_2017_train",)
+  TEST:  ("coco_2017_val",)
+SOLVER:
+  IMS_PER_BATCH: 64
+  BASE_LR: 0.00005
+  STEPS: (210000, 250000)
+  MAX_ITER: 270000
+  WEIGHT_DECAY: 0.05
+INPUT:
+  MIN_SIZE_TRAIN: (416, 448, 480, 512, 544, 576, 608, 640)
+  MAX_SIZE_TRAIN: 853
+  MIN_SIZE_TEST: 640
+  MAX_SIZE_TEST: 853
+  FORMAT: "RGB"
+  MASK_FORMAT: "bitmask"
+TEST:
+  EVAL_PERIOD: 7330
+DATALOADER:
+  NUM_WORKERS: 6
+VERSION: 2

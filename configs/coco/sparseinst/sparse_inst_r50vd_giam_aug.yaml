@@ -1,0 +1,12 @@
+_BASE_: "Base-SparseInst.yaml"
+MODEL:
+  BACKBONE:
+    FREEZE_AT: 0
+    NAME: "build_resnet_vd_backbone"
+INPUT:
+  CROP:
+    ENABLED: True
+    TYPE: "absolute_range"
+    SIZE: (384, 600)
+  MASK_FORMAT: "polygon"
+OUTPUT_DIR: "output/sparse_inst_r50vd_giam_aug"

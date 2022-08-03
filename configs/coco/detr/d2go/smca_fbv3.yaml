@@ -1,0 +1,77 @@
+MODEL:
+  META_ARCHITECTURE: "DetrD2go"
+  PIXEL_MEAN: [123.675, 116.280, 103.530]
+  PIXEL_STD: [58.395, 57.120, 57.375]
+  MASK_ON: False
+  BACKBONE:
+    NAME: "FBNetV2C4Backbone"
+  FBNET_V2:
+    ARCH: "FBNetV3_A_dsmask_C5"
+    NORM: "sync_bn"
+    WIDTH_DIVISOR: 8
+    SCALE_FACTOR: 1.0
+    OUT_FEATURES: ["trunk4"]
+
+  DETR:
+    NUM_CLASSES: 80
+    CLS_WEIGHT: 2.0
+    DIM_FEEDFORWARD: 2048 # 1024 -> 2048
+    GIOU_WEIGHT: 2.0
+    L1_WEIGHT: 5.0
+    NUM_OBJECT_QUERIES: 300
+    CENTERED_POSITION_ENCODIND: True
+    USE_FOCAL_LOSS: True
+    NUM_FEATURE_LEVELS: 1
+    ATTENTION_TYPE: "SMCA"
+
+DATASETS:
+  TRAIN: ("coco_2017_train",)
+  TEST: ("coco_2017_val",)
+
+SOLVER:
+  AMP:
+    ENABLED: true
+  IMS_PER_BATCH: 64
+  BASE_LR: 0.0001
+  # STEPS: (295720,)
+  # MAX_ITER: 369650
+  STEPS: (73930, )
+  # MAX_ITER: 369650
+  MAX_ITER: 429650
+  WARMUP_FACTOR: 1.0
+  WARMUP_ITERS: 10
+  WEIGHT_DECAY: 0.0001
+  OPTIMIZER: "ADAMW"
+  CLIP_GRADIENTS:
+    ENABLED: True
+    CLIP_TYPE: "full_model"
+    CLIP_VALUE: 0.1
+    NORM_TYPE: 2.0
+  LR_MULTIPLIER_OVERWRITE:
+    [{ "backbone": 1.2 }, { "reference_points": 0.1, "sampling_offsets": 0.1 }]
+
+# 0.00012 0.1 25.17,23.09,21.96
+# 0.00012 0.9 24,   22.29, 21.88
+# 0.00019 0.9 25.32,23.81, 23.46
+# 0.0001  0.9 24.37, 22.35, 21.57, 21.02, 20.76
+# 0.0001  1.2 23.83, 22.09, 
+
+INPUT:
+  MIN_SIZE_TRAIN: (480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800)
+  CROP:
+    ENABLED: True
+    TYPE: "absolute_range"
+    SIZE: (384, 600)
+  FORMAT: "RGB"
+# D2GO_DATA:
+#   MAPPER:
+#     NAME: "DETRDatasetMapper"
+
+TEST:
+  EVAL_PERIOD: 4000
+DATALOADER:
+  FILTER_EMPTY_ANNOTATIONS: False
+  NUM_WORKERS: 4
+VERSION: 2
+
+OUTPUT_DIR: "output/coco_smcadetr_d2go_fbv3"

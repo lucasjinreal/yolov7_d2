@@ -1,0 +1,68 @@
+MODEL:
+  META_ARCHITECTURE: "AnchorDetr"
+  WEIGHTS: "detectron2://ImageNetPretrained/torchvision/R-50.pkl"
+  # WEIGHTS: "weights/R-50.pkl"
+  PIXEL_MEAN: [123.675, 116.280, 103.530]
+  PIXEL_STD: [58.395, 57.120, 57.375]
+  MASK_ON: False
+  RESNETS:
+    DEPTH: 50
+    STRIDE_IN_1X1: False
+    OUT_FEATURES: ["res2", "res3", "res4", "res5"]
+  DETR:
+    GIOU_WEIGHT: 2.0
+    L1_WEIGHT: 5.0
+    NUM_QUERY_POSITION: 300
+    DIM_FEEDFORWARD: 1024
+    DROPOUT: 0.0
+    ENC_LAYERS: 6
+    DEC_LAYERS: 6
+    HIDDEN_DIM: 256
+    NUM_CLASSES: 80
+  YOLO:
+    CONF_THRESHOLD: 0.001
+    IGNORE_THRESHOLD: 0.07
+
+DATASETS:
+  TRAIN: ("coco_2017_train",)
+  TEST: ("coco_2017_val",)
+
+SOLVER:
+  AMP:
+    ENABLED: true
+  IMS_PER_BATCH: 64
+  # BASE_LR: 0.0002 # 0.00025 is better
+  BASE_LR: 0.00025 # lr should be a little bit larger
+  # STEPS: (295720, )
+  STEPS: (73930, )
+  # MAX_ITER: 369650
+  MAX_ITER: 409650
+  WARMUP_FACTOR: 1.0
+  WARMUP_ITERS: 10
+  WEIGHT_DECAY: 0.0001
+  OPTIMIZER: "ADAMW"
+  LR_MULTIPLIER_OVERWRITE:
+    [{ "backbone": 0.1 }, { "reference_points": 0.1, "sampling_offsets": 0.1 }]
+  CLIP_GRADIENTS:
+    ENABLED: True
+    CLIP_TYPE: "full_model"
+    # CLIP_TYPE: "norm"
+    CLIP_VALUE: 0.1
+    NORM_TYPE: 2.0
+INPUT:
+  MIN_SIZE_TRAIN: (480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800)
+  CROP:
+    ENABLED: True
+    TYPE: "absolute_range"
+    SIZE: (384, 600)
+    # SIZE: (384, 632)
+  FORMAT: "RGB"
+TEST:
+  EVAL_PERIOD: 7393 # 1 epoch same as bs=2
+DATALOADER:
+  FILTER_EMPTY_ANNOTATIONS: False
+  NUM_WORKERS: 2
+VERSION: 2
+
+VIS_PERIOD: 100
+OUTPUT_DIR: "output/coco_anchordetr"

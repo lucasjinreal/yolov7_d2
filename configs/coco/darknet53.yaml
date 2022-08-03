@@ -1,4 +1,4 @@
-_BASE_: "../Base-YoloV7.yaml"
+_BASE_: "../Base-YOLOv7.yaml"
 MODEL:
   WEIGHTS: ""
   MASK_ON: False
@@ -23,6 +23,9 @@ MODEL:
     CONF_THRESHOLD: 0.2
     NMS_THRESHOLD: 0.1
     IGNORE_THRESHOLD: 0.6
+    NECK:
+      TYPE: "fpn"
+      WITH_SPP: True
 DATASETS:
   TRAIN: ("coco_2017_train",)
   TEST: ("coco_2017_val",)

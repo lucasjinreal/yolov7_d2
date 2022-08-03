@@ -1,0 +1,4 @@
+*.pt
+*.torchscript
+data/
+vendor/

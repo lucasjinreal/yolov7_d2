@@ -24,7 +24,7 @@ from yolov7.utils.misc import NestedTensor, nested_tensor_from_tensor_list, is_d
 from alfred.utils.log import logger
 
 from ..backbone.detr_backbone import Joiner, PositionEmbeddingSine, Transformer
-from .detr_seg import DETRsegm, PostProcessPanoptic, PostProcessSegm
+from .detr_seg import DETRsegm, PostProcessPanoptic, PostProcessSegm, sigmoid_focal_loss, dice_loss
 
 
 __all__ = ["Detr"]
@@ -173,6 +173,7 @@ class Detr(nn.Module):
             for k in loss_dict.keys():
                 if k in weight_dict:
                     loss_dict[k] *= weight_dict[k]
+            print(loss_dict)
             return loss_dict
         else:
             if self.onnx_export:
@@ -181,7 +182,7 @@ class Detr(nn.Module):
                 scores, labels = F.softmax(box_cls, dim=-1)[:, :, :-1].max(-1)
                 box_pred = box_cxcywh_to_xyxy(box_pred)
                 labels = labels.to(torch.float)
-                print(scores.shape)
+                # print(scores.shape)
                 # print(scores.unsqueeze(0).shape)
                 a = torch.cat([box_pred, scores.unsqueeze(-1), labels.unsqueeze(-1)], dim=-1)
                 return a
@@ -189,6 +190,8 @@ class Detr(nn.Module):
                 box_cls = output["pred_logits"]
                 box_pred = output["pred_boxes"]
                 mask_pred = output["pred_masks"] if self.mask_on else None
+                
+                # print(mask_pred.shape)
                 results = self.inference(box_cls, box_pred, mask_pred, images.image_sizes)
                 processed_results = []
                 for results_per_image, input_per_image, image_size in zip(results, batched_inputs, images.image_sizes):
@@ -244,12 +247,18 @@ class Detr(nn.Module):
 
             result.pred_boxes.scale(scale_x=image_size[1], scale_y=image_size[0])
             if self.mask_on:
-                mask = F.interpolate(mask_pred[i].unsqueeze(0), size=image_size, mode='bilinear', align_corners=False)
+                mask_pred_per_image = mask_pred[i]
+                mask_pred_per_image = mask_pred_per_image[indexes]
+
+                mask = F.interpolate(mask_pred_per_image.unsqueeze(0), size=image_size, mode='bilinear', align_corners=False)
                 mask = mask[0].sigmoid() > 0.5
                 B, N, H, W = mask_pred.shape
-                mask = BitMasks(mask.cpu()).crop_and_resize(result.pred_boxes.tensor.cpu(), 32)
-                result.pred_masks = mask.unsqueeze(1).to(mask_pred[0].device)
-
+                # print('mask_pred shape: ', mask.shape)
+                # mask = BitMasks(mask.cpu()).crop_and_resize(result.pred_boxes.tensor.cpu(), 32)
+                mask = BitMasks(mask.cpu())
+                # result.pred_masks = mask.unsqueeze(1).to(mask_pred[0].device)
+                result.pred_bit_masks = mask.to(mask_pred_per_image.device)
+            # print('box_pred_per_image: ', box_pred_per_image.shape)
             result.scores = scores_per_image
             result.pred_classes = labels_per_image
             results.append(result)
@@ -438,7 +447,6 @@ class DETR(nn.Module):
             # print('samples: ', samples.shape)
         # print(samples, type(samples))
         features, pos = self.backbone(samples)
-        # print(features, 'features')
 
         src, mask = features[-1].decompose()
         assert mask is not None
