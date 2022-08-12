@@ -4,8 +4,9 @@ from typing import Union, Dict, Any
 
 import cv2
 import numpy as np
-import wandb
+import torch
 from alfred.vis.image.get_dataset_label_map import coco_label_map_list
+from detectron2.utils.events import get_event_storage, EventWriter
 from detectron2.utils.visualizer import GenericMask
 
 coco_label_map = {k: v for k, v in enumerate(coco_label_map_list) if isinstance(v, str)}
@@ -13,6 +14,10 @@ coco_label_map = {k: v for k, v in enumerate(coco_label_map_list) if isinstance(
 
 def is_wandb_available():
     return importlib.util.find_spec("wandb") is not None
+
+
+if is_wandb_available():
+    import wandb
 
 
 class WandbFormatter:
@@ -205,3 +210,43 @@ class WandbInferenceLogger:
             return None
         self.run.log({self.dataset_name: self.table})
         self.run.finish()
+
+
+class WandbWriter(EventWriter):
+    """
+    Write all scalars to weights and biases.
+    """
+
+    def __init__(self, project=None, window_size: int = 20, **kwargs):
+        """
+        Args:
+            project (str): the name of the wandb project
+            window_size (int): the scalars will be median-smoothed by this window size
+            kwargs: other arguments passed to `wandb.init(...)`
+        """
+        self._window_size = window_size
+        if project:
+            self.run = wandb.init(project=project, **kwargs)
+        else:
+            self.run = wandb.run if wandb.run else None
+
+    def write(self):
+        if self.run is None:
+            # wandb not initialized
+            return
+
+        storage = get_event_storage()
+        log_dict = {}
+        for k, v in storage.latest_with_smoothing_hint(self._window_size).items():
+            # print(k, v)
+            log_dict[k] = v[0]
+
+        if len(storage._vis_data) >= 1:
+            # TODO: mask_head logs images with indexes in the name like (23), so it
+            # generates a lot of keys per step. We should fix that. Might need to
+            # parse the image name, or send a patch to detectron
+            for img_name, img, step_num in storage._vis_data:
+                img = torch.tensor(img)
+                log_dict[img_name] = wandb.Image(img.permute(1, 2, 0).cpu().numpy())
+            storage.clear_images()
+        self.run.log(log_dict, step=storage.iter)

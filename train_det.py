@@ -37,6 +37,17 @@ class Trainer(DefaultTrainer):
         model = build_model(cfg)
         return model
 
+    def build_writers(self):
+        if self.cfg.WANDB.ENABLED is is_wandb_available():
+            from wandadb.wandb_logger import WandbWriter
+
+            writers = super().build_writers() + [
+                WandbWriter(self.cfg.WANDB.PROJECT_NAME)
+            ]
+        else:
+            writers = super().build_writers()
+        return writers
+
 
 def setup(args):
     cfg = get_cfg()
