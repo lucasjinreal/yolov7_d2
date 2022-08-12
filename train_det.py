@@ -39,7 +39,7 @@ class Trainer(DefaultTrainer):
 
     def build_writers(self):
         if self.cfg.WANDB.ENABLED is is_wandb_available():
-            from wandadb.wandb_logger import WandbWriter
+            from loggers.wandb_logger import WandbWriter
 
             writers = super().build_writers() + [
                 WandbWriter(self.cfg.WANDB.PROJECT_NAME)
