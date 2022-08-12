@@ -11,8 +11,8 @@ from detectron2.engine import DefaultTrainer, default_argument_parser, launch
 from detectron2.evaluation import COCOEvaluator
 from detectron2.data import MetadataCatalog, build_detection_train_loader
 from detectron2.modeling import build_model
-from detectron2.utils import comm
-from yolov7.data.dataset_mapper import MyDatasetMapper, MyDatasetMapper2
+
+from loggers.wandb_logger import is_wandb_available
 from yolov7.config import add_yolo_config
 from yolov7.utils.d2overrides import default_setup
 
