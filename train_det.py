@@ -12,7 +12,7 @@ from detectron2.evaluation import COCOEvaluator
 from detectron2.data import MetadataCatalog, build_detection_train_loader
 from detectron2.modeling import build_model
 
-from loggers.wandb_logger import is_wandb_available
+from yolov7.utils.wandb.wandb_logger import is_wandb_available
 from yolov7.config import add_yolo_config
 from yolov7.utils.d2overrides import default_setup
 
@@ -39,7 +39,7 @@ class Trainer(DefaultTrainer):
 
     def build_writers(self):
         if self.cfg.WANDB.ENABLED is is_wandb_available():
-            from loggers.wandb_logger import WandbWriter
+            from yolov7.utils.wandb.wandb_logger import WandbWriter
 
             writers = super().build_writers() + [
                 WandbWriter(self.cfg.WANDB.PROJECT_NAME)
