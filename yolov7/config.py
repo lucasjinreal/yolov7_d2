@@ -308,3 +308,8 @@ def add_yolo_config(cfg):
     _C.INPUT.GRID_MASK.PROB = 0.3
     _C.INPUT.GRID_MASK.USE_HEIGHT = True
     _C.INPUT.GRID_MASK.USE_WIDTH = True
+
+    # Wandb Part
+    _C.WANDB = CN()
+    _C.WANDB.ENABLED = False
+    _C.WANDB.PROJECT_NAME = "yolov7"

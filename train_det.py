@@ -15,6 +15,7 @@ from detectron2.utils import comm
 from yolov7.data.dataset_mapper import MyDatasetMapper, MyDatasetMapper2
 from yolov7.config import add_yolo_config
 from yolov7.utils.d2overrides import default_setup
+from yolov7.utils.wandb.wandb_logger import is_wandb_available
 
 
 class Trainer(DefaultTrainer):
@@ -36,6 +37,17 @@ class Trainer(DefaultTrainer):
     def build_model(cls, cfg):
         model = build_model(cfg)
         return model
+
+    def build_writers(self):
+        if self.cfg.WANDB.ENABLED is is_wandb_available():
+            from yolov7.utils.wandb.wandb_logger import WandbWriter
+
+            writers = super().build_writers() + [
+                WandbWriter(self.cfg.WANDB.PROJECT_NAME)
+            ]
+        else:
+            writers = super().build_writers()
+        return writers
 
 
 def setup(args):
