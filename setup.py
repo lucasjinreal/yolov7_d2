@@ -22,14 +22,14 @@ def get_version():
 
 if __name__ == "__main__":
     setup(
-        name="yolov7",
+        name="yolov7_d2",
         version=get_version(),
-        description="YOLOv7 is a high-level training framework based on detectron2",
+        description="YOLOv7D2 is a high-level training framework based on detectron2",
         long_description="",
         author="LucasJin",
         author_email="jinfagang19@163.com",
         keywords="computer vision, object detection",
-        url="https://github.com/jinfagang/yolov7",
+        url="https://github.com/jinfagang/yolov7_d2",
         packages=find_packages(exclude=("configs", "tools", "demo", "images")),
         classifiers=[
             "Development Status :: 4 - Beta",
