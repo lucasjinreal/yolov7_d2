@@ -1,10 +1,7 @@
 
 <div align="center">
 
-<img src="https://s4.ax1x.com/2022/02/01/Hk2dtP.png">
-
-<h1>YOLOv7 - Make YOLO Great Again</h1>
-
+<img src="https://s1.ax1x.com/2022/08/21/vy5nHJ.png">
 
 [Documentation](https://github.com/jinfagang/yolov7) •
 [Installation Instructions](https://github.com/jinfagang/yolov7) •
@@ -13,31 +10,20 @@
 [Reporting Issues](https://github.com/jinfagang/yolov7/issues/new?assignees=&labels=&template=bug-report.yml)
 
 
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/yolort)](https://pypi.org/project/alfred-py/)
-[![PyPI downloads](https://static.pepy.tech/personalized-badge/alfred-py?period=total&units=international_system&left_color=grey&right_color=blue&left_text=pypi%20downloads)](https://pepy.tech/project/yolort)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/yolort)](https://pypi.org/project/yolov7-d2/)
+[![PyPI downloads](https://static.pepy.tech/personalized-badge/alfred-py?period=total&units=international_system&left_color=grey&right_color=blue&left_text=pypi%20downloads)](https://pepy.tech/project/yolov7-d2)
 [![Github downloads](https://img.shields.io/github/downloads/jinfagang/yolov7/total?color=blue&label=downloads&logo=github&logoColor=lightgrey)](https://img.shields.io/github/downloads/jinfagang/yolov7/total?color=blue&label=Downloads&logo=github&logoColor=lightgrey)
 
-[![codecov](https://codecov.io/gh/zhiqwang/yolov5-rt-stack/branch/main/graph/badge.svg?token=1GX96EA72Y)](https://codecov.io/gh/zhiqwang/yolov5-rt-stack)
-[![license](https://img.shields.io/github/license/zhiqwang/yolov5-rt-stack?color=dfd)](LICENSE)
-[![Slack](https://img.shields.io/badge/slack-chat-aff.svg?logo=slack)](https://join.slack.com/t/yolort/shared_invite/zt-mqwc7235-940aAh8IaKYeWclrJx10SA)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-pink.svg)](https://github.com/jinfagang/yolov7/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
 
 </div>
 
-## Migration Warning!
 
-Since someone else created another YOLOv7 **after** us, We don't want make people messed up with 2 of them, **Also we don't want chasing the meaningless AP number as sort of stunts**. So We plan to move further development of YOLOv7 into new place -> [YOLOvn link](https://github.com/jinfagang/yolovn). **new famework will keep development forever!!** These unfinished PRs will merge then start migrate. Thanks for everyone's contribution! Again, new framework is not only for re-implement SOTA models but also exploring new model design, **we are not only exploring detection, but also multi-tasking and new transformer arch design**.
+> this is another yolov7 implementation based on detectron2, YOLOX, YOLOv6, YOLOv5, DETR, Anchor-DETR, DINO and some other SOTA detection models also supported. The ultimate goal of yolov7-d2 is to build a powerful weapon for **anyone** who wants a SOTA detector and train it **without pain**. It's extremly easy for users to build any **Multi-Head** models on yolov2-d2, for example, our E2E pose estimation is build on yolov2-d2 and works very well.
 
-
-
-> In short: **YOLOv7 added instance segmentation to YOLO arch**. Also many transformer backbones, archs included. If you look carefully, you'll find our ultimate vision is to **make YOLO great again** by the power of **transformers**, as well as **multi-tasks training**. YOLOv7 achieves mAP 43, AP-s exceed MaskRCNN by 10 with a convnext-tiny backbone while simillar speed with YOLOX-s, more models listed below, it's more accurate and even more lighter!
-
-> GPU resources wanted! yolov7 next version is up-coming, however, I didn't have enough GPU to train pretrained models for everyone, if you have GPUs, please fire a discussion and ping me, I will guide to train new models.
 
 Thanks for Aarohi's youtube vlog for guaidance of yolov7: https://www.youtube.com/watch?v=ag88beS_fvM , if you want a quick start, take a look at this nice introduction on yolov7 and detectron2.
 
-For someone who still said we shouldn't name yolov7, here is the clarify: We create repo much much more earlier than someone else's paper, we also don't want make you confuse, but as we said, we take this name long long time ago. Besides, our yolov7 is a framework, whole **modeling is very intuitive** not like yolov5's yml config model way, it's pure in python all at your control. And inside yolov7, we supported a huge range of combination such as YOLOX, YOLOX-Lite, YOLOX-Mask, YOLOX-Keypoint, YOLOv6 Head, YOLOv4, Mosiac Augmentation etc. **Using which framework is at your choice, please stop bothering us at naming, please take a look at the create repo time screenshot below**. **WE ARE EXISTED ALREADY LAST YEAR**.
-![](https://raw.githubusercontent.com/jinfagang/public_images/master/20220718184052.png)
 
 ## New version will release!
 
@@ -98,6 +84,7 @@ If you want get full version YOLOv7, either **become a contributor** or get from
 
 ## 🆕 News!
 
+- ***2022.08.20***: Our new **lightweighted model MobileOne-S0-YOLOX-Lite** achieves mAP 30! surpressed yolox-nano or other lightweighted CPU models!
 - ***2022.07.26***: Now we are preparing release new pose model;
 - ***2022.06.25***: Meituan's YOLOv6 training has been supported in YOLOv7!
 - ***2022.06.13***: New model **YOLOX-Convnext-tiny** got a ~~41.3~~ 43 mAP beats yolox-s, AP-small even higher!;
