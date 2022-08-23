@@ -13,6 +13,7 @@ from .transforms.augmentation_impl import (
 from detectron2.data.transforms import RandomFlip, RandomBrightness, RandomLighting, RandomSaturation
 from detectron2.data.transforms import RandomFlip
 from alfred.vis.image.det import visualize_det_cv2_part, visualize_det_cv2_fancy
+from pycocotools import mask as mask_util
 
 
 def build_augmentation(cfg, is_train):

@@ -206,7 +206,7 @@ if __name__ == "__main__":
 
     iter = ImageSourceIter(args.input)
     if args.wandb_project is not None:
-        from wandadb.wandb_logger import WandbInferenceLogger
+        from yolov7.utils.wandb.wandb_logger import WandbInferenceLogger
 
         inference_logger = WandbInferenceLogger(
             wandb_entity=args.wandb_entity,

@@ -1,4 +1,4 @@
-_BASE_: "../Base-YoloV7.yaml"
+_BASE_: "../Base-YOLOv7.yaml"
 MODEL:
   WEIGHTS: ""
   META_ARCHITECTURE: "YOLOV7"

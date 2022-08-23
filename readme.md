@@ -1,10 +1,7 @@
 
 <div align="center">
 
-<img src="https://s4.ax1x.com/2022/02/01/Hk2dtP.png">
-
-<h1>YOLOv7 - Make YOLO Great Again</h1>
-
+<img src="https://s1.ax1x.com/2022/08/21/vy5nHJ.png">
 
 [Documentation](https://github.com/jinfagang/yolov7) •
 [Installation Instructions](https://github.com/jinfagang/yolov7) •
@@ -13,26 +10,19 @@
 [Reporting Issues](https://github.com/jinfagang/yolov7/issues/new?assignees=&labels=&template=bug-report.yml)
 
 
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/yolort)](https://pypi.org/project/alfred-py/)
-[![PyPI downloads](https://static.pepy.tech/personalized-badge/alfred-py?period=total&units=international_system&left_color=grey&right_color=blue&left_text=pypi%20downloads)](https://pepy.tech/project/yolort)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/yolort)](https://pypi.org/project/yolov7-d2/)
+[![PyPI downloads](https://static.pepy.tech/personalized-badge/alfred-py?period=total&units=international_system&left_color=grey&right_color=blue&left_text=pypi%20downloads)](https://pepy.tech/project/yolov7-d2)
 [![Github downloads](https://img.shields.io/github/downloads/jinfagang/yolov7/total?color=blue&label=downloads&logo=github&logoColor=lightgrey)](https://img.shields.io/github/downloads/jinfagang/yolov7/total?color=blue&label=Downloads&logo=github&logoColor=lightgrey)
 
-[![codecov](https://codecov.io/gh/zhiqwang/yolov5-rt-stack/branch/main/graph/badge.svg?token=1GX96EA72Y)](https://codecov.io/gh/zhiqwang/yolov5-rt-stack)
-[![license](https://img.shields.io/github/license/zhiqwang/yolov5-rt-stack?color=dfd)](LICENSE)
-[![Slack](https://img.shields.io/badge/slack-chat-aff.svg?logo=slack)](https://join.slack.com/t/yolort/shared_invite/zt-mqwc7235-940aAh8IaKYeWclrJx10SA)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-pink.svg)](https://github.com/jinfagang/yolov7/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
 
 </div>
 
-## Migration Warning!
 
-Since someone else created another YOLOv7 **after** us, We don't want make people messed up with 2 of them, **Also we don't want chasing the meaningless AP number as sort of stunts**. So We plan to move further development of YOLOv7 into new place -> [YOLOvn link](https://github.com/jinfagang/yolovn). **new famework will keep development forever!!** These unfinished PRs will merge then start migrate. Thanks for everyone's contribution! Again, new framework is not only for re-implement SOTA models but also exploring new model design, **we are not only exploring detection, but also multi-tasking and new transformer arch design**. 
-
+> this is another yolov7 implementation based on detectron2, YOLOX, YOLOv6, YOLOv5, DETR, Anchor-DETR, DINO and some other SOTA detection models also supported. The ultimate goal of yolov7-d2 is to build a powerful weapon for **anyone** who wants a SOTA detector and train it **without pain**. It's extremly easy for users to build any **Multi-Head** models on yolov2-d2, for example, our E2E pose estimation is build on yolov2-d2 and works very well.
 
 
-> In short: **YOLOv7 added instance segmentation to YOLO arch**. Also many transformer backbones, archs included. If you look carefully, you'll find our ultimate vision is to **make YOLO great again** by the power of **transformers**, as well as **multi-tasks training**. YOLOv7 achieves mAP 43, AP-s exceed MaskRCNN by 10 with a convnext-tiny backbone while simillar speed with YOLOX-s, more models listed below, it's more accurate and even more lighter!
-
-> GPU resources wanted! yolov7 next version is up-coming, however, I didn't have enough GPU to train pretrained models for everyone, if you have GPUs, please fire a discussion and ping me, I will guide to train new models.
+Thanks for Aarohi's youtube vlog for guaidance of yolov7: https://www.youtube.com/watch?v=ag88beS_fvM , if you want a quick start, take a look at this nice introduction on yolov7 and detectron2.
 
 
 ## New version will release!
@@ -47,7 +37,7 @@ For more details, refer to [read the doc](https://yolov7.readthedocs.io/en/lates
 
 Just **fork and star!**, you will be noticed once we release the new version!
 
-🔥🔥🔥 Just another yolo variant implemented based on **`detectron2`**. But note that **YOLOv7 isn't meant to be a successor of yolo family, 7 is just a magic and lucky number. Instead, YOLOv7 extends yolo into many other vision tasks, such as instance segmentation, one-stage keypoints detection etc.**. 
+🔥🔥🔥 Just another yolo variant implemented based on **`detectron2`**. But note that **YOLOv7 isn't meant to be a successor of yolo family, 7 is just a magic and lucky number. Instead, YOLOv7 extends yolo into many other vision tasks, such as instance segmentation, one-stage keypoints detection etc.**.
 
 The supported matrix in YOLOv7 are:
 
@@ -82,7 +72,7 @@ The supported matrix in YOLOv7 are:
 Features are ready but not opensource yet:
 
 - [x] Convnext training on YOLOX, higher accuracy than original YOLOX;
-- [x] GFL loss support; 
+- [x] GFL loss support;
 - [x] **MobileVit-V2** backbone available;
 - [x] CSPRep-Resnet: a repvgg style resnet used in PP-YOLOE but in pytorch rather than paddle;
 - [ ] VitDet support;
@@ -94,6 +84,8 @@ If you want get full version YOLOv7, either **become a contributor** or get from
 
 ## 🆕 News!
 
+- ***2022.08.20***: Our new **lightweighted model MobileOne-S0-YOLOX-Lite** achieves mAP 30! surpressed yolox-nano or other lightweighted CPU models!
+- ***2022.07.26***: Now we are preparing release new pose model;
 - ***2022.06.25***: Meituan's YOLOv6 training has been supported in YOLOv7!
 - ***2022.06.13***: New model **YOLOX-Convnext-tiny** got a ~~41.3~~ 43 mAP beats yolox-s, AP-small even higher!;
 - ***2022.06.09***: **GFL**, general focal loss supported;
@@ -128,14 +120,14 @@ Here are some tasks need to be claimed:
 - [ ] ViDet: [code](https://github.com/naver-ai/vidt), this provides a realtime detector based on transformer, Swin-Nano mAP: 40, while 20 FPS, it can be integrated into YOLOv7;
   - [ ] Integrate into D2 backbone, remove MSAtten deps;
   - [ ] Test with YOLOv7 or DETR arch;
-- [ ] DINO: 63.3mAP highest in 2022 on coco. https://github.com/IDEACVR/DINO
-  - [ ] waiting for DINO opensource code.
+- [ ] DINO: 63.3mAP highest in 2022 on coco.
+  - [ ] Code for [DINO](https://arxiv.org/abs/2203.03605) is avaliable [here](https://github.com/IDEACVR/DINO).
 - [x] ConvNext: https://github.com/facebookresearch/ConvNeXt, combined convolution and transformer.
 - [ ] NASVit: https://github.com/facebookresearch/NASViT
 - [ ] MobileVIT: https://github.com/apple/ml-cvnets/blob/main/cvnets/models/classification/mobilevit.py
 - [ ] DAB-DETR: https://github.com/IDEA-opensource/DAB-DETR, WIP
 - [ ] DN-DETR: https://github.com/IDEA-opensource/DN-DETR
-- [ ] https://github.com/jahongir7174/EfficientNetV2
+- [ ] EfficientNetV2: https://github.com/jahongir7174/EfficientNetV2
 
 Just join our in-house contributor plan, you can share our newest code with your contribution!
 
@@ -150,6 +142,8 @@ Just join our in-house contributor plan, you can share our newest code with your
 ![](https://s1.ax1x.com/2022/05/09/OJnXjI.png)  |  ![](https://s1.ax1x.com/2022/05/09/OJuuUU.png)
 ![](https://raw.githubusercontent.com/jinfagang/public_images/master/20220613110908.png) | ![](https://raw.githubusercontent.com/jinfagang/public_images/master/20220613111122.png)
 ![](https://raw.githubusercontent.com/jinfagang/public_images/master/20220613111139.png) | ![](https://raw.githubusercontent.com/jinfagang/public_images/master/20220613111239.png)
+![](https://s2.loli.net/2022/07/26/1Msgxupz4VWboqX.png) | ![](https://s2.loli.net/2022/07/26/NzahO46qcsU52Gn.png)
+![](https://raw.githubusercontent.com/jinfagang/public_images/master/20220801102656.png) | ![](https://raw.githubusercontent.com/jinfagang/public_images/master/20220801102828.png)
 
 
 
@@ -192,7 +186,7 @@ We are strongly recommend you send PR if you have any further development on thi
 | [SparseInst (G-IAM)](configs/sparse_inst_r50_dcn_giam_aug.yaml) | [R-50-DCN]() | 608 | &#10003;| 36.4 | 36.8 | 41.6 | [model](https://drive.google.com/file/d/1qxdLRRHbIWEwRYn-NPPeCCk6fhBjc946/view?usp=sharing) |
 | [SparseInst (G-IAM)](configs/sparse_inst_r50vd_giam_aug.yaml) | [R-50-vd](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 608 | &#10003;| 35.6 | 36.1 | 42.8| [model](https://drive.google.com/file/d/1dlamg7ych_BdWpPUCuiBXbwE0SXpsfGx/view?usp=sharing) |
 | [SparseInst (G-IAM)](configs/sparse_inst_r50vd_dcn_giam_aug.yaml) | [R-50-vd-DCN](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 608 | &#10003; | 37.4 | 37.9 | 40.0  | [model](https://drive.google.com/file/d/1clYPdCNrDNZLbmlAEJ7wjsrOLn1igOpT/view?usp=sharing)|
-| [SparseInst (G-IAM)](sparse_inst_r50vd_dcn_giam_aug.yaml) | [R-50-vd-DCN](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 640 | &#10003; | 37.7 | 38.1 | 39.3 |  [model](https://drive.google.com/file/d/1clYPdCNrDNZLbmlAEJ7wjsrOLn1igOpT/view?usp=sharing)| 
+| [SparseInst (G-IAM)](sparse_inst_r50vd_dcn_giam_aug.yaml) | [R-50-vd-DCN](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnet50d_ra2-464e36ba.pth) | 640 | &#10003; | 37.7 | 38.1 | 39.3 |  [model](https://drive.google.com/file/d/1clYPdCNrDNZLbmlAEJ7wjsrOLn1igOpT/view?usp=sharing)|
 | SparseInst Int8 onnx | [google drive](https://drive.google.com/file/d/1FYn_0p3RXzKaTGzTfdiJI1YhAexA_V3s/view?usp=sharing) |
 
 
@@ -201,8 +195,8 @@ We are strongly recommend you send PR if you have any further development on thi
 
 | model | backbone | input | aug | AP |  AP50 |  APs  | FPS | weights |
 | :---- | :------  | :---: | :-: |:---: | :--: | :-: | :-: | :-----: |
-| [YoloFormer-Convnext-tiny](configs/coco/yolotr/yolotr_convnext.yaml) | [Convnext-tiny](https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_224.pth) | 800 | &#10003; | 43 | 63.7 | 26.5 | 39.3 |  [model](https://drive.google.com/file/d/1bTedWQaENvlFknqyQreBKA1HoAMOtHkn/view?usp=sharing)| 
-| [YOLOX-s](configs/coco/yolox_s.yaml) | - | 800 | &#10003; | 40.5 | - | - | 39.3 |  [model](https://drive.google.com/file/d/1clYPdCNrDNZLbmlAEJ7wjsrOLn1igOpT/view?usp=sharing)| 
+| [YoloFormer-Convnext-tiny](configs/coco/yolotr/yolotr_convnext.yaml) | [Convnext-tiny](https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_224.pth) | 800 | &#10003; | 43 | 63.7 | 26.5 | 39.3 |  [model](https://drive.google.com/file/d/1bTedWQaENvlFknqyQreBKA1HoAMOtHkn/view?usp=sharing)|
+| [YOLOX-s](configs/coco/yolox_s.yaml) | - | 800 | &#10003; | 40.5 | - | - | 39.3 |  [model](https://drive.google.com/file/d/1clYPdCNrDNZLbmlAEJ7wjsrOLn1igOpT/view?usp=sharing)|
 
 > note: We post AP-s here because we want to know how does small object performance in related model, it was notablely higher small-APs for transformer backbone based model! **Some of above model might not opensourced but we provide weights**.
 
@@ -294,7 +288,7 @@ Make sure you have read **rules** before ask me any questions.
 
 ## 🤒️ Performance
 
-Here is a dedicated performance compare with other packages. 
+Here is a dedicated performance compare with other packages.
 
 tbd.
 
