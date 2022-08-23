@@ -1,7 +1,7 @@
 
 <div align="center">
 
-<img src="https://s1.ax1x.com/2022/08/21/vy5nHJ.png">
+<img src="https://s1.ax1x.com/2022/08/23/vcB3Pe.png">
 
 [Documentation](https://github.com/jinfagang/yolov7) •
 [Installation Instructions](https://github.com/jinfagang/yolov7) •
@@ -132,6 +132,25 @@ Here are some tasks need to be claimed:
 Just join our in-house contributor plan, you can share our newest code with your contribution!
 
 
+## Quick Start
+
+Before running yolov7-d2, make sure you have `detectron2` installed, for it's installation, please refer to original facebookresearch repo. 
+
+Simple `pip install -e .` you can have detectron2 installed from source.
+
+Then, just clone this repo:
+
+```
+git clone https://github.com/jinfagang/yolov7_d2
+cd yolov7_d2
+pip install -e .
+```
+
+Or, you can `pip install yolov7-d2` for quick install from pypi.
+
+Then following [docs](docs/usage.md) for first training && inference usage.
+
+
 ## 💁‍♂️ Results
 
 | YOLOv7 Instance             |  Face & Detection |
@@ -144,7 +163,6 @@ Just join our in-house contributor plan, you can share our newest code with your
 ![](https://raw.githubusercontent.com/jinfagang/public_images/master/20220613111139.png) | ![](https://raw.githubusercontent.com/jinfagang/public_images/master/20220613111239.png)
 ![](https://s2.loli.net/2022/07/26/1Msgxupz4VWboqX.png) | ![](https://s2.loli.net/2022/07/26/NzahO46qcsU52Gn.png)
 ![](https://raw.githubusercontent.com/jinfagang/public_images/master/20220801102656.png) | ![](https://raw.githubusercontent.com/jinfagang/public_images/master/20220801102828.png)
-
 
 
 ## 🧑‍🦯 Installation && Quick Start
