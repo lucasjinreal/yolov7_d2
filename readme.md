@@ -19,7 +19,7 @@
 </div>
 
 
-> this is another yolov7 implementation based on detectron2, YOLOX, YOLOv6, YOLOv5, DETR, Anchor-DETR, DINO and some other SOTA detection models also supported. The ultimate goal of yolov7-d2 is to build a powerful weapon for **anyone** who wants a SOTA detector and train it **without pain**. It's extremly easy for users to build any **Multi-Head** models on yolov2-d2, for example, our E2E pose estimation is build on yolov2-d2 and works very well.
+> this is another yolov7 implementation based on detectron2, YOLOX, YOLOv6, YOLOv5, DETR, Anchor-DETR, DINO and some other SOTA detection models also supported. The ultimate goal of yolov7-d2 is to build a powerful weapon for **anyone** who wants a SOTA detector and train it **without pain**. It's extremly easy for users to build any **Multi-Head** models on yolov7-d2, for example, our E2E pose estimation is build on yolov7-d2 and works very well.
 
 
 Thanks for Aarohi's youtube vlog for guaidance of yolov7: https://www.youtube.com/watch?v=ag88beS_fvM , if you want a quick start, take a look at this nice introduction on yolov7 and detectron2.
