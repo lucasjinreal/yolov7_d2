@@ -149,5 +149,5 @@ vendor/
 log2.md
 vendor/
 .DS_Store
-wandb/
+# wandb/
 artifacts/
