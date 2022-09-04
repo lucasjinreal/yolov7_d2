@@ -1,6 +1,6 @@
 # Copyright (c) Lucas Jin. All rights reserved.
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 short_version = __version__
 
 
