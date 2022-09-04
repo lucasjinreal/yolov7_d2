@@ -217,7 +217,7 @@ if __name__ == "__main__":
     else:
         inference_logger = None
 
-    for i in trange(len(iter.srcs)):
+    while iter.ok:
         im = next(iter)
         if isinstance(im, str):
             image_path = im
