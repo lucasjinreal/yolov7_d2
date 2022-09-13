@@ -29,7 +29,7 @@ def build_augmentation(cfg, is_train):
         augmentation = build_normal_augmentation(cfg, is_train)
     else:
         augmentation = build_yolov7_augmentation(cfg, is_train)
-    if is_train and cfg.INPUT.SHIFT.SHIFT_PIXELS>0:
+    if is_train and cfg.INPUT.SHIFT.ENABLED and cfg.INPUT.SHIFT.SHIFT_PIXELS>0:
         augmentation.append(
             YOLOFRandomShift(max_shifts=cfg.INPUT.SHIFT.SHIFT_PIXELS))
     return augmentation
@@ -52,22 +52,20 @@ def build_normal_augmentation(cfg, is_train):
         max_size = cfg.INPUT.MAX_SIZE_TEST
         sample_style = "choice"
     augmentation = [T.ResizeShortestEdge(min_size, max_size, sample_style)]
-    if is_train and cfg.INPUT.RANDOM_FLIP != "none":
-        if "horizontal" in cfg.INPUT.RANDOM_FLIP:
-            augmentation.append(
-                T.RandomFlip(
-                    horizontal=True,
-                    vertical=False,
-                )
+    if is_train and cfg.INPUT.RANDOM_FLIP_HORIZONTAL.ENABLED:
+        augmentation.append(
+            T.RandomFlip(
+                horizontal=True,
+                vertical=False,
             )
-        if "vertical" in cfg.INPUT.RANDOM_FLIP:
-            augmentation.append(
-                T.RandomFlip(
-                    horizontal=False,
-                    vertical=True,
-                )
+        )
+    if is_train and cfg.INPUT.RANDOM_FLIP_VERTICAL.ENABLED:
+        augmentation.append(
+            T.RandomFlip(
+                horizontal=False,
+                vertical=True,
             )
-
+        )
     if is_train and cfg.INPUT.COLOR_JITTER.SATURATION:
         augmentation.append(RandomSaturation(0.8, 1.2))
     if is_train and cfg.INPUT.COLOR_JITTER.BRIGHTNESS:
