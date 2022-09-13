@@ -29,7 +29,7 @@ def build_augmentation(cfg, is_train):
         augmentation = build_normal_augmentation(cfg, is_train)
     else:
         augmentation = build_yolov7_augmentation(cfg, is_train)
-    if is_train:
+    if is_train and cfg.INPUT.SHIFT.SHIFT_PIXELS>0:
         augmentation.append(
             YOLOFRandomShift(max_shifts=cfg.INPUT.SHIFT.SHIFT_PIXELS))
     return augmentation
@@ -53,12 +53,20 @@ def build_normal_augmentation(cfg, is_train):
         sample_style = "choice"
     augmentation = [T.ResizeShortestEdge(min_size, max_size, sample_style)]
     if is_train and cfg.INPUT.RANDOM_FLIP != "none":
-        augmentation.append(
-            T.RandomFlip(
-                horizontal=cfg.INPUT.RANDOM_FLIP == "horizontal",
-                vertical=cfg.INPUT.RANDOM_FLIP == "vertical",
+        if "horizontal" in cfg.INPUT.RANDOM_FLIP:
+            augmentation.append(
+                T.RandomFlip(
+                    horizontal=True,
+                    vertical=False,
+                )
             )
-        )
+        if "vertical" in cfg.INPUT.RANDOM_FLIP:
+            augmentation.append(
+                T.RandomFlip(
+                    horizontal=False,
+                    vertical=True,
+                )
+            )
 
     if is_train and cfg.INPUT.COLOR_JITTER.SATURATION:
         augmentation.append(RandomSaturation(0.8, 1.2))
@@ -118,12 +126,20 @@ def build_yolov7_augmentation(cfg, is_train):
         if cfg.INPUT.RANDOM_FLIP != "none":
             # The difference between `T.RandomFlip` and `RandomFlip` is that
             # we register a new method `apply_meta_infos` in `RandomFlip`
-            augmentation.append(
-                RandomFlip(
-                    horizontal=cfg.INPUT.RANDOM_FLIP == "horizontal",
-                    vertical=cfg.INPUT.RANDOM_FLIP == "vertical",
+            if "horizontal" in cfg.INPUT.RANDOM_FLIP:
+                augmentation.append(
+                    T.RandomFlip(
+                        horizontal=True,
+                        vertical=False,
+                    )
                 )
-            )
+            if "vertical" in cfg.INPUT.RANDOM_FLIP:
+                augmentation.append(
+                    T.RandomFlip(
+                        horizontal=False,
+                        vertical=True,
+                    )
+                )
     else:
         # augmentation.append(
         #     YOLOFResize(shape=cfg.INPUT.RESIZE.TEST_SHAPE,

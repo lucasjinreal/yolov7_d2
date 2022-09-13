@@ -142,7 +142,7 @@ def vis_res_fast(res, img, class_names, colors, thresh):
     if ins.has("pred_boxes"):
         bboxes = ins.pred_boxes.tensor.cpu().numpy()
     scores = ins.scores.cpu().numpy()
-    clss = ins.pred_classes.cpu().numpy()
+    clss = ins.pred_classes.cpu().numpy().astype(int)
     if ins.has("pred_bit_masks"):
         bit_masks = ins.pred_bit_masks
         if isinstance(bit_masks, BitMasks):
