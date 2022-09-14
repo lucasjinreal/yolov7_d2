@@ -11,7 +11,6 @@ from .transforms.augmentation_impl import (
     RandomGridMask
 )
 from detectron2.data.transforms import RandomFlip, RandomBrightness, RandomLighting, RandomSaturation
-from detectron2.data.transforms import RandomFlip
 from alfred.vis.image.det import visualize_det_cv2_part, visualize_det_cv2_fancy
 from pycocotools import mask as mask_util
 
@@ -55,15 +54,17 @@ def build_normal_augmentation(cfg, is_train):
     if is_train and cfg.INPUT.RANDOM_FLIP_HORIZONTAL.ENABLED:
         augmentation.append(
             T.RandomFlip(
-                horizontal=True,
+                prob=cfg.INPUT.RANDOM_FLIP_HORIZONTAL.PROB,
+                horizontal=cfg.INPUT.RANDOM_FLIP_HORIZONTAL.ENABLED,
                 vertical=False,
             )
         )
     if is_train and cfg.INPUT.RANDOM_FLIP_VERTICAL.ENABLED:
         augmentation.append(
             T.RandomFlip(
+                prob=cfg.INPUT.RANDOM_FLIP_HORIZONTAL.PROB,
                 horizontal=False,
-                vertical=True,
+                vertical=cfg.INPUT.RANDOM_FLIP_VERTICAL.ENABLED,
             )
         )
     if is_train and cfg.INPUT.COLOR_JITTER.SATURATION:
@@ -120,24 +121,26 @@ def build_yolov7_augmentation(cfg, is_train):
             augmentation.append(RandomSaturation(0.8, 1.2))
         if cfg.INPUT.COLOR_JITTER.BRIGHTNESS:
             augmentation.append(RandomBrightness(0.8, 1.2))
+        
+        # The difference between `T.RandomFlip` and `RandomFlip` is that
+        # we register a new method `apply_meta_infos` in `RandomFlip`
+        if cfg.INPUT.RANDOM_FLIP_HORIZONTAL.ENABLED:
+            augmentation.append(
+                T.RandomFlip(
+                    prob=cfg.INPUT.RANDOM_FLIP_HORIZONTAL.PROB,
+                    horizontal=cfg.INPUT.RANDOM_FLIP_HORIZONTAL.ENABLED,
+                    vertical=False,
+                )
+            )
+        if cfg.INPUT.RANDOM_FLIP_VERTICAL.ENABLED:
+            augmentation.append(
+                T.RandomFlip(
+                    prob=cfg.INPUT.RANDOM_FLIP_HORIZONTAL.PROB,
+                    horizontal=False,
+                    vertical=cfg.INPUT.RANDOM_FLIP_VERTICAL.ENABLED,
+                )
+            )
 
-        if cfg.INPUT.RANDOM_FLIP != "none":
-            # The difference between `T.RandomFlip` and `RandomFlip` is that
-            # we register a new method `apply_meta_infos` in `RandomFlip`
-            if "horizontal" in cfg.INPUT.RANDOM_FLIP:
-                augmentation.append(
-                    T.RandomFlip(
-                        horizontal=True,
-                        vertical=False,
-                    )
-                )
-            if "vertical" in cfg.INPUT.RANDOM_FLIP:
-                augmentation.append(
-                    T.RandomFlip(
-                        horizontal=False,
-                        vertical=True,
-                    )
-                )
     else:
         # augmentation.append(
         #     YOLOFResize(shape=cfg.INPUT.RESIZE.TEST_SHAPE,
