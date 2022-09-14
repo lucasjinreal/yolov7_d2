@@ -55,7 +55,10 @@ INPUT:
   MIN_SIZE_TEST: 416
   MAX_SIZE_TEST: 608
   # open all augmentations
-  RANDOM_FLIP: "none"
+  RANDOM_FLIP_HORIZONTAL:
+    ENABLED: False
+  RANDOM_FLIP_VERTICAL:
+    ENABLED: False
   JITTER_CROP:
     ENABLED: False
   RESIZE:
