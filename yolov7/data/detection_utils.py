@@ -62,7 +62,7 @@ def build_normal_augmentation(cfg, is_train):
     if is_train and cfg.INPUT.RANDOM_FLIP_VERTICAL.ENABLED:
         augmentation.append(
             T.RandomFlip(
-                prob=cfg.INPUT.RANDOM_FLIP_HORIZONTAL.PROB,
+                prob=cfg.INPUT.RANDOM_FLIP_VERTICAL.PROB,
                 horizontal=False,
                 vertical=cfg.INPUT.RANDOM_FLIP_VERTICAL.ENABLED,
             )
@@ -135,7 +135,7 @@ def build_yolov7_augmentation(cfg, is_train):
         if cfg.INPUT.RANDOM_FLIP_VERTICAL.ENABLED:
             augmentation.append(
                 T.RandomFlip(
-                    prob=cfg.INPUT.RANDOM_FLIP_HORIZONTAL.PROB,
+                    prob=cfg.INPUT.RANDOM_FLIP_VERTICAL.PROB,
                     horizontal=False,
                     vertical=cfg.INPUT.RANDOM_FLIP_VERTICAL.ENABLED,
                 )
