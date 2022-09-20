@@ -336,6 +336,7 @@ tbd.
 | Wechat             |  QQ |
 :-------------------------:|:-------------------------:
 ![image.png](https://s2.loli.net/2022/03/14/9uxaEnDA6vdByr2.png)  |  ![image.png](https://s2.loli.net/2022/02/28/C4gjf6DcwdHvnO8.png)
+![image.png](https://manaai.cn/images/qrcode_sai.jpg) | ![image.png](https://s1.ax1x.com/2022/09/17/xpKlcR.png)
 
 * if wechat expired, please contact me update via github issue. group for general discussion, not only for yolov7.
 
