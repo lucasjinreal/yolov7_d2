@@ -339,6 +339,7 @@ tbd.
 ![image.png](https://manaai.cn/images/qrcode_sai.jpg) | ![image.png](https://s1.ax1x.com/2022/09/17/xpKlcR.png)
 
 * if wechat expired, please contact me update via github issue. group for general discussion, not only for yolov7.
+* QQ群如果满了请加二群：419548605
 
 ## 🀄️ Some Exp Visualizations
 
