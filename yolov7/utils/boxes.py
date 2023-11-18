@@ -1,21 +1,15 @@
-import numpy as np
-
-import torch
-import torchvision
-
-import torch
-import torch.nn as nn
 import math
 import numpy as np
 from enum import IntEnum, unique
 from typing import List, Tuple, Union
-import torch
-from torch import device
-from torchvision.ops.boxes import nms, box_area
-import cv2
-import torch.utils.data
-import torchvision
 from pycocotools import mask as coco_mask
+
+import torch
+import torchvision
+import torch.nn as nn
+import torch.utils.data
+from torchvision.ops.boxes import box_area
+
 
 _RawBoxType = Union[List[float], Tuple[float, ...], torch.Tensor, np.ndarray]
 

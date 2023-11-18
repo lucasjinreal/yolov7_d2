@@ -262,7 +262,7 @@ class _Conv2d(nn.Conv2d):
             input = F.pad(input, expanded_padding, mode='circular')
 
         elif self.padding_mode == 'dynamic_same':
-            ih, iw = x.size()[-2:]
+            ih, iw = input.size()[-2:]
             kh, kw = self.weight.size()[-2:]
             sh, sw = self.stride
             oh, ow = math.ceil(ih / sh), math.ceil(iw / sw)

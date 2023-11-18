@@ -1,4 +1,4 @@
-_BASE_: "../Base-YoloV7.yaml"
+_BASE_: "../Base-YOLOv7.yaml"
 MODEL:
   META_ARCHITECTURE: "YOLOV7"
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
